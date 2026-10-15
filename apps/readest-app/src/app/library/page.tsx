@@ -68,7 +68,6 @@ import { useAppUrlIngress } from '@/hooks/useAppUrlIngress';
 import { useOpenWithBooks } from '@/hooks/useOpenWithBooks';
 import { useOpenLaunchLinks } from '@/hooks/useOpenLaunchLinks';
 import { useHomeScreenWidgets } from '@/hooks/useHomeScreenWidgets';
-import { useOpenShareLink } from '@/hooks/useOpenShareLink';
 import { useOpenDeviceLink } from '@/hooks/useOpenDeviceLink';
 import { useClipUrlIngress } from '@/hooks/useClipUrlIngress';
 import { useWebBrowserDownloads } from '@/hooks/useWebBrowserDownloads';
@@ -371,7 +370,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   useOpenWithBooks();
   useOpenLaunchLinks();
   useHomeScreenWidgets();
-  useOpenShareLink();
   useOpenDeviceLink();
   useClipUrlIngress();
   useWebBrowserDownloads();

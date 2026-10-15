@@ -241,14 +241,6 @@ const BookshelfItem: React.FC<BookshelfItemProps> = ({
           handleBookUpload(book);
         },
       },
-      share: {
-        text: _('Share Book'),
-        action: async () => {
-          // Bookshelf.tsx hosts the dialog; we dispatch and let it route
-          // unauthenticated users into the login flow first.
-          eventDispatcher.dispatch('show-share-dialog', { book });
-        },
-      },
       offlineDownload: {
         text: _('Download for Offline'),
         action: async () => {
