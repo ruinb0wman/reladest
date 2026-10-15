@@ -30,6 +30,7 @@ import {
   setTelemetryDecision,
 } from '@/utils/telemetry';
 import { getLibraryViewSettings } from '@/helpers/settings';
+import { isSelfHosted } from '@/utils/access';
 import { SETTINGS_FILENAME } from '@/services/constants';
 import type { AppService } from '@/types/system';
 import type { SystemSettings } from '@/types/settings';
@@ -67,6 +68,18 @@ const finalizeTelemetryDecision = ({
   isNewUser: boolean;
   onShowPrompt: () => void;
 }) => {
+  // A self-hosted (LAN) deployment has no telemetry at all: skip the whole
+  // consent flow (no dialog, no decision dance) and make sure both sides agree
+  // on an opt-out, so the settings switch cannot keep reading `true` from an
+  // older install and PostHog is never initialised (see PHContext.initPostHog).
+  if (isSelfHosted()) {
+    optOutTelemetry();
+    if (settings.telemetryEnabled) {
+      settings.telemetryEnabled = false;
+      void appService.saveSettings(settings);
+    }
+    return;
+  }
   const existing = getTelemetryDecision();
   if (existing === 'pending') {
     onShowPrompt();

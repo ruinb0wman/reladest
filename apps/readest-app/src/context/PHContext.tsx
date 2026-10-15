@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { ReactNode } from 'react';
 import { PostHogProvider } from 'posthog-js/react';
 import { applyPostHogConsent, getTelemetryDecision } from '@/utils/telemetry';
+import { isSelfHosted } from '@/utils/access';
 import { getAppVersion } from '@/utils/version';
 
 const posthogUrl =
@@ -26,7 +27,13 @@ export const initPostHog = () => {
     initialized ||
     typeof window === 'undefined' ||
     process.env['NODE_ENV'] !== 'production' ||
-    !posthogKey
+    !posthogKey ||
+    // A self-hosted (LAN) deployment must not talk to Readest's PostHog project
+    // at all: the token baked into `.env` is ours, and nothing about a private
+    // deployment is ours to measure. Without this the consent flow takes the
+    // `telemetryEnabled: true` default on an existing install, flips the
+    // decision to `opt-in`, and starts sending on the next boot.
+    isSelfHosted()
   ) {
     return;
   }
