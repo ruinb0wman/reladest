@@ -101,20 +101,43 @@
 - [ ] **[P3.5-1]** file sync 覆盖扩展：settings / 书架 / 字体 / 词典（旧 fork 代码找回则减半）
 - [ ] **[P6-1]** **Phase 6：包管理器 pnpm → bun**（放在 Phase 3 之后，评估 + 五条验收清单见 §8）
 - [ ] **[P7-1]** **Phase 7：demo 幽灵行 / URL 式 demo 判定修复**（看 §9；子项 P7-a..P7-e）
-- [ ] **[P4-1]** Android APK 构建（`.env.local` 里的 `NEXT_PUBLIC_SELF_HOSTED=true`）
-- [ ] **[P4-2]** 真机：装包 → WebDAV 行无 Premium → 填 `http://<PC-IP>:17322` → 双向同步
-- [ ] **[P4-3]** 真机确认：cleartext http 是否被 `plugin-http`(Rust) 绕过（若被拦则加 network-security-config）
+- [~] **[P4-1]** Android APK 构建 — **2026-10-15 首次构建成功**（下方配方已修正为实测版）；装机待手机 adb 恢复
+  - 产物：`~/readest-lan/dist/readest-lan-v0.12.16-first-apk.apk`（61.5MB，sha256 `f6f1fbee82ae…`）+ 同名 `.aab`
+  - 签名：`apksigner verify` → `CN=Readest LAN`（新 keystore `~/readest-lan/android/readest-lan.jks`，口令在 `keystore.env` 600）
+  - premium 解锁：`out/_next/static/chunks/*.js` 里是 `(process.env.SELF_HOSTED || "true") === "true"` ⇒ Tauri 下为 true ✅
+  - 耗时：cargo 冷 9m29s → 热 4m48s；Gradle 首次 ~13min；合计 ~25min
+- [x] **[P4-2]** 真机（模拟器 `emulator-5554`，x86_64 + `libndk_translation`）— **2026-10-15 通过**：WebDAV 填 `http://10.0.2.2:17322`（模拟器里的宿主回环别名）→ Connect 成功，一次拉取 16 个 DAV 请求（`library.json` + 3 本的 cover/config）→ 手机书库从 0 变 3 本，而且那本带对端进度的显示 **3%**；首次同步后手机自己也 `MKCOL Readest` + `PUT library.json`（推回方向）
+- [x] **[P4-3]** **cleartext http 完全没被拦** — `plugin-http`（Rust reqwest）不走 Android 的 cleartext 策略，`http://…:17322` 直接能用，**不需要 network-security-config**
+- [x] **[P1-3-σ]** 顺带补完：“远端有、本机全无”的设备（手机）拉取成功 ⇒ 拉取方向确认
+- [ ] **[P0-5]** 防火墙 — **模拟器这条路不算数**：模拟器通过 `10.0.2.2`/宿主 NAT 访问，与“手机过 WiFi 采 PC 的 192.168.1.5”不是同一条路。要验防火墙必须上真机
+- [ ] **[P4-4]** 开书时下载书文件：未验到（点书卡没打开 reader，可能需再试/翻译层较慢）；书卡上的云图标 = 未落本地、开书时才拉
+- [ ] **[P4-5]** **服务监督**：LAN 两个进程在会话过程中**静默死过一次**（发现时 17321/17322 都没监听），导致我第一次对模拟器的探测全部白测、并一度误判成“模拟器连不上 WSL”。→ 每次开测前先 `pnpm lan:status`；考虑给 `start.sh` 加个看门狗
 - [ ] **[P5-1]** 跑完 §4 Phase 5 验证矩阵（含“对端伪造写入 + 同一 eval 立刻触发同步”那条）
 
 ### 遗留 / 待办（本轮新出）
 - [ ] **[P2-8]** demo 清单改回空数组？（见 §9 的 [P7-b]，两个选项择一）
-- [ ] **[P1-3-σ]** 补验“**PC 拉一本书**”方向（远端有、本机无）：可直接删掉本地书的字节（保留行）后重新打开 → 应该从 WebDAV GET 回来（看 `~/readest-lan/logs/webdav.log`）
+- [x] **[P1-3-σ]** 补验“**PC 拉一本书**”方向 — **已由模拟器验证覆盖**：全新安装、书库为空的客户端拉回 3 本（见 [P4-2]）
+- [ ] **[P4-4]** 开书时下载书文件（手机侧）：模拟器上点书卡没打开 reader，未验到（书卡上的云图标 = 未落本地、开书时才拉）
+- [ ] **[P4-5]** **服务监督**：LAN 两进程在会话中**静默死过一次**（17321/17322 均无监听、进程不存在），导致对模拟器的探测全白测、一度误判成“模拟器连不上 WSL”。⇒ 开测前先 `pnpm lan:status`；考虑给 `start.sh` 加看门狗
+- [ ] **[P0-5]** 防火墙 — **模拟器这条路不算数**：模拟器走 `10.0.2.2`/宿主 NAT，与“手机过 WiFi 连 PC 的 192.168.1.5”不是同一条路。要验防火墙必须上真机
+- [ ] **[P7-1]** demo 幽灵行：**已有第二台设备的实锤**（手机书库出现两张《指数基金投资指南》）
+
+### ⚠️ 2026-10-15 顺序修正：B1/B2 纠缠，建议先做功能裁剪
+
+原计划把 **B1（Apple 产物 + `src/macos` + swift-rs）** 当“零风险纯删除”排在四件事之前。实地核实后发现**不成立**：
+
+- `src/macos/{window,menu,traffic_light,safari_auth,apple_auth,system_dictionary}.rs` 的函数被 **`#[cfg(desktop)]` 的入口代码调用**（`lib.rs:1089/1097/1138/1141/1152` 在 window 关闭/RunEvent 分支里调 `macos::window::hide_main_window` / `restore_main_window_frame`；`lib.rs:784-790` 注册三个 macOS 插件）⇒ 删 `src/macos` 必须**连桌面入口代码一起删**，B1 与 B2 是同一件事。
+- 而桌面入口（`lib.rs` 1227 行里大量 `#[cfg(desktop)]` 区域：窗口构建 / updater / single-instance / discord_rpc / menu / RunEvent）**只能靠肉眼看**：宿主编译（Linux）会编译 `cfg(desktop)` 代码但那已不是我们的目标，Android 编译又会把 `cfg(desktop)` 全部编掉，macOS 代码更无法在本机编译。
+- 收益仅“仓库变小 + 构建略快”，风险是弄坏入口点，且验证手段只有一次 7–30 分钟的 APK 构建。
+
+**→ 修正后的顺序：先 Round C（纯 JS、每步 2.5 分钟可验、功能收益大），Rust 减肥放到最后（“Phase 3.0a 终章”，一次做完 + 一次 APK 构建）**。
+iOS/macOS 的**产物**（`src-tauri/gen/apple`、两个插件的 `ios/`、`Info-ios.plist`、`tauri.macos-nonestore.conf.json`、`packages/swift-rs` + root `[patch.crates-io] swift-rs`、`bundle.macOS`/`bundle.iOS` 配置）**不被任何 Rust 代码引用**，属于真·零风险，可以单独先删（本次就做这一块）。
 
 ### 当前状态（每次会话结束时更新这一行）
 - 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → **P3a-3/4/5 + P3a-10**
 - 提交：`6297e0ce0`（LAN 档 + 硬编码）、`0a42152aa`（Phase 3.0a 第一批，-58,078 行）
 - **基线首次全绿**：1151 文件 / 13603 用例 / 0 失败（靠 `vitest.setup.ts` 的 jsdom Storage 垫片）
-- 下一步：**Phase 3.0a 第二批（Rust/Apple/CEF/桌面）** —— [P3a-1]/[P3a-2]/[P3a-6]/[P3a-7]/[P3a-8]，完了要跑一次 `tauri android build` 验证
+- 下一步：**先做零风险的那一块**（iOS/macOS 产物 + swift-rs patch，见“顺序修正”），然后 **Round C：四件功能裁剪**（从 **`[A]` 删登录**开始）；Rust 减肥（CEF/桌面/`src/macos`）放到最后一次性做
 - 遗留：Phase 7（demo 幽灵行，见 §9）、[P0-5] 防火墙 + 手机真机、[P1-3-σ] 拉书方向
 - 注意：驱动 bow 自动化时**必须显式传 `tabId`**，而且**先确认用户没在用 bow**
 
@@ -678,7 +701,41 @@ Phase 4  Android 真机验收
 
 风险提示：裁剪同时要动测试与 import 图。本仓库测试基线目前是**全绿**（memory 2026-10-15：13701 用例通过、零失败），所以每阶段跑 `nohup setsid pnpm test:pr:web:unit` 就能看住回归。
 
-### Phase 4 — Android（沿用上次已验证的配方）
+### Phase 4 — Android（配方已按 2026-10-15 实测修正）
+
+**首次构建前必须做的三件（本 clone 缺东西，之前配方没写全）**：
+
+```bash
+# 0) PATH 里必须有 gradle —— 本机没有，用缓存里的 wrapper 发行版：
+ln -sf ~/.gradle/wrapper/dists/gradle-8.14.3-bin/*/gradle-8.14.3/bin/gradle ~/.local/bin/gradle
+#    （版本必须与 src-tauri/gen/android/gradle/wrapper/gradle-wrapper.properties 一致：8.14.3）
+
+# 1) gen/android 的 Gradle 脚手架（settings.gradle / build.gradle.kts / gradlew…）都在 .gitignore 里，
+#    fresh clone 完全没有 → 必须先 init，否则构建最后一步报
+#    “Directory '…/gen/android' does not contain a Gradle build”
+cd apps/readest-app
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
+  pnpm tauri android init --ci
+
+# 2) 图标资源（ic_launcher*、values/ic_launcher_background.xml）由 tauri icon 生成且**未被跟踪**；
+#    再 `git checkout -- .` 把被 init/icon 覆盖的跟踪文件（MainActivity.kt / AndroidManifest.xml /
+#    app/build.gradle.kts / themes.xml / ic_launcher.xml / KeyLearnCaptureTest.kt）恢复
+pnpm tauri icon ../../data/icons/readest-book.png
+cd ../.. && git checkout -- .
+
+# 3) 签名（gradle 读 rootProject.file("keystore.properties")，文件本身被 gitignore）
+#    keystore：~/readest-lan/android/readest-lan.jks，keystore.properties 写 keyAlias/password/storeFile
+
+# 构建（.env.local 里要有 NEXT_PUBLIC_SELF_HOSTED=true；注意 dotenv -e .env.tauri 不含它，是 Next 自己读 .env.local）
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk ANDROID_SDK_ROOT=$HOME/android-sdk \
+  pnpm tauri android build -t aarch64
+# 产物：src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release.apk
+```
+
+**两条坑（实测踩到）**：
+- ⚠️ **构建前必须 `pnpm lan:stop`**：`beforeBuildCommand` 会跑 `next build` + `upload-sourcemaps`，会重写 `.next/`，与运行中的 standalone 撞车（完了要 `pnpm lan:build` + `lan:start`）。
+- `tauri-plugin-*` 的压缩：前端资源被 tauri 的 `compression` 特性 brotli 压缩进 `.so`，**没法在 APK 里 grep 字符串**；要验内联就看 `out/_next/static/chunks/*.js`（构建后、嵌入前）。
+- `upload-sourcemaps.mjs` 在无 `SENTRY_AUTH_TOKEN` 时是 no-op（不会卡构建）；`apksigner verify --print-certs` 验签名（`keytool -printcert -jarfile` 对 v2/v3 签名会误报 “Not a signed jar file”）。
 
 ```bash
 # 构建期开关写 .env.local（gitignored），不要改被 git 跟踪的 .env.tauri
@@ -878,6 +935,7 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 `isDemoBook()` 只接进了**云（replica）**路径 —— `useBooksSync.ts:57`（`getNewBooks`）与 `:217`（`updateLibrary`）——而 WebDAV 路径是
 `runLibrarySync.ts` 的 `runFileLibrarySyncPass` → `syncOneBackend` → `engine.syncLibrary(useLibraryStore.getState().library, …)`，**原样把所有行推上去**（包括 demo 行），并且会把它的 cover/config/书文件也推上去。
 ⇒ 本机 2 本 / 远端 3 行；其他设备一拉就多出一本书（幽灵行还会因 index 的 union 合并**留在远端**）。
+**2026-10-15 模拟器上的实锤**：手机（全新安装、书库为空）连上后拉回 3 本，屏幕上真的出现了**两张“指数基金投资指南”卡片**（一本是远端 `06e01d70…` 真书，一本是 demo 幽灵 `1914c8c5…`）—— 这就是 D1 的可见后果。
 
 **D2（待本地确认）：拖拽导入的真书带上了 demo URL。**
 远端 `06e01d70…` 行的 `url` = demo 地址。若本地确实如此，则 `isDemoBook()` 会把这本**真书误判为 demo**（后果：云同步永久跳过它；file sync 的"过滤 demo"修法若照抄云路径，会把它一起滤掉 → 书推不上去）。
