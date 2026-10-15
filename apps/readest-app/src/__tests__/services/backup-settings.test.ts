@@ -165,7 +165,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
   it('strips per-device identity fields', () => {
     const out = rec(sanitizeSettingsForBackup(makeSettings()));
     expect(out['replicaDeviceId']).toBeUndefined();
-    expect(rec(out['kosync'])['deviceId']).toBeUndefined();
     expect(rec(out['googleDrive'])['deviceId']).toBeUndefined();
     // Non-identity Drive settings still travel with the backup.
     expect(rec(out['googleDrive'])['enabled']).toBe(true);
@@ -219,8 +218,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
     expect(out.keepLogin).toBe(true);
     expect(out.libraryViewMode).toBe('grid');
     expect(out.libraryColumns).toBe(4);
-    expect(out.kosync.serverUrl).toBe('https://kosync.example');
-    expect(out.kosync.deviceName).toBe('My Phone');
     expect(out.globalReadSettings.customThemes).toEqual([{ name: 'mytheme' }]);
     expect(out.globalViewSettings.userStylesheet).toBe('body { color: red }');
   });
@@ -246,9 +243,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
 describe('sanitizeSettingsForBackup - credentials', () => {
   it('strips credentials by default', () => {
     const out = sanitizeSettingsForBackup(makeSettings());
-    expect(rec(out.kosync)['username']).toBeUndefined();
-    expect(rec(out.kosync)['userkey']).toBeUndefined();
-    expect(rec(out.kosync)['password']).toBeUndefined();
     expect(rec(out.readwise)['accessToken']).toBeUndefined();
     expect(rec(out.hardcover)['accessToken']).toBeUndefined();
     expect(rec(out.notion)['accessToken']).toBeUndefined();
@@ -272,7 +266,6 @@ describe('sanitizeSettingsForBackup - credentials', () => {
 
   it('keeps credentials when includeCredentials is true', () => {
     const out = sanitizeSettingsForBackup(makeSettings(), { includeCredentials: true });
-    expect(out.kosync.password).toBe('kpass');
     expect(out.readwise.accessToken).toBe('rw-token');
     expect(out.hardcover.accessToken).toBe('hc-token');
     expect(out.notion.accessToken).toBe('notion-token');
@@ -323,24 +316,24 @@ describe('mergeRestoredSettings', () => {
     const current = makeSettings();
     const backup = sanitizeSettingsForBackup(
       makeSettings({
-        kosync: {
+        webdav: {
           enabled: true,
-          serverUrl: 'https://new-kosync.example',
-          username: 'kuser',
-          userkey: 'kkey',
-          password: 'kpass',
-          deviceId: 'kosync-device-id',
-          deviceName: 'Restored Name',
-          checksumMethod: 'binary',
-          strategy: 'prompt',
+          serverUrl: 'https://new-dav.example',
+          username: 'wuser',
+          password: 'wpass',
+          rootPath: '/',
+          deviceId: 'webdav-backup-id',
+          lastSyncedAt: 12345,
         },
       }),
     );
     const merged = mergeRestoredSettings(current, backup);
-    // serverUrl/deviceName come from the backup, deviceId stays the device's own
-    expect(merged.kosync.serverUrl).toBe('https://new-kosync.example');
-    expect(merged.kosync.deviceName).toBe('Restored Name');
-    expect(merged.kosync.deviceId).toBe('kosync-device-id');
+    // serverUrl/deviceName come from the backup; deviceId is per-device and stays
+    // whatever the current install had (it is on the backup blacklist).
+    expect(merged.webdav.serverUrl).toBe('https://new-dav.example');
+    // lastSyncedAt is device-local too (blacklisted): the current value wins.
+    expect(merged.webdav.lastSyncedAt).toBe(current.webdav.lastSyncedAt);
+    expect(merged.webdav.deviceId).toBe(current.webdav.deviceId);
   });
 
   it('replaces arrays wholesale rather than concatenating', () => {

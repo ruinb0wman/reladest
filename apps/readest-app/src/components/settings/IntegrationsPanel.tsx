@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { MdChevronRight } from 'react-icons/md';
 import {
-  RiBookOpenLine,
   RiPlanetLine,
   RiRssLine,
   RiBookReadLine,
@@ -39,7 +38,6 @@ import { navigateToLogin, navigateToProfile } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
 import ABSForm from './integrations/ABSForm';
 import BookOrbitForm from './integrations/BookOrbitForm';
-import KOSyncForm from './integrations/KOSyncForm';
 import ReadwiseForm from './integrations/ReadwiseForm';
 import HardcoverForm from './integrations/HardcoverForm';
 import PageboundForm from './integrations/PageboundForm';
@@ -65,7 +63,6 @@ import SubPageHeader from './SubPageHeader';
 import { BoxedList, NavigationRow, SectionTitle, SettingLabel, Tips } from './primitives';
 
 type SubPage =
-  | 'kosync'
   | 'bookorbit'
   | 'webdav'
   | 'readest-cloud'
@@ -180,7 +177,6 @@ const IntegrationsPanel: React.FC = () => {
       return;
     }
     if (
-      requestedSubPage === 'kosync' ||
       requestedSubPage === 'bookorbit' ||
       requestedSubPage === 'webdav' ||
       requestedSubPage === 'readwise' ||
@@ -204,12 +200,6 @@ const IntegrationsPanel: React.FC = () => {
   // SubPageHeader's "Integrations" label lands at the exact same Y position
   // as the list-view's h2 — clicking a row reads as a navigation morph
   // rather than a layout shift.
-  if (subPage === 'kosync')
-    return (
-      <div className='my-4 w-full'>
-        <KOSyncForm onBack={() => setSubPage(null)} />
-      </div>
-    );
   if (subPage === 'localsend')
     return (
       <div className='my-4 w-full'>
@@ -319,12 +309,6 @@ const IntegrationsPanel: React.FC = () => {
       </div>
     );
 
-  const koSyncStatus = settings.kosync?.enabled
-    ? settings.kosync.username
-      ? _('Connected as {{user}}', { user: settings.kosync.username })
-      : _('Connected')
-    : _('Not connected');
-
   const bookOrbitStatus = settings.bookorbit?.enabled
     ? settings.bookorbit.username
       ? _('Connected as {{user}}', { user: settings.bookorbit.username })
@@ -428,12 +412,6 @@ const IntegrationsPanel: React.FC = () => {
         <SectionTitle className='mb-2'>{_('Reading Sync')}</SectionTitle>
         <div className='card eink-bordered border-base-200 bg-base-100 overflow-hidden border'>
           <div className='divide-base-200 divide-y'>
-            <IntegrationRow
-              icon={RiBookOpenLine}
-              title={_('KOReader')}
-              status={koSyncStatus}
-              onClick={() => setSubPage('kosync')}
-            />
             <IntegrationRow
               icon={RiPlanetLine}
               title={_('BookOrbit')}

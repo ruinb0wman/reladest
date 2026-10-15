@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { KOSyncClient } from '@/services/sync/KOSyncClient';
 import { Book } from '@/types/book';
-import { KOSyncSettings } from '@/types/settings';
+import type { KOSyncSettings } from '@/services/sync/KOSyncClient';
 
 // The LAN-server branch of KOSyncClient.request uses window.fetch (mocked
 // per-test); the Tauri HTTP plugin is never invoked here, so stub the import

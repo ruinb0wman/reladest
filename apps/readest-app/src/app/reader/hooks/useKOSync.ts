@@ -7,7 +7,7 @@ import { useBookDataStore } from '@/store/bookDataStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { KOSyncClient, KoSyncProgress } from '@/services/sync/KOSyncClient';
 import { Book, BookProgress, FIXED_LAYOUT_FORMATS } from '@/types/book';
-import type { KOSyncSettings, SystemSettings } from '@/types/settings';
+import type { SystemSettings } from '@/types/settings';
 import { BookDoc } from '@/libs/document';
 import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
@@ -31,9 +31,12 @@ type SyncState = 'idle' | 'checking' | 'conflict' | 'synced' | 'error';
 
 /**
  * Source of the KOSync-protocol config this hook instance syncs against.
- * selectConfig returns null when the provider is not configured; the hook
- * then idles. The kosync provider preserves the original semantics: a client
- * exists once credentials are set, `enabled` is checked at pull/push time.
+ * selectConfig returns null when the provider is not configured, and the hook
+ * then idles.
+ *
+ * Only BookOrbit uses this now: the KOReader Sync provider was removed with the
+ * third-party sync surface. The protocol client stays, because BookOrbit mounts
+ * the same KOSync wire protocol.
  */
 export interface KosyncProgressProvider {
   name: 'kosync' | 'bookorbit';
@@ -41,24 +44,28 @@ export interface KosyncProgressProvider {
 }
 
 /**
- * What this hook actually drives: the KOSync wire settings plus the knobs a
- * provider adds on top. `settings.kosync` satisfies it as-is.
+ * What this hook actually drives: the KOSync wire settings a provider selects,
+ * plus the knobs a provider adds on top.
  */
-export type KosyncEngineConfig = KOSyncSettings & {
+export interface KosyncEngineConfig {
+  enabled: boolean;
+  serverUrl: string;
+  username: string;
+  userkey: string;
+  password?: string;
+  deviceId: string;
+  deviceName: string;
+  checksumMethod: 'binary' | 'filename';
+  strategy: 'prompt' | 'silent' | 'send' | 'receive';
+  sendMetadata?: boolean;
   /**
-   * Manual-sync opt-out (#6029), set by BookOrbit only. When false the hook
-   * never pushes on its own; the server hears from us only on an explicit
+   * Manual-sync opt-out (#6029), set by BookOrbit. When false the hook never
+   * pushes on its own; the server hears from us only on an explicit
    * 'push-kosync'. Pulls stay automatic. Absent means automatic pushes, which
-   * is what KOReader Sync has always done.
+   * is what KOReader Sync used to do.
    */
   autoSync?: boolean;
-};
-
-export const kosyncProvider: KosyncProgressProvider = {
-  name: 'kosync',
-  selectConfig: (settings) =>
-    settings.kosync.username && settings.kosync.userkey ? settings.kosync : null,
-};
+}
 
 export interface SyncDetails {
   book: Book;
@@ -73,7 +80,7 @@ export interface SyncDetails {
   };
 }
 
-export const useKOSync = (bookKey: string, provider: KosyncProgressProvider = kosyncProvider) => {
+export const useKOSync = (bookKey: string, provider: KosyncProgressProvider) => {
   const _ = useTranslation();
   const { appService } = useEnv();
   const { settings } = useSettingsStore();

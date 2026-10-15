@@ -152,7 +152,11 @@ vi.mock('@/utils/event', () => ({
   },
 }));
 
-import { useKOSync, type KosyncProgressProvider } from '@/app/reader/hooks/useKOSync';
+import {
+  useKOSync,
+  type KosyncEngineConfig,
+  type KosyncProgressProvider,
+} from '@/app/reader/hooks/useKOSync';
 
 const flushMicrotasks = async () => {
   for (let i = 0; i < 30; i++) await Promise.resolve();
@@ -203,6 +207,16 @@ beforeEach(() => {
   h.activeCallback = null;
 });
 
+/**
+ * The hook used to default to the KOReader Sync provider; that provider is gone,
+ * so the suite supplies its own. It reads the same mutable fixture the tests
+ * already drive (`h.settings.kosync`), which keeps every assertion meaningful.
+ */
+const testProvider: KosyncProgressProvider = {
+  name: 'kosync',
+  selectConfig: () => h.settings.kosync as unknown as KosyncEngineConfig,
+};
+
 afterEach(() => {
   vi.useRealTimers();
   cleanup();
@@ -211,7 +225,7 @@ afterEach(() => {
 describe('useKOSync — applying a newer remote position (#5065)', () => {
   test('applies the newer remote position on open (silent strategy)', async () => {
     h.settings.kosync.strategy = 'silent';
-    renderHook(() => useKOSync('h1-view1'));
+    renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
 
     // The remote XPointer resolves to a CFI and the reader jumps to it.
@@ -226,7 +240,7 @@ describe('useKOSync — no clobbering when the pull is unresolved (#5065)', () =
     // reported percentage coincidentally equals Readest's. Pre-fix this looked
     // like "no conflict" → synced → auto-push overwrote the remote position.
     h.cfiResolves = false;
-    const { rerender } = renderHook(() => useKOSync('h1-view1'));
+    const { rerender } = renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
 
     // Simulate a page turn after the (unresolved) pull.
@@ -250,7 +264,7 @@ describe('useKOSync — no clobbering when the pull is unresolved (#5065)', () =
   test('does NOT auto-push (PUT) when a silent pull cannot resolve the XPointer', async () => {
     h.settings.kosync.strategy = 'silent';
     h.cfiResolves = false;
-    const { rerender } = renderHook(() => useKOSync('h1-view1'));
+    const { rerender } = renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
 
     // The reader must not have moved, and a later page turn must not push.
@@ -270,7 +284,7 @@ describe('useKOSync — no clobbering when the pull is unresolved (#5065)', () =
     // reaches 'synced', and auto-push keeps working.
     h.settings.kosync.strategy = 'silent';
     h.cfiResolves = true;
-    const { rerender } = renderHook(() => useKOSync('h1-view1'));
+    const { rerender } = renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
 
     expect(h.goTo).toHaveBeenCalledWith('epubcfi(/6/650!/4/2/6)');
@@ -289,7 +303,7 @@ describe('useKOSync — no clobbering when the pull is unresolved (#5065)', () =
     // the local position, there is no conflict and auto-push works normally.
     h.cfiResolves = true;
     h.view.getCFIProgress = vi.fn(async () => ({ fraction: 0.14 }));
-    const { rerender } = renderHook(() => useKOSync('h1-view1'));
+    const { rerender } = renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
 
     h.localProgress = {
@@ -320,7 +334,7 @@ describe('useKOSync — no phantom re-prompt after resolving (#5527)', () => {
     h.getProgressMock.mockResolvedValue(h.remote);
     h.cfiResolves = false;
 
-    const { result } = renderHook(() => useKOSync('h1-view1'));
+    const { result } = renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
 
     expect(result.current.syncState).toBe('synced');
@@ -329,7 +343,7 @@ describe('useKOSync — no phantom re-prompt after resolving (#5527)', () => {
 
   test('an already-resolved unchanged remote report does not re-prompt on window re-activation', async () => {
     // Genuine conflict on open: remote resolves to 0.6 vs local 0.14.
-    const { result } = renderHook(() => useKOSync('h1-view1'));
+    const { result } = renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
     expect(result.current.syncState).toBe('conflict');
 
@@ -356,7 +370,7 @@ describe('useKOSync — no phantom re-prompt after resolving (#5527)', () => {
   });
 
   test('a NEW remote report after resolution still prompts', async () => {
-    const { result } = renderHook(() => useKOSync('h1-view1'));
+    const { result } = renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
     expect(result.current.syncState).toBe('conflict');
 
@@ -395,7 +409,10 @@ describe('useKOSync — manual sync mode (#6029)', () => {
   // provider whose config carries the flag; KOReader Sync never sets it.
   const manualBookOrbit: KosyncProgressProvider = {
     name: 'bookorbit',
-    selectConfig: (settings) => ({ ...settings.kosync, autoSync: false }),
+    selectConfig: () => ({
+      ...(h.settings.kosync as unknown as KosyncEngineConfig),
+      autoSync: false,
+    }),
   };
   const turnPage = async (rerender: () => void) => {
     h.localProgress = {
@@ -478,7 +495,7 @@ describe('useKOSync — provider-scoped manual sync events (#6029)', () => {
   });
 
   test('ignores a push addressed to another provider', async () => {
-    renderHook(() => useKOSync('h1-view1'));
+    renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
     h.updateProgressMock.mockClear();
 
@@ -488,7 +505,7 @@ describe('useKOSync — provider-scoped manual sync events (#6029)', () => {
   });
 
   test('honours a push addressed to this provider', async () => {
-    renderHook(() => useKOSync('h1-view1'));
+    renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
     h.updateProgressMock.mockClear();
 
@@ -498,7 +515,7 @@ describe('useKOSync — provider-scoped manual sync events (#6029)', () => {
   });
 
   test('ignores a pull addressed to another provider', async () => {
-    renderHook(() => useKOSync('h1-view1'));
+    renderHook(() => useKOSync('h1-view1', testProvider));
     await settle();
     h.getProgressMock.mockClear();
 

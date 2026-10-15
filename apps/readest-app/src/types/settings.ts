@@ -54,7 +54,6 @@ export const LibraryGroupByType = {
 
 export type LibraryGroupByType = (typeof LibraryGroupByType)[keyof typeof LibraryGroupByType];
 
-export type KOSyncChecksumMethod = 'binary' | 'filename';
 export type KOSyncStrategy = 'prompt' | 'silent' | 'send' | 'receive';
 
 export interface ReadSettings {
@@ -87,27 +86,6 @@ export interface ReadSettings {
   handwritingTool: InkTool;
   handwritingMarkerColor: string;
   handwritingMarkerWidth: number;
-}
-
-export interface KOSyncSettings {
-  enabled: boolean;
-  serverUrl: string;
-  username: string;
-  userkey: string;
-  password?: string;
-  deviceId: string;
-  deviceName: string;
-  checksumMethod: KOSyncChecksumMethod;
-  strategy: KOSyncStrategy;
-  customHeaders?: Record<string, string>;
-  /**
-   * Include the book's filename, title and authors in progress uploads, in the
-   * optional `metadata` field KOReader 2026.05+ sends when "Send document
-   * metadata" is enabled. The official sync server ignores it; custom
-   * KOSync-compatible servers may use it to identify what is being read.
-   * Off by default, matching KOReader.
-   */
-  sendMetadata?: boolean;
 }
 
 export interface BookOrbitSettings {
@@ -571,7 +549,6 @@ export interface SystemSettings {
    */
   biometricUnlockEnabled?: boolean;
 
-  kosync: KOSyncSettings;
   bookorbit: BookOrbitSettings;
   readwise: ReadwiseSettings;
   hardcover: HardcoverSettings;

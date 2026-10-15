@@ -1,6 +1,25 @@
 import { md5 } from 'js-md5';
 import { Book } from '@/types/book';
-import { KOSyncSettings } from '@/types/settings';
+/**
+ * The wire config this client needs. It used to be `KOSyncSettings` from the
+ * settings slice; the KOReader Sync provider is gone (BookOrbit mounts the same
+ * protocol), so the shape lives with the client.
+ */
+export interface KOSyncSettings {
+  enabled: boolean;
+  serverUrl: string;
+  username: string;
+  userkey: string;
+  password?: string;
+  deviceId: string;
+  deviceName: string;
+  checksumMethod: 'binary' | 'filename';
+  strategy: 'prompt' | 'silent' | 'send' | 'receive';
+  sendMetadata?: boolean;
+  autoSync?: boolean;
+  /** Extra headers a caller-supplied URL may need (see utils/customHeaders). */
+  customHeaders?: Record<string, string>;
+}
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { KoSyncProxyPayload } from '@/types/kosync';
 import { isLanAddress } from '@/utils/network';
