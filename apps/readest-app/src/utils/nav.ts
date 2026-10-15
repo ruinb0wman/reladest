@@ -125,11 +125,15 @@ export const navigateToReader = (
   }
 };
 
-export const navigateToLogin = (router: ReturnType<typeof useRouter>) => {
-  const pathname = window.location.pathname;
-  const search = window.location.search;
-  const currentPath = pathname !== '/auth' ? pathname + search : '/';
-  router.push(`/auth?redirect=${encodeURIComponent(currentPath)}`);
+/**
+ * There is no login page in a LAN build — the `/auth` route was deleted with the
+ * account system. Callers are the few remaining "this needs a signed-in user"
+ * affordances (Send to Readest, the custom-translator panel, …); they now land
+ * on the library instead of a 404. Kept as a function so those call sites do not
+ * have to change.
+ */
+export const navigateToLogin = (_router: ReturnType<typeof useRouter>) => {
+  navigateToLibrary(_router);
 };
 
 export const navigateToHardcoverConnect = (router: ReturnType<typeof useRouter>) => {

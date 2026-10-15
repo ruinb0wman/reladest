@@ -654,17 +654,6 @@ describe('TTSPlayerSheet', () => {
     expect(screen.queryByText('chapters-view')).toBeNull();
   });
 
-  test('offline audio row: a signed-out user is routed to sign-in', () => {
-    mockAuth.user = null;
-    mockQuota.userProfilePlan = undefined;
-    const props = makeProps({ downloads: makeDownloads() });
-    render(<TTSPlayerSheet {...props} />);
-    expect(screen.getByText('Premium')).toBeTruthy();
-    fireEvent.click(screen.getByLabelText('Offline Audio'));
-    expect(routerPush).toHaveBeenCalledWith(expect.stringContaining('/auth?redirect='));
-    expect(screen.queryByText('chapters-view')).toBeNull();
-  });
-
   // Books with recorded narration (EPUB 3 Media Overlays) surface the narrator
   // as a voice; there is nothing to pre-download while it is selected.
   const narrationGroups = [
@@ -838,31 +827,6 @@ describe('TTSPlayerSheet', () => {
     expect(props.onSetVoice).not.toHaveBeenCalled();
     expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/user\?redirect=/));
     expect(props.onClose).toHaveBeenCalled();
-  });
-
-  test('a signed-out reader tapping a Readest voice is sent to sign in', async () => {
-    mockAuth.user = null;
-    const groups = [
-      {
-        id: 'readest-tts',
-        name: 'Readest Voice',
-        voices: [
-          {
-            id: 'kokoro:af_heart',
-            name: 'Heart',
-            lang: 'en-US',
-            tier: 'plus' as const,
-            disabled: true,
-          },
-        ],
-      },
-    ];
-    const props = makeProps({ onGetVoices: vi.fn().mockResolvedValue(groups) });
-    render(<TTSPlayerSheet {...props} />);
-    fireEvent.click(screen.getByLabelText('Voice'));
-    fireEvent.click(await waitFor(() => screen.getByRole('button', { name: /^HeartPlus$/ })));
-    expect(props.onSetVoice).not.toHaveBeenCalled();
-    expect(routerPush).toHaveBeenCalledWith(expect.stringMatching(/^\/auth/));
   });
 
   test('reopening the sheet returns to the main view', async () => {

@@ -177,14 +177,6 @@ describe('LangPanel — Custom Translators premium gate', () => {
     cleanup();
   });
 
-  it('sends a signed-out reader to sign in', () => {
-    render(<LangPanel bookKey='book-1' onRegisterReset={vi.fn()} />);
-
-    expect(getCustomTranslatorsRow().textContent).toContain('Premium');
-    fireEvent.click(getCustomTranslatorsRow());
-    expect(state.push).toHaveBeenCalledWith(expect.stringMatching(/^\/auth\?redirect=/));
-  });
-
   it('sends a free user to the plans page', () => {
     state.token = sessionToken({ plan: 'free' });
     state.user = { id: 'u' };

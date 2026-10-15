@@ -171,31 +171,20 @@ describe('navigateToReader', () => {
 });
 
 describe('navigateToLogin', () => {
-  test('navigates to /auth with redirect from current path', () => {
+  // No login page exists in this build (the /auth route was deleted with the
+  // account system), so the helper falls back to the library instead of 404ing.
+  test('routes to the library instead of the deleted /auth page', () => {
     Object.defineProperty(window, 'location', {
-      value: { pathname: '/library', search: '?q=test' },
+      value: { pathname: '/reader', search: '?ids=b1' },
       writable: true,
     });
 
     const router = mockRouter();
     navigateToLogin(router);
 
-    const url = router.push.mock.calls[0]![0] as string;
-    expect(url).toContain('/auth?redirect=');
-    expect(url).toContain(encodeURIComponent('/library?q=test'));
-  });
-
-  test('uses / as redirect when already on /auth', () => {
-    Object.defineProperty(window, 'location', {
-      value: { pathname: '/auth', search: '' },
-      writable: true,
-    });
-
-    const router = mockRouter();
-    navigateToLogin(router);
-
-    const url = router.push.mock.calls[0]![0] as string;
-    expect(url).toBe('/auth?redirect=%2F');
+    // navigateToLibrary replaces (not pushes) so the library is the
+    // back-target rather than another history entry.
+    expect(router.replace.mock.calls[0]![0]).toBe('/library');
   });
 });
 
