@@ -134,10 +134,10 @@
 iOS/macOS 的**产物**（`src-tauri/gen/apple`、两个插件的 `ios/`、`Info-ios.plist`、`tauri.macos-nonestore.conf.json`、`packages/swift-rs` + root `[patch.crates-io] swift-rs`、`bundle.macOS`/`bundle.iOS` 配置）**不被任何 Rust 代码引用**，属于真·零风险，可以单独先删（本次就做这一块）。
 
 ### 当前状态（每次会话结束时更新这一行）
-- 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → **P3a-3/4/5 + P3a-10**
-- 提交：`6297e0ce0`（LAN 档 + 硬编码）、`0a42152aa`（Phase 3.0a 第一批，-58,078 行）
-- **基线首次全绿**：1151 文件 / 13603 用例 / 0 失败（靠 `vitest.setup.ts` 的 jsdom Storage 垫片）
-- 下一步：**先做零风险的那一块**（iOS/macOS 产物 + swift-rs patch，见“顺序修正”），然后 **Round C：四件功能裁剪**（从 **`[A]` 删登录**开始）；Rust 减肥（CEF/桌面/`src/macos`）放到最后一次性做
+- 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → P3a-3/4/5 + P3a-10 → **P3a-1/2 的零风险部分**（Apple 产物 + swift-rs）→ **2.5-A 删登录**
+- 提交：`6297e0ce0`（LAN 档）、`0a42152aa`（3.0a 第一批，−58,078）、`af905f73c`（Apple 产物 + swift-rs，−10,477）、`f232266de`（**删登录**，−7,541）
+- **基线持续全绿**：1133 文件 / 13490 用例 / 0 失败
+- 下一步：**[B] 删第三方同步 + KOSync + replica**（完了顺手删 `src/app/auth/**`、`utils/supabase.ts`、假 Supabase 值的创可贴，并给 `[P7-c]` 减负）
 - 遗留：Phase 7（demo 幽灵行，见 §9）、[P0-5] 防火墙 + 手机真机、[P1-3-σ] 拉书方向
 - 注意：驱动 bow 自动化时**必须显式传 `tabId`**，而且**先确认用户没在用 bow**
 
@@ -596,6 +596,16 @@ node .next/standalone/apps/readest-app/server.js
 > 注意：`src/hooks/useTranslation.ts` 是 **i18n** 的 `_()` 助手，**不要删**（名字很像）。
 
 ---
+
+### Phase 2.5-A — 删登录（2026-10-15，commit `f232266de`，58 文件 / −7,541 行）
+- [x] **[A-1]** `useAuth()` 换成永久登出 + 全 no-op 的 stub（`AuthContext.tsx` 重写：去 Supabase / 去 `refreshSession` 挂载调用 / 去 posthog.identify）；48 个调用点一行未改
+- [~] **[A-2]** `useQuotaStats()` **未改**：它依赖 token，token 恒为 null ⇒ 自然回到默认档；而付费门控已由 `SELF_HOSTED` 解锁（`isCustomizationAllowed` 返回 true）⇒ 无需 stub。暂留
+- [~] **[A-3]** 已删 `src/app/auth/{page,callback,recovery,update,error,components}`、`src/app/user/**`、`src/app/link/**`（CrossPoint 设备登录）、`src/helpers/auth.ts`、`src/hooks/useUserActions.ts`；**`src/utils/supabase.ts` / `src/libs/user.ts` 暂留**（前者还被 `libs/payment/*`、`libs/shareServer.ts`、`api/*` 路由引用 ⇒ 随云/支付那批一起删）。顺带：`utils/access.ts` 的 `getAccessToken`/`getUserID`/`validateUserAndToken` 去 supabase 化（后者返回空 ⇒ 所有 API 路由把调用者当匿名）
+- [ ] **[A-4]** 随 A 走的 Android 侧：`start_server`（oauth 回环）、`BillingManager.kt`×2、`OAuthCallbackTarget.kt` —— **待做**（跟删 oauth provider / native-tts 一起，省一次 APK 构建）；`macos/{safari_auth,apple_auth}.rs` 归入最后的 Rust 减肥
+- [~] **[A-5]** 创可贴：`keepLogin` 守卫已删（`initLogin` 整段移除）✅；**假 Supabase 值暂留**（理由同 [A-3]，否则 `createClient` 会拿 `.env` 里烧的公有 URL）；PostHog 的 self-hosted guard 保留
+- [x] **[A-6]** 验：`tsc` 干净；**全量单测 1133 文件 / 13490 用例 / 0 失败**；`lan:build` 成功、`/` 200 + PROPFIND 207；删了 9 个断言旧登录行为的用例 + 3 个 iOS 用例（读已删的 `gen/apple`）
+- [ ] **[A-7]** 可视核对（用户或下轮）：设置菜单里无 “Sign In”、空书库无 “Sign in to sync your library”、冷启动 Network 无 supabase 域名（bow 当时占用，未打扰）
+- ℹ️ 残留：`navigateToLogin` 仍有 4 处调用（`LocalSend` 接收对话框 / `TTSPanel` / `LangPanel` / `SendToReadestForm`），但都在“需要账号才有意义”的分支里，且 LAN 档下 `isCustomizedAllowed` 恒 true 走不到；它们随 [C]/[D]/[B] 各自消失
 
 #### 不建议顺手删的（不在你这次要求里）
 
