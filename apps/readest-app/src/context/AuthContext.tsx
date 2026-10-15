@@ -1,18 +1,23 @@
 'use client';
 
-import {
-  createContext,
-  useState,
-  useContext,
-  useCallback,
-  useMemo,
-  ReactNode,
-  useEffect,
-} from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '@/utils/supabase';
-import posthog from 'posthog-js';
+import { createContext, useCallback, useContext, useMemo, ReactNode } from 'react';
+import type { User } from '@supabase/supabase-js';
 
+/**
+ * LAN/self-hosted builds have no account system at all.
+ *
+ * This provider deliberately keeps the original context shape so the ~48
+ * `useAuth()` call sites stay untouched, but it is *always* signed out and
+ * every mutator is a no-op. What it removes, relative to upstream:
+ *
+ *   - the Supabase client (and with it the module-level `createClient` that
+ *     pointed at Readest's public project unless overridden),
+ *   - `supabase.auth.refreshSession()` on mount, which was the one request a
+ *     cold start made to an external host,
+ *   - the localStorage session mirror and `posthog.identify(user.id)`.
+ *
+ * See the plan (§4 Phase 2.5-A): login is deleted, not merely hidden.
+ */
 interface AuthContextType {
   token: string | null;
   user: User | null;
@@ -24,101 +29,21 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
-    }
-    return null;
-  });
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== 'undefined') {
-      const userJson = localStorage.getItem('user');
-      return userJson ? JSON.parse(userJson) : null;
-    }
-    return null;
-  });
-
-  useEffect(() => {
-    const syncSession = (
-      session: { access_token: string; refresh_token: string; user: User } | null,
-    ) => {
-      if (session) {
-        console.log('Syncing session');
-        const { access_token, refresh_token, user } = session;
-        localStorage.setItem('token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-        localStorage.setItem('user', JSON.stringify(user));
-        posthog.identify(user.id);
-        setToken(access_token);
-        setUser(user);
-      } else {
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        setToken(null);
-        setUser(null);
-      }
-    };
-    const refreshSession = async () => {
-      try {
-        await supabase.auth.refreshSession();
-      } catch {
-        syncSession(null);
-      }
-    };
-
-    const { data: subscription } = supabase.auth.onAuthStateChange((_, session) => {
-      syncSession(session);
-    });
-
-    refreshSession();
-    return () => {
-      subscription?.subscription.unsubscribe();
-    };
-  }, []);
-
-  // setToken / setUser from useState are stable across renders, so the empty
-  // deps array is correct. Wrapping in useCallback (and only including stable
-  // refs in the deps) is what makes the useMemo below actually memoize the
-  // context value — without this, login/logout/refresh would be recreated on
-  // every render and the memo would always invalidate.
-  const login = useCallback((newToken: string, newUser: User) => {
-    console.log('Logging in');
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
-  }, []);
-
-  const logout = useCallback(async () => {
-    console.log('Logging out');
-    try {
-      await supabase.auth.refreshSession();
-    } catch {
-    } finally {
-      await supabase.auth.signOut({ scope: 'local' });
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setToken(null);
-      setUser(null);
-    }
-  }, []);
-
-  const refresh = useCallback(async () => {
-    try {
-      await supabase.auth.refreshSession();
-    } catch {}
-  }, []);
+  const login = useCallback((_token: string, _user: User) => {}, []);
+  const logout = useCallback(() => {}, []);
+  const refresh = useCallback(() => {}, []);
 
   const value = useMemo(
-    () => ({ token, user, login, logout, refresh }),
-    [token, user, login, logout, refresh],
+    () => ({ token: null, user: null, login, logout, refresh }),
+    [login, logout, refresh],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
   return context;
 };

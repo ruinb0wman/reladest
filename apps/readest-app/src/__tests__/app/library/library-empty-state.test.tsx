@@ -45,7 +45,8 @@ describe('LibraryEmptyState', () => {
     expect(screen.getByRole('heading', { name: 'Start your library' })).toBeTruthy();
     expect(screen.getByText(/drop a book anywhere on this window/i)).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Import Books' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Sign in to sync your library' })).toBeTruthy();
+    // LAN builds have no accounts: the sign-in affordance must not exist at all.
+    expect(screen.queryByRole('button', { name: 'Sign in to sync your library' })).toBeNull();
   });
 
   it('renders mobile description (no drag-drop language) when appService.isMobile', () => {

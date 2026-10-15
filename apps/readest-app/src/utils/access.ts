@@ -1,12 +1,10 @@
 import { jwtDecode } from 'jwt-decode';
-import { supabase } from '@/utils/supabase';
 import { UserPlan } from '@/types/quota';
 import {
   DEFAULT_DAILY_TRANSLATION_QUOTA,
   DEFAULT_DAILY_TTS_QUOTA,
   DEFAULT_STORAGE_QUOTA,
 } from '@/services/constants';
-import { isWebAppPlatform } from '@/services/environment';
 import { getDailyUsage } from '@/services/translators/utils';
 import { getRuntimeConfig } from '@/services/runtimeConfig';
 
@@ -277,41 +275,31 @@ export const getDailyTranslationPlanData = (token: string) => {
   };
 };
 
+/**
+ * LAN/self-hosted: there is no session to read anywhere. `localStorage` is kept
+ * only so a stray `token` key left by an earlier build cannot be mistaken for a
+ * live session; nothing writes it any more (see AuthContext).
+ */
 export const getAccessToken = async (): Promise<string | null> => {
-  // In browser context there might be two instances of supabase one in the app route
-  // and the other in the pages route, and they might have different sessions
-  // making the access token invalid for API calls. In that case we should use localStorage.
-  if (isWebAppPlatform()) {
-    return localStorage.getItem('token') ?? null;
-  }
-  const { data } = await supabase.auth.getSession();
-  return data?.session?.access_token ?? null;
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('token') ?? null;
 };
 
 export const getUserID = async (): Promise<string | null> => {
-  if (isWebAppPlatform()) {
-    const user = localStorage.getItem('user') ?? '{}';
-    return JSON.parse(user).id ?? null;
-  }
-  const { data } = await supabase.auth.getSession();
-  return data?.session?.user?.id ?? null;
+  if (typeof window === 'undefined') return null;
+  const user = localStorage.getItem('user') ?? '{}';
+  return JSON.parse(user).id ?? null;
 };
 
-export const validateUserAndToken = async (authHeader: string | null | undefined) => {
-  if (!authHeader) return {};
-
-  const token = authHeader.replace('Bearer ', '');
-  // getClaims verifies asymmetric (ES256) tokens locally against the cached JWKS, so API
-  // routes skip a GET /auth/v1/user round trip per request. HS256 tokens (legacy secret,
-  // self-hosted) still fall back to getUser inside getClaims.
-  try {
-    const { data, error } = await supabase.auth.getClaims(token);
-    const claims = data?.claims;
-    // The anon and service-role keys are JWTs too.
-    if (error || claims?.role !== 'authenticated' || !claims.sub) return {};
-    return { user: { id: claims.sub, email: claims.email }, token };
-  } catch {
-    // getClaims throws, rather than returns, an error for expired tokens.
-    return {};
-  }
+/**
+ * LAN/self-hosted builds have no accounts, so there is no token to validate:
+ * every caller is anonymous and the API routes that require a user reject the
+ * request (they are unreachable from the UI, which no longer signs in). Kept as
+ * a function so the remaining routes keep compiling until they are deleted with
+ * the rest of the cloud surface.
+ */
+export const validateUserAndToken = async (
+  _authHeader: string | null | undefined,
+): Promise<{ user?: { id: string; email?: string }; token?: string }> => {
+  return {};
 };
