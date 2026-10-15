@@ -1,8 +1,6 @@
 'use client';
 
 import { createContext, useCallback, useContext, useMemo, ReactNode } from 'react';
-import type { User } from '@supabase/supabase-js';
-
 /**
  * LAN/self-hosted builds have no account system at all.
  *
@@ -18,10 +16,21 @@ import type { User } from '@supabase/supabase-js';
  *
  * See the plan (§4 Phase 2.5-A): login is deleted, not merely hidden.
  */
+/**
+ * Structural stand-in for the Supabase user object the upstream context
+ * carried. Call sites only ever read `id`, `email` and a couple of
+ * `user_metadata` keys, all of which are always absent here.
+ */
+export interface AuthUser {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+}
+
 interface AuthContextType {
   token: string | null;
-  user: User | null;
-  login: (token: string, user: User) => void;
+  user: AuthUser | null;
+  login: (token: string, user: AuthUser) => void;
   logout: () => void;
   refresh: () => void;
 }
@@ -29,7 +38,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const login = useCallback((_token: string, _user: User) => {}, []);
+  const login = useCallback((_token: string, _user: AuthUser) => {}, []);
   const logout = useCallback(() => {}, []);
   const refresh = useCallback(() => {}, []);
 

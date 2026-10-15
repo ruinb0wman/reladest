@@ -28,12 +28,11 @@ echo "webdav hub   pid=$!   http://0.0.0.0:$HUB_PORT   root=$SYNC_ROOT"
 # --- Next standalone（LAN 档 env，理由见 plan §0.1）---
 #   SELF_HOSTED      → 解锁 premium（否则 WebDAV 行被 paywall 挡）
 #   API_BASE_URL     → 否则生产构建会打 https://web.readest.com/api
-#   SUPABASE_*       → 非空假值，抢在 .env 里 base64 烧的公有 Supabase 之前（指向本机死端口，不出网卡）
+# 不再需要 SUPABASE_* 假值：账号/云存储那套已经删了，.env 里的 base64 公有
+# 密钥也一并移除，没有任何代码路径会去读它们。
 cd "$STANDALONE"
 SELF_HOSTED=true \
 API_BASE_URL="http://localhost:$APP_PORT" \
-SUPABASE_PUBLIC_URL=http://127.0.0.1:9/ \
-SUPABASE_ANON_KEY=lan-dummy \
 PORT="$APP_PORT" HOSTNAME=0.0.0.0 \
 nohup setsid node apps/readest-app/server.js \
   > "$LOGS/app.log" 2>&1 &

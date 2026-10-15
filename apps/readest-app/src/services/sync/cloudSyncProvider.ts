@@ -65,37 +65,6 @@ export const getCloudSyncProviders = (
 export const cloudProvidersDisplayName = (kinds: CloudSyncProviderKind[]): string =>
   kinds.map(cloudProviderDisplayName).join(', ');
 
-/**
- * `isCloudSyncAllowed` needs the UserPlan, which comes from the async
- * auth JWT — non-React modules (transferManager, syncCategories) cannot
- * resolve it synchronously. The plan-resolution flow (auth / quota
- * refresh) writes the latest plan here; gate checks read it back.
- * Defaults to 'free', the most restrictive plan, so a gate evaluated
- * before the first auth resolution can only be too cautious, never too
- * permissive.
- */
-let cachedUserPlan: UserPlan = 'free';
-
-export const setCachedUserPlan = (plan: UserPlan | undefined): void => {
-  cachedUserPlan = plan ?? 'free';
-};
-
-export const getCachedUserPlan = (): UserPlan => cachedUserPlan;
-
-/**
- * Cached alongside the plan for the same reason: premium access is now the
- * plan OR an outright Full Customization purchase, and a storage-only buyer
- * reports the `purchase` plan without being entitled. Defaults to false, the
- * restrictive side.
- */
-let cachedCustomizationPurchased = false;
-
-export const setCachedCustomizationPurchased = (purchased: boolean | undefined): void => {
-  cachedCustomizationPurchased = purchased ?? false;
-};
-
-export const getCachedCustomizationPurchased = (): boolean => cachedCustomizationPurchased;
-
 export interface CloudSyncGate {
   /** Readest Cloud syncs the library channels (rows, progress, notes, files). */
   readest: boolean;
@@ -112,11 +81,14 @@ export interface CloudSyncGate {
 
 export const resolveCloudSyncGate = (
   settings: SystemSettings | null | undefined,
-  plan: UserPlan = cachedUserPlan,
-  customizationPurchased: boolean = cachedCustomizationPurchased,
+  plan: UserPlan = 'free',
+  customizationPurchased = false,
 ): CloudSyncGate => {
   const backends = getEnabledFileSyncBackends(settings);
   return {
+    // `plan` is only a gate input: in a self-hosted build isCloudSyncAllowed()
+    // returns true regardless, so a paused backend can only mean the user has
+    // not configured one at all.
     readest: isReadestCloudEnabled(settings),
     backends,
     paused: backends.length > 0 && !isCloudSyncAllowed(plan, customizationPurchased),

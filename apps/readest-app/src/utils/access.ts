@@ -1,11 +1,6 @@
 import { jwtDecode } from 'jwt-decode';
 import { UserPlan } from '@/types/quota';
-import {
-  DEFAULT_DAILY_TRANSLATION_QUOTA,
-  DEFAULT_DAILY_TTS_QUOTA,
-  DEFAULT_STORAGE_QUOTA,
-} from '@/services/constants';
-import { getDailyUsage } from '@/services/translators/utils';
+import { DEFAULT_DAILY_TRANSLATION_QUOTA, DEFAULT_DAILY_TTS_QUOTA } from '@/services/constants';
 import { getRuntimeConfig } from '@/services/runtimeConfig';
 
 interface Token {
@@ -32,21 +27,6 @@ export const getUserProfilePlan = (token: string): UserPlan => {
   }
   return plan;
 };
-
-/**
- * Plans that include the "Send to Readest via email" feature: Plus,
- * Pro, and Lifetime (`purchase`). Free users see an upgrade card on
- * the client and get a 403 from the server endpoints that allocate /
- * rotate the address, plus a bounce from the inbound email Worker.
- *
- * Other Send channels (in-app `/send` page, mobile share-sheet, browser
- * extension) stay open to free users — the gate is the personal email
- * inbox only.
- */
-export const EMAIL_IN_PLANS: readonly UserPlan[] = ['plus', 'pro', 'purchase'];
-
-export const isEmailInPlan = (plan: UserPlan, customizationPurchased: boolean): boolean =>
-  isCustomizationAllowed(plan, customizationPurchased);
 
 /**
  * Plans that include third-party cloud sync (WebDAV / Google Drive): any paid
@@ -203,26 +183,6 @@ export const isCustomTranslatorAllowed = (token: string | null | undefined): boo
  */
 export const isCustomTTSAllowed = isCustomTranslatorAllowed;
 
-export const STORAGE_QUOTA_GRACE_BYTES = 10 * 1024 * 1024; // 10 MB grace
-
-export const getStoragePlanData = (token: string) => {
-  const data = jwtDecode<Token>(token) || {};
-  const plan = data['plan'] || 'free';
-  const usage = data['storage_usage_bytes'] || 0;
-  const purchasedQuota = data['storage_purchased_bytes'] || 0;
-  const runtimeConfig = getRuntimeConfig();
-  const fixedQuota =
-    runtimeConfig?.storageFixedQuota ?? parseInt(process.env['STORAGE_FIXED_QUOTA'] ?? '0');
-  const planQuota = fixedQuota || DEFAULT_STORAGE_QUOTA[plan] || DEFAULT_STORAGE_QUOTA['free'];
-  const quota = planQuota + purchasedQuota;
-
-  return {
-    plan,
-    usage,
-    quota,
-  };
-};
-
 export const getTranslationQuota = (plan: UserPlan): number => {
   const runtimeConfig = getRuntimeConfig();
   const fixedQuota =
@@ -249,19 +209,6 @@ export const isVoiceTierInPlan = (tier: 'plus' | 'pro', plan: UserPlan): boolean
 export const getTTSQuota = (plan: UserPlan): number => {
   const fixedQuota = parseInt(process.env['TTS_FIXED_QUOTA'] ?? '0');
   return fixedQuota || DEFAULT_DAILY_TTS_QUOTA[plan] || 0;
-};
-
-export const getTranslationPlanData = (token: string) => {
-  const data = jwtDecode<Token>(token) || {};
-  const plan: UserPlan = data['plan'] || 'free';
-  const usage = getDailyUsage() || 0;
-  const quota = getTranslationQuota(plan);
-
-  return {
-    plan,
-    usage,
-    quota,
-  };
 };
 
 export const getDailyTranslationPlanData = (token: string) => {
