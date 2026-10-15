@@ -47,15 +47,16 @@
 - [x] **[P2-7]** **默认遥测改成关** — 完成：`src/services/constants.ts` 的 `telemetryEnabled: true` → `false`
 
 ### Phase 3.0a — 零风险平台清理（先做）
-- [ ] **[P3a-1]** `gen/apple/**` + 两个插件的 `ios/` + `Info-ios.plist` + `fastlane/` + `tauri.macos-*.conf.json`
-- [ ] **[P3a-2]** `packages/swift-rs` + `[patch.crates-io] swift-rs` + `sign-in-with-apple` + `sharekit`（含 npm 包）
-- [ ] **[P3a-3]** `apps/readest.koplugin/**`（含它自带的 Rust crate `native/localsend-bin`）
-- [ ] **[P3a-4]** `apps/readest-calibre-plugin/**` + `apps/readest-crosspoint-plugin/**`
-- [ ] **[P3a-5]** `workers/{iap-reconcile,send-email}` + `pnpm-workspace.yaml` 两行
+- [ ] **[P3a-1]** `src-tauri/gen/apple/**` + 两个插件的 `ios/` + `Info-ios.plist` + `tauri.macos-nonestore.conf.json`（~~fastlane~~ 已随第一批删完）
+- [ ] **[P3a-2]** `packages/swift-rs` + `[patch.crates-io] swift-rs`；⚠️ **`sign-in-with-apple` / `sharekit` 不在这里删**（见 3.0a 开头两条修正）
+- [x] **[P3a-3]** `apps/readest.koplugin/**`（含它自带的 Rust crate `native/localsend-bin`）— 2026-10-15 完成（commit `0a42152aa`，连同 calibre/crosspoint/workers/fastlane 共 286 文件、-58,078 行）
+- [x] **[P3a-4]** `apps/readest-calibre-plugin/**` + `apps/readest-crosspoint-plugin/**` — 完成
+- [x] **[P3a-5]** `workers/{iap-reconcile,send-email}` + `pnpm-workspace.yaml` 两行 + 引用它们的测试 — 完成
 - [ ] **[P3a-6]** CEF：stub + `cef` feature + `.cargo/cef.toml` + `Cargo.cef.lock` + `try-appimage.yml`
 - [ ] **[P3a-7]** 桌面 Rust：`nightly_update`/`discord_rpc`/`spawn_fresh_browser`/`window_state`/`browser_cookies_macos`/`linux_*`/`file_reveal` + `src/macos/**` + native-bridge 的 `platform/{windows,macos,linux_cef,cdp}.rs`
-- [ ] **[P3a-8]** CI 卫生：4 个 workflow 的 koplugin/calibre/macOS job + root/app `package.json` 的 `test:lua`/`lint:lua`
-- [ ] **[P3a-9]** 验：`cargo check --target aarch64-linux-android` + 一次 APK 构建装机 + `pnpm lint` + `pnpm test:pr:web:unit` 全绿
+- [ ] **[P3a-8]** CI 卫生：4 个 workflow 的 koplugin/calibre/macOS job + ~~root/app `package.json`（已做）~~
+- [x] **[P3a-9]** 部分验：`tsc` 干净 + **全量单测 1151 文件/13603 用例全绿** + `pnpm lan:build` 成功；**待做**：`cargo check --target aarch64-linux-android` + APK 装机
+- [x] **[P3a-10]** **修单测基线**（本来不在计划里）：Node 26 的 `localStorage` 遮住 jsdom 的 → 本 checkout **89 文件/746 用例失败**。`vitest.setup.ts` 装**真 jsdom Storage**（重新 prototype 到本 realm 的 `Storage.prototype`，保住 `vi.spyOn` 拦截）+ Map 兜底 → 全绿。另：`demo-books-sync.test.tsx` 改为从 `demoLibraries` 取 URL（不再钉死 cdn 地址）
 
 ### Phase 2.5-A — 删登录
 - [ ] **[A-1]** `useAuth()` 换成返回固定空态的 stub（判据：48 个调用点不动，`tsc` 通过）
@@ -110,11 +111,12 @@
 - [ ] **[P1-3-σ]** 补验“**PC 拉一本书**”方向（远端有、本机无）：可直接删掉本地书的字节（保留行）后重新打开 → 应该从 WebDAV GET 回来（看 `~/readest-lan/logs/webdav.log`）
 
 ### 当前状态（每次会话结束时更新这一行）
-- 本文件版本：2026-10-15 建；2026-10-15 完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/P2-6/P2-7
-- 当前进度：**LAN 档已跑通 + 外联归零 + WebDAV 三半（书目/进度/笔记）双向验过**；服务在跑（`pnpm lan:status`）
-- 遗留：[P1-3] 只剩“**PC 拉一本书**”这个方向（可在 Android 真机阶段一并验）+ [P2-8] demo 清单去重选项 + [P0-5] 防火墙/手机真机
-- 下一步：补书文件验证 → 然后进 **Phase 3.0a**（语言栈清理）
-- 注意：驱动 bow 自动化时**必须显式传 `tabId`**，而且**先确认用户没在用 bow**（见实测记录里的坑）
+- 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → **P3a-3/4/5 + P3a-10**
+- 提交：`6297e0ce0`（LAN 档 + 硬编码）、`0a42152aa`（Phase 3.0a 第一批，-58,078 行）
+- **基线首次全绿**：1151 文件 / 13603 用例 / 0 失败（靠 `vitest.setup.ts` 的 jsdom Storage 垫片）
+- 下一步：**Phase 3.0a 第二批（Rust/Apple/CEF/桌面）** —— [P3a-1]/[P3a-2]/[P3a-6]/[P3a-7]/[P3a-8]，完了要跑一次 `tauri android build` 验证
+- 遗留：Phase 7（demo 幽灵行，见 §9）、[P0-5] 防火墙 + 手机真机、[P1-3-σ] 拉书方向
+- 注意：驱动 bow 自动化时**必须显式传 `tabId`**，而且**先确认用户没在用 bow**
 
 ### 2026-10-15 第二轮：Phase 2 三处小改 + 外联归零 + WebDAV 双向（实测）
 
@@ -590,6 +592,15 @@ node .next/standalone/apps/readest-app/server.js
 > 盘点与行数明细见 §7。分三个子批：**3.0a 零风险平台清理**（先做）、**3.0b 需要你判断的一批**（最后做）、**3.0c 与 A/C 耦合的**（不单独做）。
 
 #### 3.0a — 零风险平台清理（放在四件事**之前**）
+
+> **第二批（Apple / CEF / 桌面 Rust）的两个重要修正（2026-10-15 实地核实）**
+>
+> 1. **`sharekit` / `sign-in-with-apple` 不能在这里删**：`lib.rs:730` 的 `tauri_plugin_sharekit::init()` 是**无条件注册**的，npm 侧 `@choochmeque/tauri-plugin-sharekit-api` 被 `nativeAppService` 的 `shareFile`（分享/导出文件）在用——**Android 也在用**。⇒ 归属改为：`sign-in-with-apple` 跟 **Phase 2.5-A（删登录）** 走，`sharekit` 跟 **Phase 3.0b（分享功能取舍）** 走。
+> 2. **macOS 专属代码在这台机器上根本没法验证**：`src/macos/**` 的 22 处引用全部在 `#[cfg(target_os = "macos")]` 里，`cargo check --target aarch64-linux-android` 和指宿主的 `cargo check` 都**不会编译它**；要编译它需要 macOS SDK（本机没有）。⇒ 删 macOS 模块只能靠“肉眼看”，而它对两个目标平台**零收益**（除仓库体积）。
+>
+> **因此第二批的打法**：CEF + 桌面 Rust + macOS 模块 + `packages/swift-rs`/patch **一次性删完**，只跑一次门（两个）：
+> `cargo metadata --filter-platform aarch64-linux-android`（验 manifest/patch 解析）+ `pnpm tauri android build -t aarch64`（真验，10–40 min，顺便就是 Phase 4 的 APK）。
+> ⚠️ 跑 Android 构建前**必须先 `pnpm lan:stop`**（它会重写 `.next/`，与运行中的 standalone 撞车），完了再 `pnpm lan:build` + `lan:start` 恢复。
 
 **为什么放最前（在 A/B/C/D 之前）：**
 1. 纯删除，目标是**不可达代码**（Apple / 桌面 / 其他生态），运行时零影响
