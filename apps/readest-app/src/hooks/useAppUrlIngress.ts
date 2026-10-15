@@ -5,8 +5,6 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useEnv } from '@/context/EnvContext';
 import { isTauriAppPlatform } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
-import { isGoogleOAuthRedirectUrl } from '@/services/sync/providers/gdrive/auth/reverseDnsRedirect';
-import { isOneDriveOAuthRedirectUrl } from '@/services/sync/providers/onedrive/microsoftOAuthConfig';
 
 interface SingleInstancePayload {
   args: string[];
@@ -80,7 +78,9 @@ export function useAppUrlIngress() {
       // they must never reach a consumer (the book-import path would otherwise
       // mistake the reverse-DNS redirect URL for a file to open).
       const appUrls = urls.filter(
-        (url) => !isGoogleOAuthRedirectUrl(url) && !isOneDriveOAuthRedirectUrl(url),
+        // The Drive/OneDrive OAuth callbacks used to be filtered out here; with
+        // those providers gone, every incoming URL is a real deep link.
+        () => true,
       );
       if (!appUrls.length) return;
       console.log('App incoming URL:', appUrls, 'action:', action);

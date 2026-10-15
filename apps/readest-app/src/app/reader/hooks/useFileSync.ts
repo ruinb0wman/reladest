@@ -200,24 +200,13 @@ export const useFileSync = (bookKey: string) => {
       if (kinds.length === 0) return;
       let next = useSettingsStore.getState().settings;
       for (const kind of kinds) {
-        // A switch (rather than a generically-keyed write) keeps each
-        // branch's settings slice type intact; `next[key] = { ...slice, ts }`
-        // does not typecheck when `key` is a union of literal keys.
+        // A switch (rather than a generically-keyed write) keeps each branch's
+        // settings slice type intact; `next[key] = { ...slice, ts }` does not
+        // typecheck when `key` is a union of literal keys. WebDAV is the only
+        // backend left, so the switch is now a single arm.
         switch (kind) {
           case 'webdav':
             next = { ...next, webdav: { ...next.webdav, lastSyncedAt: ts } };
-            break;
-          case 'gdrive':
-            next = { ...next, googleDrive: { ...next.googleDrive, lastSyncedAt: ts } };
-            break;
-          case 's3':
-            next = { ...next, s3: { ...next.s3, lastSyncedAt: ts } };
-            break;
-          case 'onedrive':
-            next = { ...next, onedrive: { ...next.onedrive, lastSyncedAt: ts } };
-            break;
-          case 'icloud':
-            next = { ...next, icloud: { ...next.icloud, lastSyncedAt: ts } };
             break;
         }
       }
@@ -287,8 +276,8 @@ export const useFileSync = (bookKey: string) => {
       eventDispatcher.dispatch('hint', {
         bookKey,
         timeout: 5000,
-        message:
-          kind === 'gdrive' ? _('Google Drive session expired') : _('Cloud sync session expired'),
+        // Only WebDAV is left, so there is no provider-specific wording to pick.
+        message: _('Cloud sync session expired'),
       });
     },
     [bookKey, _],

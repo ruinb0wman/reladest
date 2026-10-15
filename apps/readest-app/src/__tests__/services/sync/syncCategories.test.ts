@@ -58,7 +58,7 @@ describe('isSyncCategoryEnabled', () => {
     });
 
     test('legacy plural/singular aliases are gated too', () => {
-      setSettings({ googleDrive: { enabled: true } } as Partial<SystemSettings>);
+      setSettings({ webdav: { enabled: true } } as Partial<SystemSettings>);
       expect(isSyncCategoryEnabled('books')).toBe(false);
       expect(isSyncCategoryEnabled('configs')).toBe(false);
       expect(isSyncCategoryEnabled('config')).toBe(false);
@@ -192,11 +192,14 @@ describe('isSyncCategoryEnabled', () => {
     expect(isSyncCategoryEnabled('notes')).toBe(false);
   });
 
-  describe('provider gating with multiple providers', () => {
-    test('native book channels stay on when Readest Cloud runs alongside Drive', () => {
+  describe('provider gating with a file-sync backend selected', () => {
+    // Only WebDAV is left, so "multiple providers" collapsed to one. The gate
+    // still has to keep native book channels off whenever a file-sync backend is
+    // selected, which is what these two cases now pin.
+    test('native book channels stay on while Readest Cloud is enabled alongside WebDAV', () => {
       setSettings({
         readestCloud: { enabled: true },
-        googleDrive: { enabled: true },
+        webdav: { enabled: true },
       } as Partial<SystemSettings>);
       expect(isSyncCategoryEnabled('book')).toBe(true);
       expect(isSyncCategoryEnabled('progress')).toBe(true);
@@ -206,7 +209,7 @@ describe('isSyncCategoryEnabled', () => {
     test('native book channels gate off when Readest Cloud is unchecked', () => {
       setSettings({
         readestCloud: { enabled: false },
-        googleDrive: { enabled: true },
+        webdav: { enabled: true },
       } as Partial<SystemSettings>);
       expect(isSyncCategoryEnabled('book')).toBe(false);
       expect(isSyncCategoryEnabled('progress')).toBe(false);
@@ -215,8 +218,8 @@ describe('isSyncCategoryEnabled', () => {
       expect(isSyncCategoryEnabled('settings')).toBe(true);
     });
 
-    test('a legacy Drive user (no readestCloud field) keeps the native channels gated', () => {
-      setSettings({ googleDrive: { enabled: true } } as Partial<SystemSettings>);
+    test('a user with only a file-sync backend gated the native channels (no readestCloud field)', () => {
+      setSettings({ webdav: { enabled: true } } as Partial<SystemSettings>);
       expect(isSyncCategoryEnabled('book')).toBe(false);
     });
   });

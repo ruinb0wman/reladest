@@ -127,21 +127,6 @@ describe('useCloudSyncStatus (issue #5910)', () => {
     expect(result.current.failed).toBe(true);
     expect(result.current.label).toBe('Sync failed');
   });
-
-  it('drops a backend that cannot run right now', () => {
-    // An expired web Google Drive token is still `enabled` but silently
-    // skipped, so it must not lend its stale lastSyncedAt to "Synced X ago".
-    // Selecting Drive also switches Readest Cloud off, so nothing can sync —
-    // and "Sign in to Sync" would be a lie, because signing in would not help.
-    // Drive's own settings row carries the Reconnect CTA.
-    mockSettings = { googleDrive: { enabled: true, lastSyncedAt: NOW - 1_000 } } as never;
-    const { result } = renderHook(() => useCloudSyncStatus(0));
-
-    expect(result.current.providers).toEqual([]);
-    expect(result.current.lastSyncedAt).toBe(0);
-    expect(result.current.needsSignIn).toBe(false);
-    expect(result.current.label).toBe('Never synced');
-  });
 });
 
 describe('useCloudSyncStatus Hardcover (book scope)', () => {

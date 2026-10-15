@@ -11,22 +11,20 @@
  * keychain token, so it needs no settings to construct.
  */
 import type { FileSyncProvider } from './provider';
-import type { S3Settings, WebDAVSettings } from '@/types/settings';
+import type { WebDAVSettings } from '@/types/settings';
 import { createWebDAVProvider } from '@/services/sync/providers/webdav/WebDAVProvider';
-import { buildGoogleDriveProvider } from '@/services/sync/providers/gdrive/buildGoogleDriveProvider';
-import { buildOneDriveProvider } from '@/services/sync/providers/onedrive/buildOneDriveProvider';
-import { buildICloudProvider } from '@/services/sync/providers/icloud/buildICloudProvider';
-import { createS3Provider } from '@/services/sync/providers/s3/S3Provider';
 
-export type FileSyncBackendKind = 'webdav' | 'gdrive' | 's3' | 'onedrive' | 'icloud';
+/**
+ * LAN/self-hosted builds mirror the library over a WebDAV server the operator
+ * runs (see the plan). Drive / S3 / OneDrive / iCloud were deleted with the rest
+ * of the third-party sync surface; the registry keeps the seam so a provider can
+ * be re-added without touching its callers.
+ */
+export type FileSyncBackendKind = 'webdav';
 
 /** Minimal settings the registry reads to pick + build backends. */
 export interface FileSyncBackendsSettings {
   webdav?: WebDAVSettings;
-  googleDrive?: { enabled?: boolean };
-  s3?: S3Settings;
-  onedrive?: { enabled?: boolean };
-  icloud?: { enabled?: boolean };
 }
 
 /**
@@ -47,21 +45,11 @@ export interface FileSyncBackendsSettings {
  */
 const providerCache = new Map<FileSyncBackendKind, { key: string; provider: FileSyncProvider }>();
 
-const providerCacheKey = (
-  kind: FileSyncBackendKind,
-  settings: FileSyncBackendsSettings,
-): string => {
-  if (kind === 'webdav') {
-    const w = settings.webdav;
-    return `webdav:${w?.enabled}:${w?.serverUrl}:${w?.username}:${w?.password}:${w?.rootPath}`;
-  }
-  if (kind === 's3') {
-    const c = settings.s3;
-    return `s3:${c?.enabled}:${c?.endpoint}:${c?.region}:${c?.bucket}:${c?.accessKeyId}:${c?.secretAccessKey}`;
-  }
-  if (kind === 'onedrive') return 'onedrive';
-  if (kind === 'icloud') return 'icloud';
-  return 'gdrive';
+const providerCacheKey = (settings: FileSyncBackendsSettings): string => {
+  // Only WebDAV remains, so the key is the connection-relevant settings of that
+  // one backend: a config edit rebuilds it, everything else reuses the cache.
+  const w = settings.webdav;
+  return `webdav:${w?.enabled}:${w?.serverUrl}:${w?.username}:${w?.password}:${w?.rootPath}`;
 };
 
 export const resetFileSyncProviderCache = (): void => {
@@ -77,23 +65,10 @@ export const createFileSyncProvider = async (
   kind: FileSyncBackendKind,
   settings: FileSyncBackendsSettings,
 ): Promise<FileSyncProvider | null> => {
-  const key = providerCacheKey(kind, settings);
+  const key = providerCacheKey(settings);
   const cached = providerCache.get(kind);
   if (cached?.key === key) return cached.provider;
-  const provider =
-    kind === 'webdav'
-      ? settings.webdav
-        ? createWebDAVProvider(settings.webdav)
-        : null
-      : kind === 's3'
-        ? settings.s3
-          ? createS3Provider(settings.s3)
-          : null
-        : kind === 'onedrive'
-          ? await buildOneDriveProvider()
-          : kind === 'icloud'
-            ? await buildICloudProvider()
-            : await buildGoogleDriveProvider();
+  const provider = settings.webdav ? createWebDAVProvider(settings.webdav) : null;
   if (provider) providerCache.set(kind, { key, provider });
   return provider;
 };

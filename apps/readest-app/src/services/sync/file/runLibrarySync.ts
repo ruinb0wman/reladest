@@ -10,9 +10,6 @@ import type { UserPlan } from '@/types/quota';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useFileSyncStore } from '@/store/fileSyncStore';
-import { isWebAppPlatform } from '@/services/environment';
-import { hasValidWebDriveToken } from '@/services/sync/providers/gdrive/auth/webTokenStore';
-import { isICloudSupportedPlatform } from '@/services/sync/providers/icloud/buildICloudProvider';
 import {
   getActiveFileSyncBackends,
   settingsKeyForBackend,
@@ -38,9 +35,9 @@ import { FileSyncEngine, type SyncLibraryResult } from '@/services/sync/file/eng
  * Windows/Android/web device via a settings backup restore, and only the
  * iOS/macOS Tauri apps can reach a ubiquity container.
  */
-export const canBackendRun = (kind: FileSyncBackendKind): boolean => {
-  if (kind === 'gdrive' && isWebAppPlatform() && !hasValidWebDriveToken()) return false;
-  if (kind === 'icloud' && !isICloudSupportedPlatform()) return false;
+export const canBackendRun = (_kind: FileSyncBackendKind): boolean => {
+  // WebDAV is the only backend left and it needs nothing but its config, so every
+  // enabled backend can run. The seam stays for a future provider's own gating.
   return true;
 };
 

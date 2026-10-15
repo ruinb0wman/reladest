@@ -18,24 +18,11 @@ import type { FileSyncBackendKind } from '@/services/sync/file/providerRegistry'
 export type CloudSyncProviderKind = 'readest' | FileSyncBackendKind;
 
 /** Settings slice key for a third-party backend kind. */
-export const settingsKeyForBackend = (
-  kind: FileSyncBackendKind,
-): 'webdav' | 'googleDrive' | 's3' | 'onedrive' | 'icloud' =>
-  kind === 'gdrive' ? 'googleDrive' : kind;
+export const settingsKeyForBackend = (_kind: FileSyncBackendKind): 'webdav' => 'webdav';
 
 /** Human-readable provider name (product names — deliberately untranslated). */
 export const cloudProviderDisplayName = (kind: CloudSyncProviderKind): string =>
-  kind === 'gdrive'
-    ? 'Google Drive'
-    : kind === 'webdav'
-      ? 'WebDAV'
-      : kind === 's3'
-        ? 'S3'
-        : kind === 'onedrive'
-          ? 'OneDrive'
-          : kind === 'icloud'
-            ? 'iCloud'
-            : 'Readest Cloud';
+  kind === 'webdav' ? 'WebDAV' : 'Readest Cloud';
 
 /**
  * The third-party backends the user has switched on, in a STABLE order that
@@ -46,10 +33,6 @@ export const getEnabledFileSyncBackends = (
 ): FileSyncBackendKind[] => {
   const enabled: FileSyncBackendKind[] = [];
   if (settings?.webdav?.enabled) enabled.push('webdav');
-  if (settings?.googleDrive?.enabled) enabled.push('gdrive');
-  if (settings?.s3?.enabled) enabled.push('s3');
-  if (settings?.onedrive?.enabled) enabled.push('onedrive');
-  if (settings?.icloud?.enabled) enabled.push('icloud');
   return enabled;
 };
 
@@ -168,30 +151,6 @@ export const applySyncBooksAutoEnable = (settings: SystemSettings): boolean => {
       case 'webdav':
         if (settings.webdav && !settings.webdav.syncBooks) {
           settings.webdav = { ...settings.webdav, syncBooks: true };
-          changed = true;
-        }
-        break;
-      case 'gdrive':
-        if (settings.googleDrive && !settings.googleDrive.syncBooks) {
-          settings.googleDrive = { ...settings.googleDrive, syncBooks: true };
-          changed = true;
-        }
-        break;
-      case 's3':
-        if (settings.s3 && !settings.s3.syncBooks) {
-          settings.s3 = { ...settings.s3, syncBooks: true };
-          changed = true;
-        }
-        break;
-      case 'onedrive':
-        if (settings.onedrive && !settings.onedrive.syncBooks) {
-          settings.onedrive = { ...settings.onedrive, syncBooks: true };
-          changed = true;
-        }
-        break;
-      case 'icloud':
-        if (settings.icloud && !settings.icloud.syncBooks) {
-          settings.icloud = { ...settings.icloud, syncBooks: true };
           changed = true;
         }
         break;
