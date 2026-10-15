@@ -42,8 +42,6 @@ import CarMediaLibraryBridge from '@/components/CarMediaLibraryBridge';
 import FileSyncReport from '@/components/FileSyncReport';
 import AppLockDialog from '@/components/settings/AppLockDialog';
 import TelemetryConsentDialog from '@/components/TelemetryConsentDialog';
-import { upgradeToKeychainIfAvailable } from '@/libs/crypto/passphrase';
-import { cryptoSession } from '@/libs/crypto/session';
 import { useAppLockStore } from '@/store/appLockStore';
 
 // One-time, on first launch after this feature ships, decide how to handle
@@ -239,17 +237,8 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
     initializeAppLock,
   ]);
 
-  // Sync-passphrase boot path: upgrade the passphrase store from
-  // ephemeral to OS keychain on Tauri (probe is async — must run after
-  // the platform check resolves), then attempt a silent unlock from
-  // the saved passphrase. Failures are silent — the gate prompts on
-  // first encrypted-field operation if we couldn't restore.
-  useEffect(() => {
-    void (async () => {
-      await upgradeToKeychainIfAvailable();
-      await cryptoSession.tryRestoreFromStore();
-    })();
-  }, []);
+  // (The cloud sync-passphrase boot path that used to live here is gone with the
+  // replica layer: nothing on this device holds an E2E-encrypted replica.)
 
   useEffect(() => {
     const meta = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
