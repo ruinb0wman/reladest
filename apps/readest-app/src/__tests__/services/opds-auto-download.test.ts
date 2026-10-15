@@ -15,7 +15,7 @@ vi.mock('@tauri-apps/plugin-http', () => ({
   fetch: vi.fn(),
 }));
 
-vi.mock('@/libs/storage', () => ({
+vi.mock('@/libs/downloadFile', () => ({
   downloadFile: vi.fn().mockResolvedValue({ 'content-disposition': '' }),
 }));
 
@@ -62,7 +62,7 @@ import { checkFeedForNewItems } from '@/services/opds/feedChecker';
 import { saveSubscriptionState, loadSubscriptionState } from '@/services/opds/subscriptionState';
 import { upsertOPDSSourceMapping } from '@/services/opds/sourceMap';
 import { applyOPDSCover } from '@/services/opds/cover';
-import { downloadFile } from '@/libs/storage';
+import { downloadFile } from '@/libs/downloadFile';
 import { MAX_RETRY_ATTEMPTS, PERSIST_BATCH_SIZE } from '@/services/opds/types';
 
 const createMockAppService = () =>

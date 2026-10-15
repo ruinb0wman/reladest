@@ -19,6 +19,12 @@ vi.mock('@/utils/misc', async (importOriginal) => {
 
 vi.mock('@/services/environment', () => ({
   isPWA: vi.fn().mockReturnValue(false),
+  // opdsReq reads the API base at import time; the Readest Cloud storage module
+  // that used to pull it in first is gone, so the mock has to provide it.
+  getAPIBaseUrl: vi.fn().mockReturnValue('http://localhost:3000/api'),
+  getNodeAPIBaseUrl: vi.fn().mockReturnValue('http://localhost:3000/api'),
+  isWebAppPlatform: vi.fn().mockReturnValue(true),
+  isTauriAppPlatform: vi.fn().mockReturnValue(false),
 }));
 
 // Mock settingsService, bookService, etc. to avoid deep deps

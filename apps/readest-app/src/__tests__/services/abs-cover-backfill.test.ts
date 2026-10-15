@@ -17,11 +17,11 @@ vi.mock('@/services/sync/replicaPublish', () => ({
   publishReplicaDelete: vi.fn(),
 }));
 
-vi.mock('@/libs/storage', () => ({
+vi.mock('@/libs/downloadFile', () => ({
   downloadFile: vi.fn(),
 }));
 
-import { downloadFile } from '@/libs/storage';
+import { downloadFile } from '@/libs/downloadFile';
 
 const mockedDownloadFile = vi.mocked(downloadFile);
 

@@ -8,7 +8,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
 import { isWebAppPlatform } from '@/services/environment';
-import { downloadFile } from '@/libs/storage';
+import { downloadFile } from '@/libs/downloadFile';
 import { Toast } from '@/components/Toast';
 import { useThemeStore } from '@/store/themeStore';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -610,7 +610,6 @@ export default function BrowserPage() {
           const responseHeaders = await downloadFile({
             appService,
             dst: dstFilePath,
-            cfp: '',
             url: downloadUrl,
             headers,
             singleThreaded: true,
@@ -864,7 +863,6 @@ export default function BrowserPage() {
         await downloadFile({
           appService,
           dst: cachedPath,
-          cfp: '',
           url: downloadUrl,
           singleThreaded: true,
           skipSslVerification: true,

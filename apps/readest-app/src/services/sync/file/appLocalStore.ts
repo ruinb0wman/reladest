@@ -216,7 +216,7 @@ export const createAppLocalStore = ({
   },
 
   deleteBookLocally: async (book) => {
-    // Remove this device's managed copy of the book file (cloudService.deleteBook
+    // Remove this device's managed copy of the book file (bookDeletion.deleteBook
     // with 'local' only ever touches app-managed Books/<hash>/ sources; an
     // in-place / external original is left untouched). The tombstone itself is
     // set by the engine before this call — we just persist it.

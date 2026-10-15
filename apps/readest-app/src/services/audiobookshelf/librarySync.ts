@@ -5,7 +5,7 @@ import {
   readLocalLastPlayedAt,
 } from '@/services/audiobookshelf/progressSync';
 import type { EnvConfigType } from '@/services/environment';
-import { downloadFile } from '@/libs/storage';
+import { downloadFile } from '@/libs/downloadFile';
 import type { ABSLibraryItem, ABSMediaProgress, ABSServer } from '@/types/audiobookshelf';
 import type { AppService } from '@/types/system';
 import type { Book } from '@/types/book';
@@ -209,7 +209,6 @@ const downloadAbsCover = async (
     await downloadFile({
       appService,
       dst: tmpPath,
-      cfp: '',
       url: client.buildCoverUrl(itemId),
       headers: { Accept: 'image/*' },
       singleThreaded: true,

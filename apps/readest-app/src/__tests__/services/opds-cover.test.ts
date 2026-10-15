@@ -10,7 +10,7 @@ vi.mock('@/services/environment', () => ({
   getNodeAPIBaseUrl: () => '/node-api',
 }));
 
-vi.mock('@/libs/storage', () => ({
+vi.mock('@/libs/downloadFile', () => ({
   downloadFile: vi.fn().mockResolvedValue({}),
 }));
 
@@ -22,7 +22,7 @@ vi.mock('@/app/opds/utils/opdsReq', () => ({
 
 import { md5 } from 'js-md5';
 import { applyOPDSCover, getOPDSCoverHref, getOPDSImageCacheFilename } from '@/services/opds/cover';
-import { downloadFile } from '@/libs/storage';
+import { downloadFile } from '@/libs/downloadFile';
 import { probeAuth, getProxiedURL, needsProxy } from '@/app/opds/utils/opdsReq';
 
 const createMockAppService = (coverBytes = new Uint8Array([1, 2, 3]).buffer) =>

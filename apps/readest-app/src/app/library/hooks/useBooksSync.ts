@@ -62,7 +62,7 @@ export const useBooksSync = () => {
       // import flow to point at a file outside Books/<hash>/. It is
       // meaningless on any other device, so strip it before pushing to the
       // cloud — peers always rehydrate via the hash-keyed copy that
-      // cloudService.downloadBook lands under Books/<hash>/. Keeping the
+      // A mirror download lands under Books/<hash>/. Keeping the
       // source device's path in the cloud record would be dead data at
       // best, and would become an active footgun if isBookAvailable ever
       // got its branch order swapped (it currently checks Books/<hash>
@@ -283,16 +283,10 @@ export const useBooksSync = () => {
       return oldBook;
     };
 
-    const oldBooksBatchSize = 100;
-    for (let i = 0; i < oldBooksNeedsDownload.length; i += oldBooksBatchSize) {
-      const batch = oldBooksNeedsDownload.slice(i, i + oldBooksBatchSize);
-      await appService?.downloadBookCovers(batch).catch((error) => {
-        console.warn('Cover refresh failed; continuing library sync:', error);
-        // The merge adopts the remote cover hash below. Keep failed covers
-        // eligible for retry even after their metadata clocks match.
-        for (const book of batch) book.coverDownloadedAt = null;
-      });
-    }
+    // Covers for adopted rows arrive with the file mirror's own pass (see the
+    // note in the new-books loop). This loop used to fetch them from Readest
+    // storage in batches of 100.
+    void oldBooksNeedsDownload;
 
     const updatedLibrary = await Promise.all(liveLibrary.map(processOldBook));
     setLibrary(updatedLibrary);
@@ -345,9 +339,9 @@ export const useBooksSync = () => {
       const batchSize = 10;
       for (let i = 0; i < newBooks.length; i += batchSize) {
         const batch = newBooks.slice(i, i + batchSize);
-        await appService?.downloadBookCovers(batch).catch((error) => {
-          console.warn('Cover download failed; continuing library sync:', error);
-        });
+        // Covers arrive with the file mirror's own pass (the engine uploads and
+        // pulls cover.png per book); this used to fetch them from Readest
+        // storage for rows that had not been through that pass yet.
         await Promise.all(batch.map(processNewBook));
         const progress = Math.min((i + batchSize) / newBooks.length, 1);
         setSyncProgress(progress);

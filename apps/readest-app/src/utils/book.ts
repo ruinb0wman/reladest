@@ -277,7 +277,7 @@ export interface BookGroupFields {
  *
  * Group membership used to ride the row's `updatedAt`, which is stamped by
  * operations that have nothing to do with grouping — above all
- * `cloudService.uploadBook`, which bumps it on every UPLOAD. A peer holding a
+ * the cloud upload path (since removed), which bumped it on every UPLOAD. A peer holding a
  * never-grouped copy of a row could therefore win whole-row LWW and erase the
  * group, and the emptied row then propagated to every other device.
  *

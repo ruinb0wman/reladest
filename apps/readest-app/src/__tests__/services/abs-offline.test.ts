@@ -28,7 +28,7 @@ vi.mock('@/services/audiobookshelf/createClient', () => ({
     refreshOrRelogin: refreshOrReloginMock,
   }),
 }));
-vi.mock('@/libs/storage', () => ({ downloadFile: downloadFileMock }));
+vi.mock('@/libs/downloadFile', () => ({ downloadFile: downloadFileMock }));
 vi.mock('@tauri-apps/plugin-fs', () => ({ rename: renameMock }));
 
 const server: ABSServer = {

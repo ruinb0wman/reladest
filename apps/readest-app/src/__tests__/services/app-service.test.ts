@@ -35,14 +35,8 @@ vi.mock('@/services/bookService', () => ({
   saveBookConfig: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock('@/services/cloudService', () => ({
+vi.mock('@/services/bookDeletion', () => ({
   deleteBook: vi.fn().mockResolvedValue(undefined),
-  uploadFileToCloud: vi.fn().mockResolvedValue('url'),
-  uploadBook: vi.fn().mockResolvedValue(undefined),
-  downloadCloudFile: vi.fn().mockResolvedValue(undefined),
-  downloadBookCovers: vi.fn().mockResolvedValue(undefined),
-  downloadBook: vi.fn().mockResolvedValue(undefined),
-  downloadReplicaFileFromCloud: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/tts/ttsDownloadManager', () => ({
@@ -113,7 +107,7 @@ vi.mock('@/utils/permission', async (importOriginal) => {
 import { BaseAppService } from '@/services/appService';
 import * as Settings from '@/services/settingsService';
 import * as BookSvc from '@/services/bookService';
-import * as CloudSvc from '@/services/cloudService';
+import * as BookDeletion from '@/services/bookDeletion';
 import * as LibrarySvc from '@/services/libraryService';
 import * as DictSvc from '@/services/dictionaries/dictionaryService';
 import * as PluginImport from '@/services/dictionaries/plugins/import';
@@ -625,7 +619,7 @@ describe('BaseAppService', () => {
     });
 
     test('does not clear queued downloads when local deletion fails', async () => {
-      vi.mocked(CloudSvc.deleteBook).mockRejectedValueOnce(new Error('disk failure'));
+      vi.mocked(BookDeletion.deleteBook).mockRejectedValueOnce(new Error('disk failure'));
 
       await expect(service.deleteBook(book, 'local')).rejects.toThrow('disk failure');
       expect(ttsDownloadManager.removeBook).not.toHaveBeenCalled();
@@ -651,16 +645,16 @@ describe('BaseAppService', () => {
       await vi.waitFor(() => expect(ttsDownloadManager.removeBook).toHaveBeenCalled());
       expect(ttsDownloadManager.removeBook).toHaveBeenCalledWith('book-hash');
       expect(ttsSessionManager.stopBook).not.toHaveBeenCalled();
-      expect(CloudSvc.deleteBook).not.toHaveBeenCalled();
+      expect(BookDeletion.deleteBook).not.toHaveBeenCalled();
 
       finishDownloadCancellation();
       await vi.waitFor(() => expect(ttsSessionManager.stopBook).toHaveBeenCalled());
       expect(ttsSessionManager.stopBook).toHaveBeenCalledWith('book-hash', 'deleted');
-      expect(CloudSvc.deleteBook).not.toHaveBeenCalled();
+      expect(BookDeletion.deleteBook).not.toHaveBeenCalled();
 
       finishSessionStop();
       await deletion;
-      expect(CloudSvc.deleteBook).toHaveBeenCalled();
+      expect(BookDeletion.deleteBook).toHaveBeenCalled();
     });
 
     test('waits for active download cancellation before clearing pinned audio', async () => {
@@ -719,84 +713,6 @@ describe('BaseAppService', () => {
 
       // Should not have tried to read the backup file
       expect(mockFs.readFile).not.toHaveBeenCalledWith('library_backup.json', 'Books', 'text');
-    });
-  });
-
-  // Issue #5675: the native downloader writes with `File::create`, which does
-  // NOT create parent directories — a missing bundle dir surfaces as
-  // "No such file or directory (os error 2)". The pull path only mints (and
-  // mkdirs) a bundle dir for records it has never seen; a record whose
-  // directory was lost afterwards, a transfer replayed from the persisted
-  // queue, or a Retry All all reach the download with no directory. Book
-  // downloads already guard this (cloudService.downloadBook), replica
-  // downloads did not.
-  describe('downloadReplicaFile', () => {
-    test('creates the bundle directory before downloading', async () => {
-      await service.downloadReplicaFile(
-        'font',
-        'c1',
-        'Georgia.ttf',
-        'v04c1uy/Georgia.ttf',
-        'Fonts',
-      );
-
-      expect(mockFs.createDir).toHaveBeenCalledWith('v04c1uy', 'Fonts', true);
-    });
-
-    test('creates the directory before the download starts, not after', async () => {
-      const CloudSvc = await import('@/services/cloudService');
-      await service.downloadReplicaFile(
-        'font',
-        'c1',
-        'Georgia.ttf',
-        'v04c1uy/Georgia.ttf',
-        'Fonts',
-      );
-
-      const mkdirOrder = (mockFs.createDir as ReturnType<typeof vi.fn>).mock
-        .invocationCallOrder[0]!;
-      const downloadOrder = (CloudSvc.downloadReplicaFileFromCloud as ReturnType<typeof vi.fn>).mock
-        .invocationCallOrder[0]!;
-      expect(mkdirOrder).toBeLessThan(downloadOrder);
-    });
-
-    test('nested bundle paths create the full parent chain', async () => {
-      await service.downloadReplicaFile(
-        'dictionary',
-        'd1',
-        'concise.css',
-        'bundle-1/assets/concise.css',
-        'Dictionaries',
-      );
-
-      expect(mockFs.createDir).toHaveBeenCalledWith('bundle-1/assets', 'Dictionaries', true);
-    });
-
-    test('a flat legacy path with no bundle dir does not create a directory', async () => {
-      await service.downloadReplicaFile('font', 'c1', 'Georgia.ttf', 'Georgia.ttf', 'Fonts');
-
-      expect(mockFs.createDir).not.toHaveBeenCalled();
-    });
-
-    test('still downloads to the resolved absolute destination', async () => {
-      const CloudSvc = await import('@/services/cloudService');
-      await service.downloadReplicaFile(
-        'font',
-        'c1',
-        'Georgia.ttf',
-        'v04c1uy/Georgia.ttf',
-        'Fonts',
-      );
-
-      expect(CloudSvc.downloadReplicaFileFromCloud).toHaveBeenCalledWith(
-        service,
-        expect.objectContaining({
-          kind: 'font',
-          replicaId: 'c1',
-          filename: 'Georgia.ttf',
-          dst: expect.stringContaining('v04c1uy/Georgia.ttf'),
-        }),
-      );
     });
   });
 });

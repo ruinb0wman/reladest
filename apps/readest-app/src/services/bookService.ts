@@ -1175,15 +1175,11 @@ export async function saveBookNav(fs: FileSystem, book: Book, nav: BookNav): Pro
   await fs.writeFile(getBookNavFilename(book), 'Books', JSON.stringify(nav));
 }
 
-export async function fetchBookDetails(
-  fs: FileSystem,
-  book: Book,
-  downloadBookFn: (book: Book) => Promise<void>,
-): Promise<BookDoc['metadata']> {
-  const fp = getLocalBookFilename(book);
-  if (!(await fs.exists(fp, 'Books')) && book.uploadedAt) {
-    await downloadBookFn(book);
-  }
+export async function fetchBookDetails(fs: FileSystem, book: Book): Promise<BookDoc['metadata']> {
+  // Reading a book's embedded metadata needs its file on disk. Upstream this
+  // fetched a cloud-only copy first; a mirrored book is fetched by the reader's
+  // own "make available" path before the details modal can offer it, so there is
+  // nothing left to pull here.
   const { file } = await loadBookContent(fs, book);
   let bookDoc: BookDoc | undefined;
   try {

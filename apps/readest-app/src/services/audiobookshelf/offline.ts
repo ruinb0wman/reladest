@@ -10,7 +10,7 @@
 
 import { rename } from '@tauri-apps/plugin-fs';
 import { createAbsClient } from '@/services/audiobookshelf/createClient';
-import { downloadFile } from '@/libs/storage';
+import { downloadFile } from '@/libs/downloadFile';
 import { findABSServerById } from '@/store/absServerStore';
 import { getAbsOfflineDir, isAbsEbook, parseAbsFilePath } from '@/utils/audiobook';
 import { getLocalBookFilename } from '@/utils/book';
@@ -101,7 +101,6 @@ export const downloadAbsForOffline = async (
         downloadFile({
           appService,
           dst: `${dst}.part`,
-          cfp: '',
           url: `${liveServer().url}${file.contentPath}`,
           headers: { Authorization: `Bearer ${liveServer().accessToken ?? ''}` },
           // Self-hosted servers often use self-signed certificates; absFetch
