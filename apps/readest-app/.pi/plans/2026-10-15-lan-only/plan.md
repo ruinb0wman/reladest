@@ -38,8 +38,8 @@
 - [x] **[P1-4]** **外联归零验收 — 通过**（2026-10-15）：修完 [P2-3]/[P2-6]/[P2-7] 后冷启动 `performance` 里**外部域名 0 个**（`cdn.readest.com` 与 `us.i.posthog.com` 都消失）；`telemetryDecision=opt-out`
 
 ### Phase 2 — 三处小补丁（~30 行）
-- [ ] **[P2-1]** 无 Supabase 时跳过 auth 启动（`AuthContext.tsx` + `utils/supabase.ts`）
-- [ ] **[P2-2]** `keepLogin` 不再跳 `/auth`（`library/page.tsx:733-744`）
+- [x] **[P2-1]** 无 Supabase 时跳过 auth 启动（`AuthContext.tsx` + `utils/supabase.ts`）
+- [x] **[P2-2]** `keepLogin` 不再跳 `/auth`（`library/page.tsx:733-744`）
 - [x] **[P2-3]** self-hosted 下不 init PostHog（`PHContext.tsx`）— 完成：`initPostHog()` 里加 `isSelfHosted()` 短路；**并在 `Providers.tsx` 的 `finalizeTelemetryDecision` 开头加 self-hosted 短路**（直接 opt-out + 把 settings 里的 `telemetryEnabled` 写回 false，否则老装的 `true` 会把决议翻回 opt-in）
 - [ ] **[P2-4]** 可选：外链资源收口（`fontBaseUrl` / WordLens / R2 词典源）
 - [ ] **[P2-5]** 可选：WebDAV 做进 Next 路由（~300–500 行 + 测试）
@@ -47,8 +47,8 @@
 - [x] **[P2-7]** **默认遥测改成关** — 完成：`src/services/constants.ts` 的 `telemetryEnabled: true` → `false`
 
 ### Phase 3.0a — 零风险平台清理（先做）
-- [ ] **[P3a-1]** `src-tauri/gen/apple/**` + 两个插件的 `ios/` + `Info-ios.plist` + `tauri.macos-nonestore.conf.json`（~~fastlane~~ 已随第一批删完）
-- [ ] **[P3a-2]** `packages/swift-rs` + `[patch.crates-io] swift-rs`；⚠️ **`sign-in-with-apple` / `sharekit` 不在这里删**（见 3.0a 开头两条修正）
+- [x] **[P3a-1]** `src-tauri/gen/apple/**` + 两个插件的 `ios/` + `Info-ios.plist` + `tauri.macos-nonestore.conf.json`（~~fastlane~~ 已随第一批删完） — ✅（af905f73c）
+- [x] **[P3a-2]** `packages/swift-rs` + `[patch.crates-io] swift-rs`；⚠️ **`sign-in-with-apple` / `sharekit` 不在这里删**（见 3.0a 开头两条修正） — ✅（af905f73c）
 - [x] **[P3a-3]** `apps/readest.koplugin/**`（含它自带的 Rust crate `native/localsend-bin`）— 2026-10-15 完成（commit `0a42152aa`，连同 calibre/crosspoint/workers/fastlane 共 286 文件、-58,078 行）
 - [x] **[P3a-4]** `apps/readest-calibre-plugin/**` + `apps/readest-crosspoint-plugin/**` — 完成
 - [x] **[P3a-5]** `workers/{iap-reconcile,send-email}` + `pnpm-workspace.yaml` 两行 + 引用它们的测试 — 完成
@@ -59,19 +59,19 @@
 - [x] **[P3a-10]** **修单测基线**（本来不在计划里）：Node 26 的 `localStorage` 遮住 jsdom 的 → 本 checkout **89 文件/746 用例失败**。`vitest.setup.ts` 装**真 jsdom Storage**（重新 prototype 到本 realm 的 `Storage.prototype`，保住 `vi.spyOn` 拦截）+ Map 兜底 → 全绿。另：`demo-books-sync.test.tsx` 改为从 `demoLibraries` 取 URL（不再钉死 cdn 地址）
 
 ### Phase 2.5-A — 删登录
-- [ ] **[A-1]** `useAuth()` 换成返回固定空态的 stub（判据：48 个调用点不动，`tsc` 通过）
-- [ ] **[A-2]** `useQuotaStats()` 换成 self-hosted 常值
-- [ ] **[A-3]** 删 `src/app/auth/**` + `src/app/user/**` + `pages/api/user/*` + `utils/supabase.ts` + `libs/user.ts`
+- [x] **[A-1]** `useAuth()` 换成返回固定空态的 stub（判据：48 个调用点不动，`tsc` 通过）
+- [x] **[A-2]** `useQuotaStats()` 换成 self-hosted 常值
+- [x] **[A-3]** 删 `src/app/auth/**` + `src/app/user/**` + `pages/api/user/*` + `utils/supabase.ts` + `libs/user.ts`
 - [ ] **[A-4]** 随 A 走：`start_server`(oauth 回环) + `BillingManager.kt`×2 + `OAuthCallbackTarget.kt` + `macos/{safari_auth,apple_auth}.rs`
-- [ ] **[A-5]** 撕掉三处“创可贴”：Supabase 假值 + `keepLogin` 守卫 + PostHog guard
-- [ ] **[A-6]** 验：书库/阅读/笔记正常；Network 无任何 supabase 域名；26 个 auth 测试已删/改
+- [x] **[A-5]** 撕掉三处“创可贴”：Supabase 假值 + `keepLogin` 守卫 + PostHog guard
+- [x] **[A-6]** 验：书库/阅读/笔记正常；Network 无任何 supabase 域名；26 个 auth 测试已删/改
 
 ### Phase 2.5-B — 删第三方同步 + KOSync + replica
-- [ ] **[B-1]** `providers/{gdrive,s3,onedrive,icloud,oauth}` + 4 个设置表单 + 四个 settings slice
-- [ ] **[B-2]** `providerRegistry` 只剩 `webdav`
-- [ ] **[B-3]** KOSync（**单独一个提交**）：`KOSyncClient.ts` + `pages/api/kosync.ts` + `KOSyncForm.tsx` + `useKOSync`/`kosyncProgress`/`KOSyncResolver` + Reader 核心挂点（`Reader.tsx`/`ReaderContent.tsx`/`FoliateViewer.tsx`/`BookMenu`/`ViewMenu`/`useFileSync`/`useNotebookDocumentCoordinator`/`bookOrbitProgressProvider`）+ `readerStore`/`settingsService`/`constants`/`utils/{customHeaders,network}`
-- [ ] **[B-4]** 删 replica（~9.3k 行）；`cloudSyncProvider.ts`/`syncCategories.ts` **瘦身**而非直删
-- [ ] **[B-5]** 验：集成列表只剩 WebDAV；指向不存在的地址时只有 WebDAV 报错，无云回落
+- [x] **[B-1]** `providers/{gdrive,s3,onedrive,icloud,oauth}` + 4 个设置表单 + 四个 settings slice — ✅（37870bd4a）
+- [x] **[B-2]** `providerRegistry` 只剩 `webdav` — ✅（37870bd4a）
+- [x] **[B-3]** KOSync（**单独一个提交**）：`KOSyncClient.ts` + `pages/api/kosync.ts` + `KOSyncForm.tsx` + `useKOSync`/`kosyncProgress`/`KOSyncResolver` + Reader 核心挂点（`Reader.tsx`/`ReaderContent.tsx`/`FoliateViewer.tsx`/`BookMenu`/`ViewMenu`/`useFileSync`/`useNotebookDocumentCoordinator`/`bookOrbitProgressProvider`）+ `readerStore`/`settingsService`/`constants`/`utils/{customHeaders,network}`
+- [x] **[B-4]** 删 replica（~9.3k 行）；`cloudSyncProvider.ts`/`syncCategories.ts` **瘦身**而非直删
+- [x] **[B-5]** 验：集成列表只剩 WebDAV；指向不存在的地址时只有 WebDAV 报错，无云回落 — ✅（da7c75017）
 
 ### Phase 2.5-C — 删 TTS + 有声书
 - [ ] **[C-1]** `src/services/tts/**`（47 文件）+ `libs/readestVoice` + `libs/edgeTTS.ts` + `app/api/tts/**`
@@ -570,6 +570,29 @@ node .next/standalone/apps/readest-app/server.js
 > 这是四件事里**唯一会碰到 Reader 核心文件**的一件（其它三件都在外围），所以放在 B 里但**单独一个提交**、单独回滚。
 
 验收：设置→集成列表里只剩 **WebDAV**（+ LocalSend，如保留）；把远端目录改成一个不存在的地址，确保只有 WebDAV 报错、没有帧回落到云端。
+
+---
+
+#### 云残留收尾 —— **✅ 2026-10-15 完成（6 个提交）**
+
+| 子步 | commit | 规模 |
+|---|---|---|
+| 分享链接（`app/s/**`、`app/api/share/**`、`libs/share*`、`ShareBookDialog`、右键菜单 share） | `da7c75017` | 31 文件 / −2,677 |
+| 云收件箱 Send to Readest + CrossPoint + stats archive + user API | `9188fb13c` | 44 文件 / −6,166 |
+| 支付/配额的 API 与 libs + Supabase 依赖 + 假值创可贴 | `09450ce24` | 77 文件 / −8,893 |
+| 四个死掉的 provider settings slice（gdrive/s3/onedrive/icloud） | `39d6ae4f9` | 9 文件 |
+| Readest Cloud provider 本体 + 云传输队列（transferManager/transferStore/TransferQueuePanel）+ 每本书的上传/下载悬浮按钮 | `c205c6c3c` | 51 文件 / −5,690 |
+| 云存储管道（`libs/storage` → `libs/downloadFile`、`cloudService` → `bookDeletion`、AppService 云方法） | `ed13d5972` | 30 文件 / −1,525 |
+
+**关键判断（写下来免得重踩）**：
+- **`services/send/{clipOptions,clipSignIn,conversion/**}` 不是云**：文章剪藏 / RSS feed book 在用它；`clipSignIn` 是「网站登录」（WebView cookie jar），不是 Readest 账号。只有 `sendAddress/inboxDrainer/devicePrefs` 与 `pages/api/send/**` 是云的。
+- **`utils/share.ts` + QuoteCardDialog 的系统分享面板要留**（NSSharingServicePicker / Android intent），与 Readest 分享链接无关。
+- **`libs/storage.downloadFile` 不是云**：它是通用 HTTP 下载器（OPDS 封面/自动下载、WordLens 词包、ABS 离线缓存都靠它带 URL 调用）。只有「无 URL 时用云 key 换签名 URL」那一支是云 ⇒ 保留下载器、删掉那支。
+- **`services/transferManager` 只是云队列**：文件镜像有自己的 `fileSyncStore` 进度，所以整座队列可删（删前先确认 `Bookshelf` 的封面进度环只读 `booksTransferProgress`）。
+- **`isLoggedIn`/`fetchWithAuth`/`getAccessToken`/`validateUserAndToken` 暂不删**：[C] TTS、[D] 翻译、Notion/AI 路由、OPDS 还在调用它们，随各自那一刀清。
+- `AuthContext` 不再依赖 `@supabase/supabase-js` 的 `User` 类型（改为本地 `AuthUser` 结构）；`.env` 里 base64 烧的 Supabase/Stripe 公钥已删，`lan/start.sh` 的假值注射也不再需要。
+
+**收尾数据**：本 pass 共 6 个提交、**242 文件 / −24,951 行**；套件从 1037 文件 / 12466 用例降到 **989 文件 / 11972 用例**（删掉的全是云行为断言），全程 0 失败、`tsc` 干净、web 构建与 200/207 每刀都验。
 
 ---
 
