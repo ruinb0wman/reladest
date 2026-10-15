@@ -43,7 +43,6 @@ vi.mock('@/services/sync/file/runLibrarySync', () => ({
   getReadyFileSyncBackends: (settings: Partial<SystemSettings>) => {
     const ready: string[] = [];
     if (settings?.webdav?.enabled) ready.push('webdav');
-    if (settings?.icloud?.enabled) ready.push('icloud');
     return ready;
   },
 }));

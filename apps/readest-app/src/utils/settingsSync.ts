@@ -34,13 +34,6 @@ export const SETTINGS_SYNC_EVENT = 'global-settings-window-sync';
  */
 export interface CloudSyncProviderFlags {
   webdav: { enabled: boolean; providerSelectedAt?: number };
-  googleDrive: { enabled: boolean; providerSelectedAt?: number };
-  /** Optional: absent on payloads from pre-S3 windows (treated as unchanged). */
-  s3?: { enabled: boolean; providerSelectedAt?: number };
-  /** Optional: absent on payloads from pre-OneDrive windows (treated as unchanged). */
-  onedrive?: { enabled: boolean; providerSelectedAt?: number };
-  /** Optional: absent on payloads from pre-iCloud windows (treated as unchanged). */
-  icloud?: { enabled: boolean; providerSelectedAt?: number };
   /**
    * Optional in two senses: absent on payloads from pre-#5062 windows, and
    * absent when the source window has never had the slice written. `enabled`
@@ -86,16 +79,6 @@ export const mergeSyncedGlobalSettings = (
     merged.bookshelves = mergeBookshelfStates(local.bookshelves, payload.bookshelves);
   if (payload.cloudSyncProviders) {
     merged.webdav = { ...local.webdav, ...payload.cloudSyncProviders.webdav };
-    merged.googleDrive = { ...local.googleDrive, ...payload.cloudSyncProviders.googleDrive };
-    if (payload.cloudSyncProviders.s3) {
-      merged.s3 = { ...local.s3, ...payload.cloudSyncProviders.s3 };
-    }
-    if (payload.cloudSyncProviders.onedrive) {
-      merged.onedrive = { ...local.onedrive, ...payload.cloudSyncProviders.onedrive };
-    }
-    if (payload.cloudSyncProviders.icloud) {
-      merged.icloud = { ...local.icloud, ...payload.cloudSyncProviders.icloud };
-    }
     if (payload.cloudSyncProviders.readestCloud) {
       merged.readestCloud = {
         ...local.readestCloud,
@@ -129,24 +112,8 @@ export const broadcastGlobalSettings = async (
           enabled: !!settings.webdav?.enabled,
           providerSelectedAt: settings.webdav?.providerSelectedAt,
         },
-        googleDrive: {
-          enabled: !!settings.googleDrive?.enabled,
-          providerSelectedAt: settings.googleDrive?.providerSelectedAt,
-        },
-        s3: {
-          enabled: !!settings.s3?.enabled,
-          providerSelectedAt: settings.s3?.providerSelectedAt,
-        },
-        onedrive: {
-          enabled: !!settings.onedrive?.enabled,
-          providerSelectedAt: settings.onedrive?.providerSelectedAt,
-        },
-        icloud: {
-          enabled: !!settings.icloud?.enabled,
-          providerSelectedAt: settings.icloud?.providerSelectedAt,
-        },
       };
-      if (settings.readestCloud) {
+      if (settings.readestCloud && payload.cloudSyncProviders) {
         payload.cloudSyncProviders.readestCloud = {
           enabled: settings.readestCloud.enabled,
           disabledAt: settings.readestCloud.disabledAt,

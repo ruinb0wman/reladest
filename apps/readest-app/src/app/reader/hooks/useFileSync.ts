@@ -222,15 +222,11 @@ export const useFileSync = (bookKey: string) => {
   // rebuild it — which for Drive would re-probe the keychain on every push.
   const engineKey = useMemo(() => {
     const w = settings.webdav;
-    const c = settings.s3;
     return [
       activeKindsKey,
       `webdav:${w?.serverUrl}:${w?.username}:${w?.password}:${w?.rootPath}`,
-      `gdrive:${settings.googleDrive?.enabled}`,
-      `s3:${c?.endpoint}:${c?.region}:${c?.bucket}:${c?.accessKeyId}:${c?.secretAccessKey}`,
-      `onedrive:${settings.onedrive?.enabled}`,
     ].join('|');
-  }, [activeKindsKey, settings.webdav, settings.googleDrive, settings.s3, settings.onedrive]);
+  }, [activeKindsKey, settings.webdav]);
 
   const [engines, setEngines] = useState<
     Array<{ kind: FileSyncBackendKind; engine: FileSyncEngine }>

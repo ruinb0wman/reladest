@@ -218,98 +218,6 @@ export interface WebDAVSettings {
 }
 
 /**
- * Google Drive file-sync settings. A second file-sync backend alongside
- * {@link WebDAVSettings}, sharing the same engine, sub-toggles, and strategy
- * vocabulary. Drive has no URL / credentials / root path (it is OAuth + a
- * fixed `/Readest` namespace under the `drive.file` scope), and no BYO client.
- * The OAuth token is NOT stored here — it lives in the OS keychain. `deviceId`
- * and `lastSyncedAt` are device-local (excluded from cross-device restore).
- */
-export interface GoogleDriveSettings {
-  enabled: boolean;
-  /** Connected account's email (or display name), shown in the settings UI. */
-  accountLabel?: string;
-  syncProgress?: boolean;
-  syncNotes?: boolean;
-  syncBooks?: boolean;
-  fullSync?: boolean;
-  strategy?: KOSyncStrategy;
-  deviceId?: string;
-  lastSyncedAt?: number;
-  /** See {@link WebDAVSettings.providerSelectedAt}. */
-  providerSelectedAt?: number;
-}
-
-/**
- * S3-compatible object-store file-sync settings — the third file-sync
- * backend alongside {@link WebDAVSettings} and {@link GoogleDriveSettings},
- * sharing the same engine, sub-toggles, and strategy vocabulary. Covers any
- * SigV4 endpoint: Cloudflare R2, AWS S3, MinIO, Backblaze B2. Addressing is
- * path-style (`<endpoint>/<bucket>/<key>`). Credentials live here like
- * WebDAV's (same encrypted cross-device credential-sync semantics).
- */
-export interface S3Settings {
-  enabled: boolean;
-  /** Service endpoint origin, e.g. `https://<account-id>.r2.cloudflarestorage.com`. */
-  endpoint: string;
-  /** SigV4 region; 'auto' works for R2/MinIO, AWS wants the bucket region. */
-  region?: string;
-  bucket: string;
-  accessKeyId: string;
-  secretAccessKey: string;
-  syncProgress?: boolean;
-  syncNotes?: boolean;
-  syncBooks?: boolean;
-  fullSync?: boolean;
-  strategy?: KOSyncStrategy;
-  deviceId?: string;
-  lastSyncedAt?: number;
-  /** See {@link WebDAVSettings.providerSelectedAt}. */
-  providerSelectedAt?: number;
-}
-
-/**
- * Microsoft OneDrive file-sync settings. An OAuth-based file-sync backend
- * alongside {@link GoogleDriveSettings}, storing data in the Graph App Folder
- * (approot). No URL / credentials / root path and no BYO client; the OAuth
- * token lives in the OS keychain (native) or sessionStorage (web), never here.
- * `deviceId`/`lastSyncedAt`/`providerSelectedAt` are device-local.
- */
-export interface OneDriveSettings {
-  enabled: boolean;
-  /** Connected account's userPrincipalName/email, shown in the settings UI. */
-  accountLabel?: string;
-  syncProgress?: boolean;
-  syncNotes?: boolean;
-  syncBooks?: boolean;
-  fullSync?: boolean;
-  strategy?: KOSyncStrategy;
-  deviceId?: string;
-  lastSyncedAt?: number;
-  /** See {@link WebDAVSettings.providerSelectedAt}. */
-  providerSelectedAt?: number;
-}
-
-/**
- * iCloud Drive file-sync settings. Available only in the iOS/macOS Tauri
- * apps: the backend is the app's ubiquity container, synced by the OS. No
- * credentials and no OAuth — the device's iCloud session is the account.
- * `deviceId`/`lastSyncedAt`/`providerSelectedAt` are device-local.
- */
-export interface ICloudSettings {
-  enabled: boolean;
-  syncProgress?: boolean;
-  syncNotes?: boolean;
-  syncBooks?: boolean;
-  fullSync?: boolean;
-  strategy?: KOSyncStrategy;
-  deviceId?: string;
-  lastSyncedAt?: number;
-  /** See {@link WebDAVSettings.providerSelectedAt}. */
-  providerSelectedAt?: number;
-}
-
-/**
  * Readest Cloud's own library-sync switch. Readest Cloud used to be the
  * derived fallback — "on" whenever no third-party provider was enabled —
  * because exactly one provider could own the library channels. Providers are
@@ -557,10 +465,6 @@ export interface SystemSettings {
   /** Optional by design — see {@link ReadestCloudSettings}. Never defaulted. */
   readestCloud?: ReadestCloudSettings;
   webdav: WebDAVSettings;
-  googleDrive: GoogleDriveSettings;
-  s3: S3Settings;
-  onedrive: OneDriveSettings;
-  icloud: ICloudSettings;
 
   aiSettings: AISettings;
   /**

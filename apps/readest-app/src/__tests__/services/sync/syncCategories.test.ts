@@ -84,10 +84,7 @@ describe('isSyncCategoryEnabled', () => {
     });
 
     test('no gating when readest is the provider', () => {
-      setSettings({
-        webdav: { enabled: false },
-        googleDrive: { enabled: false },
-      } as Partial<SystemSettings>);
+      setSettings({ webdav: { enabled: false } } as Partial<SystemSettings>);
       expect(isSyncCategoryEnabled('book')).toBe(true);
       expect(isSyncCategoryEnabled('progress')).toBe(true);
       expect(isSyncCategoryEnabled('note')).toBe(true);

@@ -41,58 +41,22 @@ const globals = {
   globalReadSettings: {} as SystemSettings['globalReadSettings'],
 };
 
-describe('mergeSyncedGlobalSettings: readestCloud', () => {
-  test('adopts a broadcast Readest Cloud switch-off', () => {
+describe('mergeSyncedGlobalSettings: provider flags', () => {
+  test('adopts a broadcast WebDAV switch-on without carrying credentials', () => {
     const merged = mergeSyncedGlobalSettings(local, {
       ...globals,
-      cloudSyncProviders: {
-        webdav: { enabled: true },
-        googleDrive: { enabled: false },
-        readestCloud: { enabled: false, disabledAt: 1234 },
-      },
+      cloudSyncProviders: { webdav: { enabled: true, providerSelectedAt: 42 } },
     });
-    expect(merged.readestCloud?.enabled).toBe(false);
-    expect(merged.readestCloud?.disabledAt).toBe(1234);
+    expect(merged.webdav.enabled).toBe(true);
+    expect(merged.webdav.providerSelectedAt).toBe(42);
     // Credentials never ride the wire, and the local copy is preserved.
     expect(merged.webdav.password).toBe('secret');
   });
 
-  test('a payload without readestCloud leaves the local value untouched', () => {
-    const merged = mergeSyncedGlobalSettings(local, {
-      ...globals,
-      cloudSyncProviders: {
-        webdav: { enabled: true },
-        googleDrive: { enabled: false },
-      },
-    });
-    expect(merged.readestCloud?.enabled).toBe(true);
-  });
-});
-
-describe('mergeSyncedGlobalSettings: icloud', () => {
-  test('applies broadcast icloud provider flags', () => {
-    const merged = mergeSyncedGlobalSettings(local, {
-      ...globals,
-      cloudSyncProviders: {
-        webdav: { enabled: false },
-        googleDrive: { enabled: false },
-        icloud: { enabled: true, providerSelectedAt: 123 },
-      },
-    });
-    expect(merged.icloud?.enabled).toBe(true);
-    expect(merged.icloud?.providerSelectedAt).toBe(123);
-  });
-
-  test('a payload without icloud leaves the local value untouched', () => {
-    const withICloud = { ...local, icloud: { enabled: true } } as SystemSettings;
-    const merged = mergeSyncedGlobalSettings(withICloud, {
-      ...globals,
-      cloudSyncProviders: {
-        webdav: { enabled: false },
-        googleDrive: { enabled: false },
-      },
-    });
-    expect(merged.icloud?.enabled).toBe(true);
+  test('a payload without provider flags leaves the local slice untouched', () => {
+    const merged = mergeSyncedGlobalSettings(local, { ...globals });
+    expect(merged.webdav.enabled).toBe(false);
+    expect(merged.webdav.password).toBe('secret');
   });
 });
 
