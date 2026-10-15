@@ -134,10 +134,10 @@
 iOS/macOS 的**产物**（`src-tauri/gen/apple`、两个插件的 `ios/`、`Info-ios.plist`、`tauri.macos-nonestore.conf.json`、`packages/swift-rs` + root `[patch.crates-io] swift-rs`、`bundle.macOS`/`bundle.iOS` 配置）**不被任何 Rust 代码引用**，属于真·零风险，可以单独先删（本次就做这一块）。
 
 ### 当前状态（每次会话结束时更新这一行）
-- 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → P3a-3/4/5 + P3a-10 → P3a-1/2 零风险部分 → **2.5-A 删登录** → **2.5-B 第一部分（四个 provider）**
-- 提交：`6297e0ce0`、`0a42152aa`(−58,078)、`af905f73c`(−10,477)、`f232266de`(−7,541)、`37870bd4a`(−8,806)
-- **基线持续全绿**：1101 文件 / 13216 用例 / 0 失败；服务在跑（200/207）
-- 下一步：**[B] 第二部分** —— replica 机器本体（~9.3k 行；需给 20 个 store 的 `markDirty` 做壳）+ KOSync（会碰 Reader 核心，单独提交）；顺带删死设置 slice、撕掉假 Supabase 值的创可贴、删 `src/app/auth/**` 残页
+- 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → P3a-3/4/5 + P3a-10 → P3a-1/2 零风险部分 → **2.5-A 删登录** → **2.5-B 全部（provider / replica / 客户端 / KOSync / 收尾）**
+- 提交（本会话 12 个）：`6297e0ce0` `0a42152aa` `2c8ab87a4` `af905f73c` `f232266de` `225619b17` `37870bd4a` `169ded3ae` `5cba8a353` `d14631ef2` `1a7f4db67` `1a8b277f8`
+- **基线持续全绿**：1040 文件 / 12482 用例 / 0 失败；服务在跑（200/207）
+- 下一步：**[C] 删 TTS + 有声书**（顺带删 `native-tts` crate + Kotlin 侧；完了跑一次 APK 验证），然后 **[D] 删翻译**；两者都是纯 JS + 一次 Android 构建
 - 遗留：Phase 7（demo 幽灵行，见 §9）、[P0-5] 防火墙 + 手机真机、[P1-3-σ] 拉书方向
 - 注意：驱动 bow 自动化时**必须显式传 `tabId`**，而且**先确认用户没在用 bow**
 
@@ -515,7 +515,28 @@ node .next/standalone/apps/readest-app/server.js
 
 ---
 
-#### B. 其他第三方同步（删 33 文件 / ~4.5k 行）+ 顺带删掉 replica 云同步（~9.3k 行）
+#### B. 其他第三方同步 + KOSync + replica —— **✅ 2026-10-15 全部完成（4 刀 + 收尾，共 5 个提交）**
+
+| 子步 | commit | 规模 |
+|---|---|---|
+| B-1 四个 provider（gdrive/onedrive/s3/icloud） | `37870bd4a` | 70 文件 / −8,806 |
+| B-2 replica 引擎（壳化 20 个 store 调用点） | `5cba8a353` | 72 文件 / −12,137 |
+| B-3 replica 客户端 + API 路由 + E2E 加密会话 | `d14631ef2` | 40 文件 / −6,883 |
+| B-4 KOSync（只摘 KOReader provider，协议留给 BookOrbit） | `1a7f4db67` | 17 文件 / −774 |
+| B-5 收尾：oauth 移动端流 + `app/auth/**` 残页 + `navigateToLogin` | `1a8b277f8` | 20 文件 / −1,375 |
+
+**关键判断（写下来免得重踩）**：
+- `providers/oauth/**` **不是**同步 provider，是共享 OAuth 工具箱（`tokenEndpoint` 13 个消费方、`persistedOAuth`/`keychainTokenStore` 被 ABS 用）⇒ 只删了平台流（oauthIos/Android/Desktop/oauthFlow/pkce/parseRedirect）。
+- **replica 层在运行期早就是惰性死代码**（`publishReplicaUpsert` 开头 `if (!ctx) return`，而 `getReplicaSync()` 恒 null）⇒ 壳化成 no-op 不改变行为。
+- `getReplicaPersistEnv()` 是**本地持久化的开关**（`if (env) saveCustomX(env)`）⇒ `replicaPersist` 必须原样保留。
+- `migrateLegacyReplicas` 里**有真的本地迁移**（把老式扁平路径的字体/纹理重哈希成 bundle 布局）⇒ 只去掉 publish 步骤，迁移逻辑保留（曾误壳成 no-op 被字体测试抓出来）。
+- `services/bookshelves/replica.ts` 是**本地** schema/合并逻辑（不是云）⇒ 先删后恢复。
+- `useKOSync` 是**通用 provider 钩子**，BookOrbit 走同一套协议 ⇒ 只摘 KOReader provider，钩子/客户端/冲突面板保留。
+- 新增 `services/sync/replicaKinds.ts`：kind 字符串 + 本地仍需要的 content-id 助手（dictionary/ABS/OPDS 身份）。
+
+**遗留（归入“云残留”收尾，不在 [B] 内）**：`utils/supabase.ts`（仍被 `cloudService`/payment/share 引用 ⇒ 假值创可贴还在）、`cloudService.ts`（AppService 接口仍点名）、`libs/{user,storage,share*}`, payment libs, `pages/api/{storage,user}/*`、死掉的 `googleDrive/s3/onedrive/icloud` settings slice。
+
+#### B 原计划（历史参考，已执行）
 
 > **2026-10-15 完成“第一部分：四个 provider”（commit `37870bd4a`，70 文件 / −8,806 行）**
 > - 删：`providers/{gdrive,onedrive,s3,icloud}`（24 文件）+ 4 个设置表单 + `app/{gdrive,onedrive}-callback` 路由
