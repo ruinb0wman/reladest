@@ -35,7 +35,7 @@ function isBlockedV4(a: number, b: number, c: number, _d: number): boolean {
 
 /**
  * Canonical SSRF host blocklist, shared by every server route that fetches a
- * client-supplied URL (`/api/opds/proxy`, `/api/kosync`, `/api/send/fetch-url`).
+ * client-supplied URL (`/api/opds/proxy`, `/api/hardcover`, …).
  * Returns true for hosts that must never be reached: loopback, private,
  * link-local, CGNAT, benchmarking, multicast, internal hostname suffixes, and
  * bare single-label names.

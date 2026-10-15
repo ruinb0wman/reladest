@@ -9,7 +9,6 @@ import {
   RiBookmark3Line,
   RiFileList3Line,
   RiDiscordLine,
-  RiSendPlaneLine,
   RiWifiLine,
   RiCloudLine,
   RiHeadphoneLine,
@@ -42,7 +41,6 @@ import ReadwiseForm from './integrations/ReadwiseForm';
 import HardcoverForm from './integrations/HardcoverForm';
 import PageboundForm from './integrations/PageboundForm';
 import NotionForm from './integrations/NotionForm';
-import SendToReadestForm from './integrations/SendToReadestForm';
 import LocalSendForm from './integrations/LocalSendForm';
 import WebDAVForm from './integrations/WebDAVForm';
 import { persistCloudProviderEnabled } from './integrations/cloudSync';
@@ -72,7 +70,6 @@ type SubPage =
   | 'notion'
   | 'opds'
   | 'audiobookshelf'
-  | 'send'
   | 'localsend'
   | null;
 
@@ -185,7 +182,6 @@ const IntegrationsPanel: React.FC = () => {
       requestedSubPage === 'notion' ||
       requestedSubPage === 'opds' ||
       requestedSubPage === 'audiobookshelf' ||
-      requestedSubPage === 'send' ||
       requestedSubPage === 'localsend'
     ) {
       setSubPage(requestedSubPage);
@@ -302,13 +298,6 @@ const IntegrationsPanel: React.FC = () => {
         <ABSForm onBack={() => setSubPage(null)} />
       </div>
     );
-  if (subPage === 'send')
-    return (
-      <div className='my-4 w-full'>
-        <SendToReadestForm onBack={() => setSubPage(null)} />
-      </div>
-    );
-
   const bookOrbitStatus = settings.bookorbit?.enabled
     ? settings.bookorbit.username
       ? _('Connected as {{user}}', { user: settings.bookorbit.username })
@@ -507,12 +496,6 @@ const IntegrationsPanel: React.FC = () => {
               title={_('Audiobookshelf')}
               status={absStatus}
               onClick={() => setSubPage('audiobookshelf')}
-            />
-            <IntegrationRow
-              icon={RiSendPlaneLine}
-              title={_('Send to Readest')}
-              status={_('Email books to your library')}
-              onClick={() => setSubPage('send')}
             />
           </div>
         </div>
