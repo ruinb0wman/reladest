@@ -123,7 +123,6 @@ import { convertToEpubWithWorker } from '@/services/send/conversion/conversionWo
 import type { WebBrowserPage } from '@/services/webBrowser/webBrowser';
 import ClipSignInAlert from '@/components/ClipSignInAlert';
 import useShortcuts from '@/hooks/useShortcuts';
-import { useReplicaPull } from '@/hooks/useReplicaPull';
 import { useCustomFonts } from '@/hooks/useCustomFonts';
 import DropIndicator from '@/components/DropIndicator';
 import SettingsDialog from '@/components/settings/SettingsDialog';
@@ -241,20 +240,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   // background textures, OPDS catalogs, Audiobookshelf servers, custom
   // translators + prompts, custom TTS services, bundled settings). Deferred 10s; module-scoped
   // dedup means a later navigation to the reader won't re-pull the same kind.
-  useReplicaPull({
-    kinds: [
-      'dictionary',
-      'font',
-      'texture',
-      'opds_catalog',
-      'abs_server',
-      'custom_translator',
-      'translation_prompt',
-      'custom_tts',
-      'settings',
-      'bookshelf',
-    ],
-  });
   // Hydrate the custom-font store from persisted settings so the Font
   // panel sees imported fonts even when opened straight from the
   // library — the replica pull above is auth-gated and the reader's

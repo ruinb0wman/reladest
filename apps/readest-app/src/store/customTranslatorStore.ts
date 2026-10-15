@@ -4,10 +4,7 @@ import type { CustomTranslator, TranslationPrompt } from '@/types/translation';
 import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import {
-  CUSTOM_TRANSLATOR_KIND,
-  TRANSLATION_PROMPT_KIND,
-} from '@/services/sync/adapters/customTranslator';
+import { CUSTOM_TRANSLATOR_KIND, TRANSLATION_PROMPT_KIND } from '@/services/sync/replicaKinds';
 import {
   DEFAULT_PROMPT_ID,
   DEFAULT_TRANSLATION_PROMPT,

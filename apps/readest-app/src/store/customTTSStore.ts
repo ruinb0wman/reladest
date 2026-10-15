@@ -4,7 +4,7 @@ import type { CustomTTSService } from '@/types/customTTS';
 import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import { CUSTOM_TTS_KIND } from '@/services/sync/adapters/customTTS';
+import { CUSTOM_TTS_KIND } from '@/services/sync/replicaKinds';
 
 type ServiceInput = Omit<CustomTTSService, 'id' | 'addedAt' | 'updatedAt'>;
 

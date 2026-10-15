@@ -8,7 +8,7 @@ import type {
 import { BUILTIN_PROVIDER_IDS, BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
 import { useSettingsStore } from './settingsStore';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import { DICTIONARY_KIND } from '@/services/sync/adapters/dictionary';
+import { DICTIONARY_KIND } from '@/services/sync/replicaKinds';
 import { markExplicitProviderOrderPublish } from '@/services/sync/replicaSettingsSync';
 import type { DictionaryPluginControlStore } from '@/services/dictionaries/plugins/controlStore';
 

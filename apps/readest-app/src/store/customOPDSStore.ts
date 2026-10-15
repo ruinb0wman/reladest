@@ -4,10 +4,7 @@ import type { OPDSCatalog } from '@/types/opds';
 import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import {
-  computeOpdsCatalogContentId,
-  OPDS_CATALOG_KIND,
-} from '@/services/sync/adapters/opdsCatalog';
+import { computeOpdsCatalogContentId, OPDS_CATALOG_KIND } from '@/services/sync/replicaKinds';
 
 const publishOpdsUpsert = (catalog: OPDSCatalog): void => {
   if (!catalog.contentId) return;

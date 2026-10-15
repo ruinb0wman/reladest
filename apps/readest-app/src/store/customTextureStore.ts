@@ -10,7 +10,7 @@ import {
 import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import { TEXTURE_KIND } from '@/services/sync/adapters/texture';
+import { TEXTURE_KIND } from '@/services/sync/replicaKinds';
 import { computeTextureContentId } from '@/services/imageService';
 import { migrateLegacyReplicas } from '@/services/sync/migrateLegacy';
 

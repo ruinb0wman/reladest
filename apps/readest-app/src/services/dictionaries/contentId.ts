@@ -1,5 +1,5 @@
 import { partialMD5 } from '@/utils/md5';
-import { computeDictionaryReplicaId } from '@/services/sync/adapters/dictionary';
+import { computeDictionaryReplicaId } from '@/services/sync/replicaKinds';
 
 /**
  * Compute the cross-device content-hash id for a dictionary bundle at

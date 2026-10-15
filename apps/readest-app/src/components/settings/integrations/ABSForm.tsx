@@ -8,7 +8,7 @@ import { useABSServerStore } from '@/store/absServerStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { ABSClient } from '@/services/audiobookshelf/client';
 import { removeAbsServerBooks } from '@/services/audiobookshelf/librarySync';
-import { computeAbsServerContentId } from '@/services/sync/adapters/absServer';
+import { computeAbsServerContentId } from '@/services/sync/replicaKinds';
 import { ttsSessionManager } from '@/services/tts/TTSSessionManager';
 import type { ABSLibrary, ABSServer } from '@/types/audiobookshelf';
 import type { AppService } from '@/types/system';

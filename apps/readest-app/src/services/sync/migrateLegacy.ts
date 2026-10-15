@@ -1,11 +1,11 @@
 import { partialMD5 } from '@/utils/md5';
 import { uniqueId } from '@/utils/misc';
-import { queueReplicaBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import type { EnvConfigType } from '@/services/environment';
 import type { BaseDir } from '@/types/system';
 
 /**
- * Shared shape for legacy flat-path records that predate replica sync:
+ * Local data migration for legacy flat-path records (predating the per-record
+ * bundle layout):
  * a flat `<filename>` path under the kind's base dir, no `contentId`
  * or `bundleDir`. The migration rehashes the bytes into a per-record
  * `<bundleDir>/<filename>` layout so the kind starts syncing without
@@ -118,8 +118,8 @@ export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
   } catch (err) {
     console.warn(`migrateLegacyReplicas[${deps.kind}]: save failed`, err);
   }
-  for (const record of migrated) {
-    deps.publishUpsert(record);
-    void queueReplicaBinaryUpload(deps.kind, record, appService);
-  }
+  // The replica publish that used to follow (`deps.publishUpsert` +
+  // `queueReplicaBinaryUpload`) is gone with the cloud sync layer: this is now a
+  // purely LOCAL migration, rehashing legacy flat-path records into the
+  // per-bundle layout the stores expect.
 };

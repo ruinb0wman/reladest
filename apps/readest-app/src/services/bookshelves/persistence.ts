@@ -4,8 +4,6 @@ import type { ReplicaRow } from '@/types/replica';
 import type { EnvConfigType } from '@/services/environment';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getUserID } from '@/utils/access';
-import { getReplicaSync } from '@/services/sync/replicaSync';
-import { isSyncCategoryEnabled } from '@/services/sync/syncCategories';
 import { HlcGenerator } from '@/libs/crdt';
 import { LocalStorageHlcStore } from '@/libs/hlcStore';
 import { applyBookshelfDraft, mergeBookshelfStates, readBookshelves } from './state';
@@ -31,27 +29,18 @@ const persistState = (env: EnvConfigType, state: BookshelfState): Promise<void> 
   writes = writes.catch(() => {}).then(save);
   return writes;
 };
-const publishPendingBookshelves = async (env: EnvConfigType, userId: string | null) => {
-  const ctx = getReplicaSync();
-  if (!ctx || !userId || !isSyncCategoryEnabled('bookshelf')) return;
-  const rows: ReplicaRow[] = [];
-  const bound: BookshelfState = { rows: {} };
-  for (const original of readPendingBookshelves()) {
-    const row = bindBookshelfOperation(original, userId);
-    if (row.user_id !== userId) continue;
-    if (original.localOnly) bound.rows[row.replica_id] = row;
-    rows.push(row);
-  }
-  // Persist the canonical rows before queuing them. Their journals are already
-  // durable, so a crash during the handoff is recovered on the next load.
-  if (Object.keys(bound.rows).length) await persistState(env, bound);
-  for (const row of rows) ctx.manager.markDirty(row);
-};
+/**
+ * Reapply the bookshelf journal on load.
+ *
+ * The cloud replica publish that used to follow this (`publishPendingBookshelves`
+ * → `ctx.manager.markDirty`) is gone with the replica layer, so this is now a
+ * purely local recovery step: a crash between journaling an operation and saving
+ * settings cannot lose the user's change, and local-only shelves are persisted
+ * under their canonical rows.
+ */
 export const replayBookshelfOperations = async (env: EnvConfigType) => {
   const userId = await getUserID();
   const pending = readPendingBookshelves();
-  // Reapply the journal first: a crash between journaling and saving settings
-  // cannot lose the user's changes, whether or not sync is currently enabled.
   if (pending.length) {
     let state: BookshelfState = { rows: {} };
     for (const row of pending)
@@ -59,7 +48,14 @@ export const replayBookshelfOperations = async (env: EnvConfigType) => {
         state = mergeBookshelfStates(state, { rows: { [row.replica_id]: row } });
     await persistState(env, state);
   }
-  await publishPendingBookshelves(env, userId);
+  const bound: BookshelfState = { rows: {} };
+  for (const original of pending) {
+    if (!userId) continue;
+    const row = bindBookshelfOperation(original, userId);
+    if (row.user_id !== userId) continue;
+    if (original.localOnly) bound.rows[row.replica_id] = row;
+  }
+  if (Object.keys(bound.rows).length) await persistState(env, bound);
 };
 export const saveBookshelfDraft = async (
   env: EnvConfigType,
@@ -75,9 +71,7 @@ export const saveBookshelfDraft = async (
   const { settings } = useSettingsStore.getState();
   const deviceId = settings.replicaDeviceId || 'local';
   const hlcStore = new LocalStorageHlcStore();
-  const hlc =
-    getReplicaSync()?.hlc ||
-    HlcGenerator.restore(hlcStore.load() || { physicalMs: 0, counter: 0 }, deviceId);
+  const hlc = HlcGenerator.restore(hlcStore.load() || { physicalMs: 0, counter: 0 }, deviceId);
   for (const row of Object.values(settings.bookshelves?.rows || {})) hlc.observe(row.updated_at_ts);
   const { state, operations } = applyBookshelfDraft(
     settings.bookshelves || { rows: {} },
@@ -116,7 +110,6 @@ export const saveBookshelfDraft = async (
   // replaying — a replay would persist the very same state a second time, and
   // the editor autosaves on every keystroke.
   await persistState(env, state);
-  await publishPendingBookshelves(env, userId);
 };
 export const updateBookshelf = async (
   env: EnvConfigType,

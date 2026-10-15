@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { useCustomOPDSStore } from '@/store/customOPDSStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { computeOpdsCatalogContentId } from '@/services/sync/adapters/opdsCatalog';
+import { computeOpdsCatalogContentId } from '@/services/sync/replicaKinds';
 import type { OPDSCatalog } from '@/types/opds';
 import type { SystemSettings } from '@/types/settings';
 import type { EnvConfigType } from '@/services/environment';

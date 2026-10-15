@@ -82,7 +82,7 @@ vi.mock('@/services/audiobookshelf/client', () => ({
 
 import ABSForm from '@/components/settings/integrations/ABSForm';
 import { useLibraryStore } from '@/store/libraryStore';
-import { computeAbsServerContentId } from '@/services/sync/adapters/absServer';
+import { computeAbsServerContentId } from '@/services/sync/replicaKinds';
 import { makeAbsFilePath } from '@/utils/audiobook';
 import type { Book } from '@/types/book';
 

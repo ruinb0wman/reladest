@@ -6,7 +6,7 @@ import { parseAbsFilePath } from '@/utils/audiobook';
 import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import { computeAbsServerContentId, ABS_SERVER_KIND } from '@/services/sync/adapters/absServer';
+import { computeAbsServerContentId, ABS_SERVER_KIND } from '@/services/sync/replicaKinds';
 
 const publishAbsUpsert = (server: ABSServer): void => {
   if (!server.contentId) return;

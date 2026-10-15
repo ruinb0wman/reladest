@@ -11,7 +11,7 @@ import { useSettingsStore } from './settingsStore';
 import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
 import { queueReplicaBinaryDelete } from '@/services/sync/replicaBinaryUpload';
-import { FONT_KIND } from '@/services/sync/adapters/font';
+import { FONT_KIND } from '@/services/sync/replicaKinds';
 import { computeFontContentId } from '@/services/fontService';
 import { migrateLegacyReplicas } from '@/services/sync/migrateLegacy';
 

@@ -564,16 +564,6 @@ describe('customFontStore', () => {
       expect(svc.deleteFile).toHaveBeenCalledWith('Roboto.ttf', 'Fonts');
     });
 
-    test('publishes each migrated font (replica upsert)', async () => {
-      useCustomFontStore.setState({
-        fonts: [{ id: 'legacy-2', name: 'Inter', path: 'Inter.ttf' }],
-        loading: false,
-      });
-      await migrateLegacyFonts(buildEnv(fakeService()));
-      expect(mockPublishReplicaUpsert).toHaveBeenCalledOnce();
-      expect(mockPublishReplicaUpsert.mock.calls[0]![0]).toBe('font');
-    });
-
     test('skips fonts that already have a contentId (idempotent)', async () => {
       useCustomFontStore.setState({
         fonts: [

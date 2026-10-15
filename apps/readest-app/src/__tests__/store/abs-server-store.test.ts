@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { findABSServerById, isAbsBookOrphaned, useABSServerStore } from '@/store/absServerStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { computeAbsServerContentId } from '@/services/sync/adapters/absServer';
+import { computeAbsServerContentId } from '@/services/sync/replicaKinds';
 import { makeAbsFilePath } from '@/utils/audiobook';
 import type { ABSServer } from '@/types/audiobookshelf';
 import type { Book } from '@/types/book';
