@@ -134,10 +134,10 @@
 iOS/macOS 的**产物**（`src-tauri/gen/apple`、两个插件的 `ios/`、`Info-ios.plist`、`tauri.macos-nonestore.conf.json`、`packages/swift-rs` + root `[patch.crates-io] swift-rs`、`bundle.macOS`/`bundle.iOS` 配置）**不被任何 Rust 代码引用**，属于真·零风险，可以单独先删（本次就做这一块）。
 
 ### 当前状态（每次会话结束时更新这一行）
-- 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → P3a-3/4/5 + P3a-10 → **P3a-1/2 的零风险部分**（Apple 产物 + swift-rs）→ **2.5-A 删登录**
-- 提交：`6297e0ce0`（LAN 档）、`0a42152aa`（3.0a 第一批，−58,078）、`af905f73c`（Apple 产物 + swift-rs，−10,477）、`f232266de`（**删登录**，−7,541）
-- **基线持续全绿**：1133 文件 / 13490 用例 / 0 失败
-- 下一步：**[B] 删第三方同步 + KOSync + replica**（完了顺手删 `src/app/auth/**`、`utils/supabase.ts`、假 Supabase 值的创可贴，并给 `[P7-c]` 减负）
+- 本文件版本：2026-10-15 建；已完成 PRE-1 → P0-1..P0-7 → P1-1..P1-4 → P2-3/6/7 → P3a-3/4/5 + P3a-10 → P3a-1/2 零风险部分 → **2.5-A 删登录** → **2.5-B 第一部分（四个 provider）**
+- 提交：`6297e0ce0`、`0a42152aa`(−58,078)、`af905f73c`(−10,477)、`f232266de`(−7,541)、`37870bd4a`(−8,806)
+- **基线持续全绿**：1101 文件 / 13216 用例 / 0 失败；服务在跑（200/207）
+- 下一步：**[B] 第二部分** —— replica 机器本体（~9.3k 行；需给 20 个 store 的 `markDirty` 做壳）+ KOSync（会碰 Reader 核心，单独提交）；顺带删死设置 slice、撕掉假 Supabase 值的创可贴、删 `src/app/auth/**` 残页
 - 遗留：Phase 7（demo 幽灵行，见 §9）、[P0-5] 防火墙 + 手机真机、[P1-3-σ] 拉书方向
 - 注意：驱动 bow 自动化时**必须显式传 `tabId`**，而且**先确认用户没在用 bow**
 
@@ -516,6 +516,14 @@ node .next/standalone/apps/readest-app/server.js
 ---
 
 #### B. 其他第三方同步（删 33 文件 / ~4.5k 行）+ 顺带删掉 replica 云同步（~9.3k 行）
+
+> **2026-10-15 完成“第一部分：四个 provider”（commit `37870bd4a`，70 文件 / −8,806 行）**
+> - 删：`providers/{gdrive,onedrive,s3,icloud}`（24 文件）+ 4 个设置表单 + `app/{gdrive,onedrive}-callback` 路由
+> - 改：`providerRegistry` 收窄到 `'webdav'`（缓存 seam 保留）、`runLibrarySync` 去掉 Drive-token/iCloud 门控、`cloudSyncProvider` 的 kind 列表与 `applySyncBooksAutoEnable` 收成单臂、`useFileSync` 同理、Integrations 面板只留 WebDAV 行
+> - **`providers/oauth/**` 不删**：它是共享 OAuth 工具箱（`tokenEndpoint` 有 13 个消费方，Hardcover/Readwise/Notion 等都在用），不是同步 provider
+> - 测试：多后端选择类套件（providerRegistry / cloudSyncProvider / fileSyncStore / useFileSync / runLibrarySync / fileSyncReport / settings/cloudSync）随特性删除；`syncCategories` 与 `useCloudSyncStatus` 里仅剩的 Drive 用例改写为 WebDAV 语义。**engine 套件（9 个 `engine-*.test.ts` + merge/wire/layout/provider-conformance）原封不动** —— 真风险在那里。全量：1101 文件 / 13216 用例 / 0 失败
+> - **待做（第二部分）**：replica 机器本体（`replica*.ts` / `adapters/*` / `passphraseGate` / `migrateLegacy`，需给 ~20 个 store 的 `markDirty` 做壳）、KOSync（会碰 Reader 核心）、以及已死的 `googleDrive/s3/onedrive/icloud` settings slice（目前只是死字段 + `settingsSync`/`backupService` 里的死引用，无 UI 渲染）
+> - 做完第一部分后 `[P7-c]`（file sync 过滤 demo 行）的改动面不变（那两处 demo 过滤在云路径 `useBooksSync` 里，属第二部分的 replica 清理）
 
 | 删什么 | 规模 |
 |---|---|
