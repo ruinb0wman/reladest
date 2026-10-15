@@ -3,6 +3,15 @@ import { renderHook, waitFor } from '@testing-library/react';
 
 import type { Book } from '@/types/book';
 
+// The demo shelf is deployment-specific (upstream points at cdn.readest.com; a
+// self-hosted build serves a local sample instead), so take the URL from the
+// same source of truth the app imports demo rows from rather than pinning a
+// CDN address that no longer exists in this build. `isDemoBook()` matches on the
+// resolved list, so this keeps the guard honest for any list.
+import { demoLibraries } from '@/services/demoBooks';
+
+const DEMO_URL = demoLibraries.en.library[0]!;
+
 /**
  * Issue #5049 — "web.readest.com after signing in retains the example books".
  *
@@ -21,8 +30,6 @@ import type { Book } from '@/types/book';
  * Demo books are never the user's content: they must stay out of the push, and
  * a cloud row must never write back over one.
  */
-
-const DEMO_URL = 'https://cdn.readest.com/books/the-great-gatsby.epub';
 
 const appService = vi.hoisted(() => ({
   saveLibraryBooks: vi.fn(async () => {}),

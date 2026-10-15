@@ -1,3 +1,5 @@
+import { JSDOM } from 'jsdom';
+
 // jsdom does not implement the CSS namespace; foliate-js TTS uses CSS.escape
 // (mark[name="…"] lookups). Provide the standard polyfill so those paths work.
 const globalWithCSS = globalThis as { CSS?: { escape?: (value: string) => string } };
@@ -72,3 +74,65 @@ if (typeof globalThis.fetch === 'function') {
       ? Promise.resolve(Response.json({ error: 'NOT_CONFIGURED' }, { status: 503 }))
       : realFetch(input, init);
 }
+
+// Node 26 ships its own `localStorage` getter, and it is unusable without
+// `--localstorage-file`: it shadows jsdom's implementation, so the global reads
+// as `undefined` and every storage-backed suite fails at `localStorage.getItem()`
+// — ~750 tests, which buries real failures in noise.
+//
+// Install a REAL jsdom Storage rather than a hand-rolled Map. A Map loses two
+// things the storage tests themselves assert *about*:
+//   * `new StorageEvent('storage', { storageArea: localStorage })` is rejected by
+//     jsdom's IDL conversion unless the object carries jsdom's own `implSymbol`.
+//   * `vi.spyOn(Storage.prototype, 'getItem')` cannot intercept a plain object, so
+//     the "storage disabled" paths silently stop being covered.
+// jsdom's type check still passes after re-prototyping because `implSymbol` lives
+// on the instance itself; pointing the prototype at THIS realm's
+// `Storage.prototype` is what makes `vi.spyOn` intercept.
+const installStorageGlobals = (): void => {
+  const read = (name: 'localStorage' | 'sessionStorage'): Storage | undefined => {
+    try {
+      return globalThis[name];
+    } catch {
+      return undefined;
+    }
+  };
+  if (read('localStorage') && read('sessionStorage')) return;
+
+  let win: (Window & typeof globalThis) | undefined;
+  try {
+    // Lazily constructed, so the extra JSDOM instance is only paid for on Node
+    // versions that shadow the global.
+    win = new JSDOM('', { url: 'http://localhost/' }).window;
+  } catch {
+    win = undefined;
+  }
+  const StorageCtor = globalThis.Storage ?? win?.Storage;
+
+  const mapFallback = (): Storage => {
+    const map = new Map<string, string>();
+    const fallback = {
+      get length() {
+        return map.size;
+      },
+      key: (i: number) => [...map.keys()][i] ?? null,
+      getItem: (k: string) => (map.has(k) ? (map.get(k) as string) : null),
+      setItem: (k: string, v: string) => void map.set(String(k), String(v)),
+      removeItem: (k: string) => void map.delete(k),
+      clear: () => void map.clear(),
+    };
+    return fallback as unknown as Storage;
+  };
+
+  for (const name of ['localStorage', 'sessionStorage'] as const) {
+    if (read(name)) continue;
+    const storage = win?.[name];
+    if (storage && StorageCtor) Object.setPrototypeOf(storage, StorageCtor.prototype);
+    Object.defineProperty(globalThis, name, {
+      value: storage ?? mapFallback(),
+      configurable: true,
+      writable: true,
+    });
+  }
+};
+installStorageGlobals();
