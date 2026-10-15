@@ -51,7 +51,6 @@ import {
 } from './integrations/cloudSyncStatus';
 import {
   getCloudSyncProviders,
-  isReadestCloudEnabled,
   resolveCloudSyncGate,
   settingsKeyForBackend,
   type CloudSyncProviderKind,
@@ -321,13 +320,11 @@ const IntegrationsPanel: React.FC = () => {
   // token) can be switched on inline; an unconfigured one must be opened to
   // connect.
   const providers = getCloudSyncProviders(settings);
-  const readestEnabled = isReadestCloudEnabled(settings);
   const cloudGate = resolveCloudSyncGate(settings, userProfilePlan ?? 'free');
   const enabledBackends = cloudGate.backends;
 
-  /** Book files have a home when Readest Cloud is on or some backend uploads them. */
+  /** Book files have a home when some other enabled backend uploads them. */
   const booksBackedUpBy = (kind: FileSyncBackendKind): boolean =>
-    readestEnabled ||
     enabledBackends.some(
       (k) => k !== kind && (settings[settingsKeyForBackend(k)]?.syncBooks ?? false),
     );

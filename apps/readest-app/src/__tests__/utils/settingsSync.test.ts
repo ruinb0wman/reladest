@@ -96,43 +96,6 @@ describe('broadcastGlobalSettings: readestCloud in the emitted payload', () => {
     return call![1] as SettingsSyncPayload;
   };
 
-  test('omits the readestCloud key entirely when settings has no readestCloud slice', async () => {
-    const settings = makeFullSettings();
-    expect(settings.readestCloud).toBeUndefined();
-
-    await broadcastGlobalSettings(settings, { includeCloudSyncProviders: true });
-
-    const payload = capturePayload();
-    expect(payload.cloudSyncProviders).toBeDefined();
-    // A key present with value `undefined` is NOT the same as an absent key:
-    // the receiving window's merge only touches `readestCloud` `if
-    // (payload.cloudSyncProviders.readestCloud)`, so an explicit `{ enabled:
-    // undefined }` would still be truthy and would clobber the receiver.
-    expect('readestCloud' in payload.cloudSyncProviders!).toBe(false);
-  });
-
-  test('carries enabled:false and disabledAt faithfully', async () => {
-    const settings = makeFullSettings({
-      readestCloud: { enabled: false, disabledAt: 1234 },
-    });
-
-    await broadcastGlobalSettings(settings, { includeCloudSyncProviders: true });
-
-    const payload = capturePayload();
-    expect(payload.cloudSyncProviders?.readestCloud).toEqual({ enabled: false, disabledAt: 1234 });
-  });
-
-  test('carries enabled:true', async () => {
-    const settings = makeFullSettings({
-      readestCloud: { enabled: true },
-    });
-
-    await broadcastGlobalSettings(settings, { includeCloudSyncProviders: true });
-
-    const payload = capturePayload();
-    expect(payload.cloudSyncProviders?.readestCloud?.enabled).toBe(true);
-  });
-
   test('never carries credentials or lastSyncedAt', async () => {
     const settings = makeFullSettings({
       webdav: {
@@ -141,7 +104,6 @@ describe('broadcastGlobalSettings: readestCloud in the emitted payload', () => {
         password: 'hunter2',
         lastSyncedAt: 999,
       },
-      readestCloud: { enabled: true },
     });
 
     await broadcastGlobalSettings(settings, { includeCloudSyncProviders: true });

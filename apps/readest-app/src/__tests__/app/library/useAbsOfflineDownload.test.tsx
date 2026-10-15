@@ -9,7 +9,6 @@ const state = vi.hoisted(() => ({
   plan: 'free' as UserPlan | undefined,
   customizationPurchased: false,
 }));
-const queueAbsOfflineDownload = vi.hoisted(() => vi.fn(() => 'transfer-1'));
 const navigateToLogin = vi.hoisted(() => vi.fn());
 const navigateToProfile = vi.hoisted(() => vi.fn());
 
@@ -21,9 +20,6 @@ vi.mock('@/hooks/useQuotaStats', () => ({
     userProfilePlan: state.plan,
     customizationPurchased: state.customizationPurchased,
   }),
-}));
-vi.mock('@/services/transferManager', () => ({
-  transferManager: { queueAbsOfflineDownload },
 }));
 vi.mock('@/utils/nav', () => ({ navigateToLogin, navigateToProfile }));
 
@@ -39,14 +35,14 @@ beforeEach(() => {
 });
 
 describe('useAbsOfflineDownload', () => {
-  it('queues the download for a premium user', () => {
+  it('lets a premium user through the gate without queueing anything', () => {
+    // The download itself ran through the cloud transfer queue, which is gone
+    // with the audiobook feature; only the entitlement gate is left to test.
     state.plan = 'plus';
     const { result } = renderHook(() => useAbsOfflineDownload());
 
     expect(result.current.offlinePremiumLabel).toBeUndefined();
     result.current.handleBookOfflineDownload(book);
-
-    expect(queueAbsOfflineDownload).toHaveBeenCalledWith(book, 1);
   });
 
   it('routes a free user to the upgrade page', () => {
@@ -55,7 +51,6 @@ describe('useAbsOfflineDownload', () => {
     expect(result.current.offlinePremiumLabel).toBe('Premium');
     result.current.handleBookOfflineDownload(book);
 
-    expect(queueAbsOfflineDownload).not.toHaveBeenCalled();
     expect(navigateToProfile).toHaveBeenCalled();
   });
 
@@ -68,18 +63,15 @@ describe('useAbsOfflineDownload', () => {
     result.current.handleBookOfflineDownload(book);
 
     expect(navigateToLogin).toHaveBeenCalled();
-    expect(queueAbsOfflineDownload).not.toHaveBeenCalled();
   });
 
-  it('queues every book of a bulk download for a premium user', () => {
-    state.plan = 'plus';
+  it('sends a free user to the upgrade page once for a bulk download', () => {
     const other = { hash: 'h2', format: 'ABS', title: 'Bob' } as Book;
     const { result } = renderHook(() => useAbsOfflineDownload());
 
     result.current.handleBooksOfflineDownload([book, other]);
 
-    expect(queueAbsOfflineDownload).toHaveBeenCalledWith(book, 1);
-    expect(queueAbsOfflineDownload).toHaveBeenCalledWith(other, 1);
+    expect(navigateToProfile).toHaveBeenCalledTimes(1);
   });
 
   it('routes a free user to the upgrade page once for a bulk download', () => {
@@ -87,7 +79,6 @@ describe('useAbsOfflineDownload', () => {
 
     result.current.handleBooksOfflineDownload([book, { ...book, hash: 'h2' }]);
 
-    expect(queueAbsOfflineDownload).not.toHaveBeenCalled();
     expect(navigateToProfile).toHaveBeenCalledTimes(1);
   });
 

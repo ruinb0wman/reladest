@@ -16,7 +16,6 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useDeviceControlStore } from '@/store/deviceStore';
 import { useScreenWakeLock } from '@/hooks/useScreenWakeLock';
 import { useScreenBrightness } from '@/app/reader/hooks/useScreenBrightness';
-import { useTransferQueue } from '@/hooks/useTransferQueue';
 import { eventDispatcher } from '@/utils/event';
 import { interceptWindowOpen } from '@/utils/open';
 import { mountAdditionalFonts } from '@/styles/fonts';
@@ -74,7 +73,6 @@ const Reader: React.FC<{ ids?: string }> = ({ ids }) => {
   });
   useScreenWakeLock(settings.screenWakeLock, appService?.hasWindow, appService?.isIOSApp);
   useScreenBrightness();
-  useTransferQueue(libraryLoaded, 5000);
   // Reader needs dictionaries for word-lookup, fonts for rendering, and
   // textures for the page background. Mounted here (not in the app-
   // router page wrapper) so the web pages-router entry at

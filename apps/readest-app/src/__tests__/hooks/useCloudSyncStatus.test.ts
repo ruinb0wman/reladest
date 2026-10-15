@@ -71,41 +71,25 @@ describe('useCloudSyncStatus (issue #5910)', () => {
     expect(result.current.providers.map((p) => p.kind)).toEqual(['webdav']);
   });
 
-  it('still asks for sign-in when Readest Cloud is the only provider', () => {
+  it('never asks for sign-in — a LAN build has no account to sign into', () => {
     const { result } = renderHook(() => useCloudSyncStatus(0));
 
-    expect(result.current.needsSignIn).toBe(true);
-    expect(result.current.label).toBe('Sign in to Sync');
-  });
-
-  it('ignores the native stamp when Readest Cloud is switched off', () => {
-    // The native cursors FREEZE rather than reset when the channels are gated,
-    // so a stale value would report a disabled provider as recently synced.
-    mockUser = { id: 'u1' };
-    mockSettings = {
-      readestCloud: { enabled: false },
-      webdav: { enabled: true },
-    } as never;
-    const { result } = renderHook(() => useCloudSyncStatus(NOW - 5_000));
-
-    expect(result.current.providers.map((p) => p.kind)).toEqual(['webdav']);
-    expect(result.current.lastSyncedAt).toBe(0);
+    expect(result.current.needsSignIn).toBe(false);
     expect(result.current.label).toBe('Never synced');
   });
 
-  it('lists both providers with their own timestamps', () => {
+  it('reports only the file backend, with its own timestamp', () => {
     mockUser = { id: 'u1' };
     mockSettings = {
-      readestCloud: { enabled: true },
       webdav: { enabled: true, lastSyncedAt: NOW - 120_000 },
     } as never;
     const { result } = renderHook(() => useCloudSyncStatus(NOW - 300_000));
 
     expect(result.current.providers).toEqual([
-      expect.objectContaining({ kind: 'readest', lastSyncedAt: NOW - 300_000 }),
       expect.objectContaining({ kind: 'webdav', lastSyncedAt: NOW - 120_000 }),
     ]);
-    // The row shows the freshest; the per-provider breakdown is the dialog's job.
+    // The hook's `nativeLastSyncedAt` argument belonged to the Readest Cloud
+    // rows and no longer contributes.
     expect(result.current.lastSyncedAt).toBe(NOW - 120_000);
   });
 
@@ -131,7 +115,6 @@ describe('useCloudSyncStatus (issue #5910)', () => {
 describe('useCloudSyncStatus Hardcover (book scope)', () => {
   const hardcover = (over = {}) =>
     ({
-      readestCloud: { enabled: false },
       hardcover: {
         enabled: true,
         autoSync: true,
@@ -184,11 +167,11 @@ describe('useCloudSyncStatus Hardcover (book scope)', () => {
     expect(b.label).toContain('Synced {{time}}');
   });
 
-  it('does not send a signed-out user to login when Hardcover can still sync', () => {
+  it('lists Hardcover alongside the file backend without a sign-in prompt', () => {
     mockSettings = { hardcover: { enabled: true, autoSync: true, accessToken: 'tok' } } as never;
     const { result } = renderHook(() => useCloudSyncStatus(0, 'book-a'));
 
-    expect(result.current.providers.map((p) => p.kind)).toEqual(['readest', 'hardcover']);
+    expect(result.current.providers.map((p) => p.kind)).toEqual(['hardcover']);
     expect(result.current.needsSignIn).toBe(false);
   });
 });

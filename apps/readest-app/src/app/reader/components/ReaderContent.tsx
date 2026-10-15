@@ -33,7 +33,6 @@ import { getLockedPanX } from '../utils/lockedPan';
 import { BOOK_IDS_SEPARATOR } from '@/services/constants';
 import { saveBookMetadataEdit } from '@/services/bookMetadataEdit';
 import { BookDetailModal } from '@/components/metadata';
-import { useAuth } from '@/context/AuthContext';
 import { useNotebookDocumentStore } from '@/store/notebookDocumentStore';
 import { canTransitionWithNotebookRecovery } from '../services/notebookDocumentCoordinator';
 import {
@@ -84,7 +83,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
   const [audiobookBookKey, setAudiobookBookKey] = useState<string | null>(null);
   const [hardcoverLinkBookKey, setHardcoverLinkBookKey] = useState<string | null>(null);
   const [pageboundLinkBookKey, setPageboundLinkBookKey] = useState<string | null>(null);
-  const { user } = useAuth();
   const isInitiating = useRef(false);
   const [loading, setLoading] = useState(false);
   const [errorLoading, setErrorLoading] = useState(false);
@@ -463,7 +461,7 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
           book={showDetailsBook}
           onClose={() => setShowDetailsBook(null)}
           handleBookMetadataUpdate={(book, metadata, tags) =>
-            saveBookMetadataEdit(envConfig, book, metadata, tags, !!user)
+            saveBookMetadataEdit(envConfig, book, metadata, tags)
           }
         />
       )}

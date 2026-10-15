@@ -550,15 +550,13 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
       <MenuItem
         label={syncStatus.label}
         description={
-          // Which provider the status belongs to. Only worth saying when a
-          // third-party backend is in play — with Readest Cloud alone the row
-          // means what it always meant.
+          // Which provider the status belongs to.
           syncStatus.providers.length > 1
             ? // Several names in full would overrun the row; show a count.
               // `count` (not a plain var) so i18next applies each locale's
               // plural rule.
               _('Synced via {{count}} providers', { count: syncStatus.providers.length })
-            : syncStatus.providers[0] && syncStatus.providers[0].kind !== 'readest'
+            : syncStatus.providers[0]
               ? _('Synced via {{provider}}', { provider: syncStatus.providers[0].name })
               : undefined
         }

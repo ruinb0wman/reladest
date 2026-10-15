@@ -6,7 +6,6 @@ import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { syncSubscribedCatalogs } from '@/services/opds';
-import { queueOPDSBookUploads } from '@/services/opds/cloudUpload';
 import { AUTO_CHECK_INTERVAL_MS } from '@/services/opds/types';
 import { eventDispatcher } from '@/utils/event';
 
@@ -53,16 +52,12 @@ export function useOPDSSubscriptions() {
           await appService.saveLibraryBooks(merged);
         };
 
-        const { newBooks, totalNewBooks, errors } = await syncSubscribedCatalogs(
+        const { totalNewBooks, errors } = await syncSubscribedCatalogs(
           catalogs,
           appService,
           librarySnapshot,
           persistImportedBooks,
         );
-
-        if (totalNewBooks > 0) {
-          queueOPDSBookUploads(!!user, useSettingsStore.getState().settings, newBooks);
-        }
 
         if (verbose && totalNewBooks > 0) {
           eventDispatcher.dispatch('toast', {

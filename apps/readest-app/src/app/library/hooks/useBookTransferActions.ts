@@ -6,12 +6,7 @@ import { createProgressThrottle, toProgressPercent, type ProgressPayload } from 
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { eventDispatcher } from '@/utils/event';
-import { transferManager } from '@/services/transferManager';
-import {
-  getActiveFileSyncBackends,
-  isReadestCloudEnabled,
-} from '@/services/sync/cloudSyncProvider';
-import { isSyncCategoryEnabled } from '@/services/sync/syncCategories';
+import { getActiveFileSyncBackends } from '@/services/sync/cloudSyncProvider';
 import { runFileBookDownload, runFileBookUpload } from '@/services/sync/file/runLibrarySync';
 
 /**
@@ -92,26 +87,12 @@ export const useBookTransferActions = (
     async (book: Book, _syncBooks = true) => {
       const settingsNow = useSettingsStore.getState().settings;
       const backends = getActiveFileSyncBackends(settingsNow);
-      const readest = isReadestCloudEnabled(settingsNow);
-      // Peers list a Readest Cloud file only through its `books` row, which is
-      // pushed only while Books sync is on, so an upload without it is unreachable.
-      const booksSyncOff = readest && !isSyncCategoryEnabled('book');
 
-      // An explicit Upload must reach EVERY destination the user selected
-      // (#5062), not just the first one.
+      // The file mirror is the only destination a LAN build has, so an
+      // explicit Upload reaches it directly (#5062 made it "every selected
+      // destination"; there is exactly one now).
       const pushed = backends.length > 0 ? await runFileBookUpload(envConfig, book) : false;
-      // Readest Cloud uploads go through the transfer queue (resumable, with its
-      // own progress panel), so it reports "queued", not "uploaded".
-      const queued = readest && !booksSyncOff ? !!transferManager.queueUpload(book, 1) : false;
 
-      if (queued) {
-        eventDispatcher.dispatch('toast', {
-          type: 'info',
-          timeout: 2000,
-          message: _('Upload queued: {{title}}', { title: book.title }),
-        });
-        return true;
-      }
       if (pushed) {
         eventDispatcher.dispatch('toast', {
           type: 'info',
@@ -120,22 +101,13 @@ export const useBookTransferActions = (
         });
         return true;
       }
-      // An explicit Upload action must never silently no-op. A failed file
-      // backend upload is the real error, so the Books hint is only for when
-      // Readest Cloud was the sole destination.
-      if (booksSyncOff && backends.length === 0) {
-        eventDispatcher.dispatch('toast', {
-          type: 'info',
-          timeout: 5000,
-          message: _('Turn on Books in Manage Sync to upload this book'),
-        });
-        return false;
-      }
+      // An explicit Upload action must never silently no-op: with no mirror
+      // configured the honest answer is "configure one", not "upload failed".
       eventDispatcher.dispatch('toast', {
-        type: backends.length > 0 || readest ? 'error' : 'info',
+        type: backends.length > 0 ? 'error' : 'info',
         timeout: 5000,
         message:
-          backends.length > 0 || readest
+          backends.length > 0
             ? _('Failed to upload book: {{title}}', { title: book.title })
             : _('Turn on a provider in Cloud Sync settings to upload this book'),
       });
@@ -147,15 +119,13 @@ export const useBookTransferActions = (
 
   const handleBookDownload = useCallback(
     async (book: Book, downloadOptions: BookDownloadOptions = {}) => {
-      const { redownload = false, queued = false, silent = false } = downloadOptions;
+      // `redownload` and `queued` were Readest Cloud transfer-queue options;
+      // the file mirror always re-reads what it needs, so only `silent` matters.
+      const { silent = false } = downloadOptions;
       const settingsNow = useSettingsStore.getState().settings;
       const backends = getActiveFileSyncBackends(settingsNow);
-      const readest = isReadestCloudEnabled(settingsNow);
-      // `uploadedAt` proves that some cloud copy exists, but it does not encode
-      // provenance: the file-sync engine stamps it for WebDAV/Drive/S3/etc. too.
-      // Try the enabled file mirrors first so a metadata-only shelf row is not
-      // misrouted into Readest Cloud. When none has the file, fall through to
-      // the native, resumable path if that backend is also enabled (#5009).
+      // `uploadedAt` is stamped by the file-sync engine for a mirrored book, so
+      // a metadata-only shelf row has exactly one place to fetch its file from.
       if (backends.length > 0) {
         const tracker = trackProgress(book.hash);
         let ok = false;
@@ -176,62 +146,23 @@ export const useBookTransferActions = (
           return true;
         }
 
-        if (!readest || !book.uploadedAt) {
-          if (!silent) {
-            eventDispatcher.dispatch('toast', {
-              type: 'error',
-              timeout: 2000,
-              message: _('Failed to download book: {{title}}', { title: book.title }),
-            });
-          }
-          return false;
-        }
-      }
-
-      if (redownload || !queued) {
-        const tracker = trackProgress(book.hash);
-        try {
-          await appService?.downloadBook(book, false, redownload, tracker.onProgress);
-          tracker.done();
-          await updateBook(envConfig, book);
-          if (!silent) {
-            eventDispatcher.dispatch('toast', {
-              type: 'info',
-              timeout: 2000,
-              message: _('Book downloaded: {{title}}', {
-                title: book.title,
-              }),
-            });
-          }
-          return true;
-        } catch {
-          tracker.done();
-          if (!silent) {
-            eventDispatcher.dispatch('toast', {
-              message: _('Failed to download book: {{title}}', {
-                title: book.title,
-              }),
-              type: 'error',
-            });
-          }
-          return false;
-        }
-      }
-
-      // Use transfer queue for normal downloads - priority 1 for manual downloads.
-      // A silent (bulk) download also stays quiet when each transfer completes.
-      const transferId = transferManager.queueDownload(book, 1, silent);
-      if (transferId) {
         if (!silent) {
           eventDispatcher.dispatch('toast', {
-            type: 'info',
+            type: 'error',
             timeout: 2000,
-            message: _('Download queued: {{title}}', {
-              title: book.title,
-            }),
+            message: _('Failed to download book: {{title}}', { title: book.title }),
           });
         }
-        return true;
+        return false;
+      }
+      // No mirror configured: nothing to fetch the file from. A row can still
+      // carry `uploadedAt` from a provider this device has since switched off.
+      if (!silent) {
+        eventDispatcher.dispatch('toast', {
+          type: 'error',
+          timeout: 2000,
+          message: _('Failed to download book: {{title}}', { title: book.title }),
+        });
       }
       return false;
     },

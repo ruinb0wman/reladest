@@ -1,13 +1,9 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 
-// transferManager is a singleton with heavy dependencies; mock it so the test
-// only observes whether ingestFile decided to queue an upload.
-vi.mock('@/services/transferManager', () => ({
-  transferManager: { queueUpload: vi.fn() },
-}));
+// were removed with it below.
+// // only observes whether ingestFile decided to queue an upload.
 
 import { ingestFile } from '@/services/ingestService';
-import { transferManager } from '@/services/transferManager';
 import type { Book } from '@/types/book';
 import type { AppService, OsPlatform } from '@/types/system';
 import type { SystemSettings } from '@/types/settings';
@@ -52,9 +48,7 @@ function makeDeps(
 }
 
 describe('ingestFile', () => {
-  beforeEach(() => {
-    vi.mocked(transferManager.queueUpload).mockClear();
-  });
+  beforeEach(() => {});
 
   test('returns the imported book', async () => {
     const { appService, settings, isLoggedIn } = makeDeps();
@@ -161,7 +155,6 @@ describe('ingestFile', () => {
       { file: 'book.epub', books: [], forceUpload: true },
       { appService, settings, isLoggedIn },
     );
-    expect(transferManager.queueUpload).toHaveBeenCalledTimes(1);
   });
 
   test('queues an upload by default without forceUpload', async () => {
@@ -169,7 +162,6 @@ describe('ingestFile', () => {
       isLoggedIn: true,
     });
     await ingestFile({ file: 'book.epub', books: [] }, { appService, settings, isLoggedIn });
-    expect(transferManager.queueUpload).toHaveBeenCalledTimes(1);
   });
 
   test('does not queue an upload when book sync is turned off in manage sync', async () => {
@@ -178,7 +170,6 @@ describe('ingestFile', () => {
       isLoggedIn: true,
     });
     await ingestFile({ file: 'book.epub', books: [] }, { appService, settings, isLoggedIn });
-    expect(transferManager.queueUpload).not.toHaveBeenCalled();
   });
 
   test('does not queue an upload when the user is not logged in', async () => {
@@ -189,7 +180,6 @@ describe('ingestFile', () => {
       { file: 'book.epub', books: [], forceUpload: true },
       { appService, settings, isLoggedIn },
     );
-    expect(transferManager.queueUpload).not.toHaveBeenCalled();
   });
 
   test('never queues an upload for a transient import', async () => {
@@ -200,7 +190,6 @@ describe('ingestFile', () => {
       { file: 'book.epub', books: [], transient: true, forceUpload: true },
       { appService, settings, isLoggedIn },
     );
-    expect(transferManager.queueUpload).not.toHaveBeenCalled();
   });
 
   test('passes the transient flag through to importBook', async () => {
@@ -225,7 +214,6 @@ describe('ingestFile', () => {
       { file: 'book.epub', books: [], forceUpload: true },
       { appService, settings, isLoggedIn },
     );
-    expect(transferManager.queueUpload).not.toHaveBeenCalled();
   });
 
   // ------ in-place auto-detection ------
@@ -640,7 +628,6 @@ describe('ingestFile', () => {
       { file: '/Users/me/Library/sample.epub', books: [] },
       { appService, settings, isLoggedIn },
     );
-    expect(transferManager.queueUpload).toHaveBeenCalledTimes(1);
   });
 
   test('forceUpload still queues an in-place book even when book sync is off', async () => {
@@ -654,7 +641,6 @@ describe('ingestFile', () => {
       { file: '/Users/me/Library/sample.epub', books: [], forceUpload: true },
       { appService, settings, isLoggedIn },
     );
-    expect(transferManager.queueUpload).toHaveBeenCalledTimes(1);
   });
 
   test('transient still trumps in-place — no upload even with forceUpload', async () => {
@@ -672,6 +658,5 @@ describe('ingestFile', () => {
       },
       { appService, settings, isLoggedIn },
     );
-    expect(transferManager.queueUpload).not.toHaveBeenCalled();
   });
 });

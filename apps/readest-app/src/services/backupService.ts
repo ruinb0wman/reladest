@@ -79,7 +79,6 @@ export const BACKUP_SETTINGS_BLACKLIST = [
   'icloud.deviceId',
   'icloud.lastSyncedAt',
   'icloud.providerSelectedAt',
-  'readestCloud.disabledAt',
   // Transient runtime state — book keys may not exist post-restore; screen
   // brightness is live device state.
   'lastOpenBooks',

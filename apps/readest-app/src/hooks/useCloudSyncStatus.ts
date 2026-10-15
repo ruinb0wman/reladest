@@ -8,7 +8,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatSyncTimeFromNow } from '@/utils/time';
 import {
   cloudProviderDisplayName,
-  isReadestCloudEnabled,
   settingsKeyForBackend,
   type CloudSyncProviderKind,
 } from '@/services/sync/cloudSyncProvider';
@@ -81,27 +80,13 @@ export const useCloudSyncStatus = (nativeLastSyncedAt = 0, bookKey?: string): Cl
   );
 
   return useMemo(() => {
-    const readestEnabled = isReadestCloudEnabled(settings);
-    // Only backends that can actually run. A web Google Drive whose token
-    // expired is still `enabled` but silently skipped, so counting it would
-    // both inflate the provider list and lend its stale lastSyncedAt to
-    // "Synced X ago".
+    // Only backends that can actually run. A backend that cannot run right now
+    // (unreachable, misconfigured) is still `enabled` but silently skipped, so
+    // counting it would both inflate the provider list and lend its stale
+    // lastSyncedAt to "Synced X ago".
     const backends = getReadyFileSyncBackends(settings);
 
     const providers: CloudSyncProviderStatus[] = [
-      ...(readestEnabled
-        ? [
-            {
-              kind: 'readest' as const,
-              name: cloudProviderDisplayName('readest'),
-              lastSyncedAt: nativeLastSyncedAt,
-              // The native channel reports neither in-flight nor failed state
-              // per book; its row is a timestamp only.
-              syncing: false,
-              failed: false,
-            },
-          ]
-        : []),
       ...backends.map((kind) => ({
         kind,
         name: cloudProviderDisplayName(kind),
@@ -125,8 +110,9 @@ export const useCloudSyncStatus = (nativeLastSyncedAt = 0, bookKey?: string): Cl
     const syncing = providers.some((p) => p.syncing);
     const failed = providers.some((p) => p.failed);
     const lastSyncedAt = Math.max(0, ...providers.map((p) => p.lastSyncedAt));
-    const needsSignIn =
-      !user && providers.length > 0 && providers.every((p) => p.kind === 'readest');
+    // A LAN build has no account to sign in to, so the WebDAV backend reports
+    // its own errors rather than a sign-in prompt.
+    const needsSignIn = false;
 
     const label = needsSignIn
       ? _('Sign in to Sync')

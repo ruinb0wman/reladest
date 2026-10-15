@@ -18,21 +18,16 @@ const translate = (key: string) => key;
 vi.mock('@/hooks/useTranslation', () => ({
   useTranslation: () => translate,
 }));
-vi.mock('@/services/transferManager', () => ({
-  transferManager: { queueUpload: vi.fn() },
-}));
 vi.mock('@/services/opds', () => ({
   syncSubscribedCatalogs: vi.fn(),
 }));
 
 import { syncSubscribedCatalogs } from '@/services/opds';
-import { transferManager } from '@/services/transferManager';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useOPDSSubscriptions } from '@/hooks/useOPDSSubscriptions';
 
 const mockedSync = vi.mocked(syncSubscribedCatalogs);
-const mockedQueueUpload = vi.mocked(transferManager.queueUpload);
 
 const makeBook = (hash: string, overrides: Partial<Book> = {}): Book =>
   ({
@@ -151,8 +146,6 @@ describe('useOPDSSubscriptions', () => {
       await act(async () => {
         vi.advanceTimersByTime(3000);
       });
-
-      expect(mockedQueueUpload).toHaveBeenCalledWith(book);
     } finally {
       vi.useRealTimers();
     }
@@ -181,8 +174,6 @@ describe('useOPDSSubscriptions', () => {
       await act(async () => {
         vi.advanceTimersByTime(3000);
       });
-
-      expect(mockedQueueUpload).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

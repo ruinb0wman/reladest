@@ -3,7 +3,6 @@ import { useAuth } from '@/context/AuthContext';
 import { useAppRouter } from '@/hooks/useAppRouter';
 import { useQuotaStats } from '@/hooks/useQuotaStats';
 import { useTranslation } from '@/hooks/useTranslation';
-import { transferManager } from '@/services/transferManager';
 import { isAbsOfflineAllowed } from '@/utils/access';
 import { navigateToLogin, navigateToProfile } from '@/utils/nav';
 import type { Book } from '@/types/book';
@@ -25,9 +24,11 @@ export const useAbsOfflineDownload = () => {
     !entitled && (!user || userProfilePlan !== undefined) ? _('Premium') : undefined;
 
   const handleBooksOfflineDownload = useCallback(
-    (books: Book[]) => {
+    (_books: Book[]) => {
+      // The download itself ran through the cloud transfer queue, which is gone
+      // with the audiobook feature this gates. The gate stays until then so the
+      // Premium badge and the sign-in fallback keep their meaning.
       if (entitled) {
-        for (const book of books) transferManager.queueAbsOfflineDownload(book, 1);
       } else if (user) {
         navigateToProfile(router);
       } else {

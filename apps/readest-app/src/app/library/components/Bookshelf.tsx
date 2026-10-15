@@ -15,7 +15,6 @@ import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isAbsBookOrphaned, useABSServerStore } from '@/store/absServerStore';
 import { useLibraryStore } from '@/store/libraryStore';
-import { selectActiveBookDownloadProgress, useTransferStore } from '@/store/transferStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useMedianPageDurationsSecs } from '@/hooks/useMedianPageDurationSecs';
 import { useBookshelfDate } from '@/hooks/useBookshelfDate';
@@ -814,17 +813,10 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     [openBook],
   );
 
-  // Cover transfer overlay progress for every book on screen, from both
-  // sources: queued downloads live in the transfer store, direct ones in
-  // `booksTransferProgress`. Merged on read so neither has to reconcile
-  // against the other's lifecycle, and so the recent strip and the grid
-  // cannot disagree about the same book. Selecting `transfers` keeps the
-  // subscription off the store's unrelated UI fields.
-  const transfers = useTransferStore((state) => state.transfers);
-  const transferProgress = useMemo(
-    () => ({ ...selectActiveBookDownloadProgress(transfers), ...booksTransferProgress }),
-    [transfers, booksTransferProgress],
-  );
+  // Cover transfer overlay progress for every book on screen. It used to merge
+  // in the cloud transfer queue's per-book downloads; that queue is gone, so
+  // `booksTransferProgress` (direct mirror downloads) is the only source.
+  const transferProgress = booksTransferProgress;
 
   // Reserve enough trailing space for the fixed select-mode action bar so the
   // last book scrolls clear of it (#5175). `selectModeActionsHeight` already

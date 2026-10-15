@@ -34,14 +34,6 @@ export const SETTINGS_SYNC_EVENT = 'global-settings-window-sync';
  */
 export interface CloudSyncProviderFlags {
   webdav: { enabled: boolean; providerSelectedAt?: number };
-  /**
-   * Optional in two senses: absent on payloads from pre-#5062 windows, and
-   * absent when the source window has never had the slice written. `enabled`
-   * is itself optional because `undefined` is meaningful there (it means
-   * "derive from the third-party flags") — coercing it to `false` would
-   * silently switch Readest Cloud off on the receiver.
-   */
-  readestCloud?: { enabled?: boolean; disabledAt?: number };
 }
 
 export interface SettingsSyncPayload {
@@ -79,12 +71,6 @@ export const mergeSyncedGlobalSettings = (
     merged.bookshelves = mergeBookshelfStates(local.bookshelves, payload.bookshelves);
   if (payload.cloudSyncProviders) {
     merged.webdav = { ...local.webdav, ...payload.cloudSyncProviders.webdav };
-    if (payload.cloudSyncProviders.readestCloud) {
-      merged.readestCloud = {
-        ...local.readestCloud,
-        ...payload.cloudSyncProviders.readestCloud,
-      };
-    }
   }
   return merged;
 };
@@ -113,12 +99,6 @@ export const broadcastGlobalSettings = async (
           providerSelectedAt: settings.webdav?.providerSelectedAt,
         },
       };
-      if (settings.readestCloud && payload.cloudSyncProviders) {
-        payload.cloudSyncProviders.readestCloud = {
-          enabled: settings.readestCloud.enabled,
-          disabledAt: settings.readestCloud.disabledAt,
-        };
-      }
     }
     await emit(SETTINGS_SYNC_EVENT, payload);
   } catch (err) {

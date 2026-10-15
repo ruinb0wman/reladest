@@ -7,7 +7,6 @@ import { useReaderStore } from '@/store/readerStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useCustomFontStore } from '@/store/customFontStore';
-import { useTransferStore } from '@/store/transferStore';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { saveViewSettings } from '@/helpers/settings';
 import { CustomFont, mountCustomFont } from '@/styles/fonts';
@@ -41,7 +40,6 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
     saveCustomFonts,
   } = useCustomFontStore();
   const { getViewSettings } = useReaderStore();
-  const { getReplicaTransfer } = useTransferStore();
   const viewSettings = getViewSettings(bookKey) || settings.globalViewSettings;
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   // null = idle, true = importing (spinner), { family } = done importing (show font name).
@@ -111,9 +109,6 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
       }
     }
   };
-
-  const isFamilyDownloading = (family: FontFamily) =>
-    family.fonts.some((f) => f.contentId && getReplicaTransfer('font', f.contentId, 'download'));
 
   const handleSelectFamily = async (family: FontFamily) => {
     // Synced fonts download on demand: fetch every missing weight of the
@@ -268,7 +263,9 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
 
         {availableFamilies.map((family) => {
           const isCloudOnly = family.fonts.some((f) => f.unavailable);
-          const isDownloading = isCloudOnly && isFamilyDownloading(family);
+          // Replica-synced fonts used to report their pull here; that layer is
+          // gone, so a cloud-only family is simply not downloaded yet.
+          const isDownloading = false;
           return (
             <div
               role='none'

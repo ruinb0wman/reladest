@@ -26,7 +26,6 @@ vi.mock('@/services/sync/replicaBinaryUpload', () => ({
 import CustomFonts from '@/components/settings/CustomFonts';
 import { useCustomFontStore } from '@/store/customFontStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useTransferStore } from '@/store/transferStore';
 import { saveViewSettings } from '@/helpers/settings';
 import { queueReplicaBinaryDownload } from '@/services/sync/replicaBinaryUpload';
 import type { CustomFont } from '@/styles/fonts';
@@ -49,7 +48,6 @@ beforeEach(() => {
       globalViewSettings: { defaultFont: 'Sans-serif', serifFont: '', sansSerifFont: '' },
     } as unknown as SystemSettings,
   });
-  useTransferStore.setState({ transfers: {} });
 });
 
 afterEach(() => {
@@ -78,15 +76,6 @@ describe('CustomFonts download on demand', () => {
       'Inter Bold',
     ]);
     expect(saveViewSettings).toHaveBeenCalledWith({}, '', 'sansSerifFont', 'Inter');
-  });
-
-  it('shows progress while the family is downloading', () => {
-    useCustomFontStore.setState({ fonts: [cloudFont()] });
-    useTransferStore.getState().addReplicaTransfer('font', 'hash-regular', 'Inter', 'download');
-    render(<CustomFonts bookKey='' onBack={vi.fn()} />);
-
-    expect(screen.getByRole('status', { name: 'Downloading…' })).not.toBeNull();
-    expect(screen.queryByRole('img', { name: 'Download from Cloud' })).toBeNull();
   });
 
   it('does not download a family that is already on this device', () => {

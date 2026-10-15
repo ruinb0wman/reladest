@@ -214,6 +214,8 @@ describe('ViewMenu layout', () => {
       'Webtoon Mode',
       'hr',
     ]);
-    expect(seq[autoScroll + 6]).toBe('Sign in to Sync');
+    // The sync row follows the separator; a LAN build never asks for sign-in,
+    // so it reports the mirror's state instead.
+    expect(seq[autoScroll + 6]).toBe('Never synced');
   });
 });

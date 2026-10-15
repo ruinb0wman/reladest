@@ -16,7 +16,6 @@ export const saveBookMetadataEdit = async (
   book: Book,
   metadata: BookMetadata,
   tags: string[],
-  isLoggedIn: boolean,
 ) => {
   const appService = await envConfig.getAppService();
   const { library, hashIndex, updateBook } = useLibraryStore.getState();
@@ -42,23 +41,12 @@ export const saveBookMetadataEdit = async (
       // their cover until a new one is set).
       const newCoverHash = await appService.computeCoverHash(updatedBook);
       if (newCoverHash && newCoverHash !== current.coverHash) {
-        // For a book already in the cloud, re-upload the cover FIRST and only
-        // advertise the new version if it succeeded — otherwise peers would
-        // try to fetch a cover that isn't there. A not-yet-uploaded book
-        // carries the new cover on its first full upload, so the bump is safe.
-        let coverUploaded = true;
-        if (isLoggedIn && updatedBook.uploadedAt) {
-          try {
-            await appService.uploadBookCover(updatedBook);
-          } catch (uploadError) {
-            console.warn('Failed to upload updated cover:', uploadError);
-            coverUploaded = false;
-          }
-        }
-        if (coverUploaded) {
-          updatedBook.coverHash = newCoverHash;
-          updatedBook.coverUpdatedAt = Date.now();
-        }
+        // Announcing the new hash is the whole job now: the cover file itself
+        // reaches peers through the file mirror's next pass. Upstream this had
+        // to re-upload the cover to Readest storage FIRST (or peers would fetch
+        // a cover that was not there yet).
+        updatedBook.coverHash = newCoverHash;
+        updatedBook.coverUpdatedAt = Date.now();
       }
     } catch (error) {
       console.warn('Failed to update cover image:', error);

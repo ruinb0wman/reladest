@@ -15,7 +15,6 @@ import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useCloudSyncStatus } from '@/hooks/useCloudSyncStatus';
-import { useTransferQueue } from '@/hooks/useTransferQueue';
 import { tauriHandleSetAlwaysOnTop, tauriHandleToggleFullScreen } from '@/utils/window';
 import { setAboutDialogVisible } from '@/components/AboutWindow';
 import { setMigrateDataDirDialogVisible } from '@/app/library/components/MigrateDataWindow';
@@ -82,13 +81,6 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
     setIsDropdownOpen?.(false);
   };
   const { isSyncing, setLibrary } = useLibraryStore();
-  const { stats, hasActiveTransfers, setIsTransferQueueOpen } = useTransferQueue();
-
-  const openTransferQueue = () => {
-    setIsTransferQueueOpen(true);
-    setIsDropdownOpen?.(false);
-  };
-
   const showAboutReadest = () => {
     setAboutDialogVisible(true);
     setIsDropdownOpen?.(false);
@@ -240,7 +232,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
       settings.lastSyncedAtNotes || 0,
     ),
   );
-  const fileBackendCount = syncStatus.providers.filter((p) => p.kind !== 'readest').length;
+  const fileBackendCount = syncStatus.providers.length;
   // Hoisted out of the `_()` call below: i18next-scanner parses the options
   // object with esprima, which chokes on TypeScript's `!` non-null assertion.
   const firstProviderName = syncStatus.providers[0]?.name ?? '';
@@ -253,23 +245,8 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
       )}
       onCancel={() => setIsDropdownOpen?.(false)}
     >
-      <MenuItem label={_('Sync & Transfers')} Icon={MdCloudSync}>
+      <MenuItem label={_('Library Sync')} Icon={MdCloudSync}>
         <ul className='ms-0 flex flex-col ps-0 before:hidden'>
-          <MenuItem
-            label={_('Cloud File Transfers')}
-            Icon={MdCloudSync}
-            description={
-              hasActiveTransfers
-                ? _('{{activeCount}} active, {{pendingCount}} pending', {
-                    activeCount: stats.active,
-                    pendingCount: stats.pending,
-                  })
-                : stats.failed > 0
-                  ? _('{{failedCount}} failed', { failedCount: stats.failed })
-                  : ''
-            }
-            onClick={openTransferQueue}
-          />
           <MenuItem
             label={syncStatus.label}
             Icon={syncStatus.needsSignIn || syncStatus.failed ? MdSyncProblem : MdSync}

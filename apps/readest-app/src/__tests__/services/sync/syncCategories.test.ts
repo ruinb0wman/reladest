@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'vitest';
 
 import {
-  SYNC_CATEGORIES,
   isCredentialsSyncEnabled,
   isSyncCategoryEnabled,
   isSyncCategoryLocked,
@@ -49,46 +48,21 @@ describe('isSyncCategoryEnabled', () => {
     expect(isSyncCategoryEnabled('font')).toBe(true);
   });
 
-  describe('cloud sync provider gate (exclusive routing, #4380)', () => {
-    test('book/progress/note are gated off while a third-party provider is selected', () => {
-      setSettings({ webdav: { enabled: true } } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('book')).toBe(false);
-      expect(isSyncCategoryEnabled('progress')).toBe(false);
-      expect(isSyncCategoryEnabled('note')).toBe(false);
-    });
-
-    test('legacy plural/singular aliases are gated too', () => {
-      setSettings({ webdav: { enabled: true } } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('books')).toBe(false);
-      expect(isSyncCategoryEnabled('configs')).toBe(false);
-      expect(isSyncCategoryEnabled('config')).toBe(false);
-      expect(isSyncCategoryEnabled('notes')).toBe(false);
-    });
-
-    test('account channels stay native while a third-party provider is selected', () => {
-      setSettings({ webdav: { enabled: true } } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('stats')).toBe(true);
-      expect(isSyncCategoryEnabled('settings')).toBe(true);
-      expect(isSyncCategoryEnabled('dictionary')).toBe(true);
-      expect(isSyncCategoryEnabled('font')).toBe(true);
-      expect(isSyncCategoryEnabled('opds_catalog')).toBe(true);
-    });
-
-    test('the gate overrides an explicitly-true user category toggle', () => {
-      setSettings({
-        webdav: { enabled: true },
-        syncCategories: { book: true, progress: true },
-      } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('book')).toBe(false);
-      expect(isSyncCategoryEnabled('progress')).toBe(false);
-    });
-
-    test('no gating when readest is the provider', () => {
-      setSettings({ webdav: { enabled: false } } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('book')).toBe(true);
-      expect(isSyncCategoryEnabled('progress')).toBe(true);
-      expect(isSyncCategoryEnabled('note')).toBe(true);
-    });
+  // The provider gate (book/progress/note off while a third-party provider was
+  // selected, #4380) belonged to the Readest Cloud channels and is gone with
+  // them: the user's own toggles are the whole answer.
+  test('a selected file-sync backend does not gate the book categories', () => {
+    setSettings({
+      webdav: { enabled: true },
+      syncCategories: { book: true, progress: true },
+    } as Partial<SystemSettings>);
+    expect(isSyncCategoryEnabled('book')).toBe(true);
+    expect(isSyncCategoryEnabled('progress')).toBe(true);
+    expect(isSyncCategoryEnabled('note')).toBe(true);
+    // Legacy aliases resolve to the same categories.
+    expect(isSyncCategoryEnabled('books')).toBe(true);
+    expect(isSyncCategoryEnabled('configs')).toBe(true);
+    expect(isSyncCategoryEnabled('notes')).toBe(true);
   });
 
   test('settings is togglable on its own', () => {
@@ -189,70 +163,14 @@ describe('isSyncCategoryEnabled', () => {
     expect(isSyncCategoryEnabled('notes')).toBe(false);
   });
 
-  describe('provider gating with a file-sync backend selected', () => {
-    // Only WebDAV is left, so "multiple providers" collapsed to one. The gate
-    // still has to keep native book channels off whenever a file-sync backend is
-    // selected, which is what these two cases now pin.
-    test('native book channels stay on while Readest Cloud is enabled alongside WebDAV', () => {
-      setSettings({
-        readestCloud: { enabled: true },
-        webdav: { enabled: true },
-      } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('book')).toBe(true);
-      expect(isSyncCategoryEnabled('progress')).toBe(true);
-      expect(isSyncCategoryEnabled('note')).toBe(true);
-    });
-
-    test('native book channels gate off when Readest Cloud is unchecked', () => {
-      setSettings({
-        readestCloud: { enabled: false },
-        webdav: { enabled: true },
-      } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('book')).toBe(false);
-      expect(isSyncCategoryEnabled('progress')).toBe(false);
-      expect(isSyncCategoryEnabled('note')).toBe(false);
-      // Account-level categories are never provider-gated.
-      expect(isSyncCategoryEnabled('settings')).toBe(true);
-    });
-
-    test('a user with only a file-sync backend gated the native channels (no readestCloud field)', () => {
-      setSettings({ webdav: { enabled: true } } as Partial<SystemSettings>);
-      expect(isSyncCategoryEnabled('book')).toBe(false);
-    });
-  });
-});
-
-describe('translator category', () => {
-  test('one toggle gates both custom_translator and translation_prompt kinds', () => {
-    expect(isSyncCategoryEnabled('translation_prompt')).toBe(true);
-    setSettings({ syncCategories: { custom_translator: false } });
-    expect(isSyncCategoryEnabled('custom_translator')).toBe(false);
-    expect(isSyncCategoryEnabled('translation_prompt')).toBe(false);
-  });
-});
-
-describe('SYNC_CATEGORIES', () => {
-  test('covers all thirteen user-facing categories (incl. settings + stats + credentials)', () => {
-    expect([...SYNC_CATEGORIES].sort()).toEqual(
-      [
-        'abs_server',
-        'book',
-        'credentials',
-        'custom_translator',
-        'custom_tts',
-        'dictionary',
-        'font',
-        'note',
-        'opds_catalog',
-        'progress',
-        'settings',
-        'stats',
-        'texture',
-      ].sort(),
-    );
-  });
-
-  test('credentials is the last item (rendered as the last toggle in Manage Sync)', () => {
-    expect(SYNC_CATEGORIES[SYNC_CATEGORIES.length - 1]).toBe('credentials');
+  // The provider gate that used to keep the native book/progress/note channels
+  // off while Readest Cloud was unchecked is gone with that provider: the
+  // user's own category toggles are the whole answer now.
+  test('a file-sync backend does not gate the book categories', () => {
+    setSettings({ webdav: { enabled: true } } as unknown as Partial<SystemSettings>);
+    expect(isSyncCategoryEnabled('book')).toBe(true);
+    expect(isSyncCategoryEnabled('progress')).toBe(true);
+    expect(isSyncCategoryEnabled('note')).toBe(true);
+    expect(isSyncCategoryEnabled('settings')).toBe(true);
   });
 });

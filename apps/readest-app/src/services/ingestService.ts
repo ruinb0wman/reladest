@@ -1,8 +1,6 @@
 import type { Book, BookLookupIndex } from '@/types/book';
 import type { AppService, OsPlatform } from '@/types/system';
 import type { SystemSettings } from '@/types/settings';
-import { transferManager } from '@/services/transferManager';
-import { isReadestCloudStorageActive } from '@/services/sync/cloudSyncProvider';
 import { normalizeFilePathForIndex } from '@/services/bookService';
 import { isContentURI, isValidURL } from '@/utils/misc';
 import { isPseStreamFileName } from '@/services/opds/pseStream';
@@ -154,7 +152,7 @@ export async function ingestFile(
   opts: IngestFileOptions,
   deps: IngestFileDeps,
 ): Promise<Book | null> {
-  const { appService, settings, isLoggedIn, appBooksPrefix } = deps;
+  const { appService, settings, appBooksPrefix } = deps;
 
   const inPlaceRoots = settings.externalLibraryFolders ?? [];
   const inPlace = shouldImportInPlace(
@@ -246,22 +244,10 @@ export async function ingestFile(
   // In-place imports (book.filePath set, content under one of the user's
   // external library folders) DO get uploaded: from a backup/sync standpoint
   // they are equivalent to a hash-copy book — only the local storage
-  // location differs. uploadBook reads straight from book.filePath in that
-  // case; downloads on other devices land in Books/<hash>/ as a normal copy.
-  // Readest Cloud storage is written only when Readest Cloud is one of the
-  // enabled providers (#5062 lets several run at once). When it is unchecked,
-  // this gate is false and the file-sync engine mirrors the import instead
-  // (including Sent books, which reach other devices via each enabled backend
-  // whose syncBooks toggle is on).
-  if (
-    !opts.transient &&
-    isLoggedIn &&
-    !book.uploadedAt &&
-    (opts.forceUpload || settings.syncCategories?.book !== false) &&
-    isReadestCloudStorageActive(settings)
-  ) {
-    transferManager.queueUpload(book);
-  }
+  // An imported book is mirrored by the file-sync engine (library.json plus the
+  // book file, for each enabled backend whose syncBooks toggle is on) rather than
+  // queued for an upload: the Readest Cloud upload queue is gone with that
+  // provider.
 
   return book;
 }

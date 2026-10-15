@@ -10,10 +10,7 @@ import { throttle } from '@/utils/throttle';
 import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
 import { useSettingsStore } from '@/store/settingsStore';
-import {
-  isReadestCloudEnabled,
-  getActiveFileSyncBackends,
-} from '@/services/sync/cloudSyncProvider';
+import { getActiveFileSyncBackends } from '@/services/sync/cloudSyncProvider';
 import { isDemoBook } from '@/services/demoBooks';
 import { isFeedBook } from '@/services/rss/feedBookUrl';
 import { ensureFeedBookCover } from '@/services/rss/feedBook';
@@ -87,20 +84,16 @@ export const useBooksSync = () => {
   }, [user, lastSyncedAtBooks]);
 
   const pullLibrary = useCallback(
-    async (fullRefresh = false, verbose = false) => {
-      // Providers are independently selectable (#5062): an enabled file
-      // backend and Readest Cloud both run their own pass here, every
-      // library-refresh surface — pull to refresh, the SettingsMenu sync
-      // row, BackupWindow — routes through here. The file pass works
-      // logged out (file sync has no Readest account dependency); the
-      // native pull below still requires `user`.
+    async (_fullRefresh = false, verbose = false) => {
+      // A LAN build has one sync path: the enabled file backend (WebDAV).
+      // Upstream this also ran a "native pull" of the Readest Cloud book rows,
+      // which is gone with the account system. Every library-refresh surface —
+      // pull to refresh, the SettingsMenu sync row, BackupWindow — routes here.
       const settingsNow = useSettingsStore.getState().settings;
       const backends = getActiveFileSyncBackends(settingsNow);
-      const readest = isReadestCloudEnabled(settingsNow);
       const runFilePass = backends.length > 0;
-      const runNativePull = readest && !!user;
 
-      if (!runFilePass && !runNativePull) return;
+      if (!runFilePass) return;
       if (isPullingRef.current) return;
 
       isPullingRef.current = true;
@@ -124,23 +117,11 @@ export const useBooksSync = () => {
           fileSynced = result?.booksSynced ?? 0;
         }
 
-        let nativeSynced = 0;
-        if (runNativePull) {
-          const library = useLibraryStore.getState().library;
-          const since = (libraryLoaded && library.length === 0) || fullRefresh ? 0 : undefined;
-          nativeSynced = (await syncBooks([], 'pull', since)) ?? 0;
-        }
-
         if (verbose) {
-          // The native pull swallows its own errors (returns a count, never
-          // throws), so it never contributes a "failed" leg here — matching
-          // its pre-existing standalone behaviour. Only report failure when
-          // every leg that ran actually failed.
-          const succeeded = (runFilePass && fileSucceeded) || runNativePull;
           eventDispatcher.dispatch('toast', {
-            type: succeeded ? 'info' : 'error',
-            message: succeeded
-              ? _('{{count}} book(s) synced', { count: fileSynced + nativeSynced })
+            type: fileSucceeded ? 'info' : 'error',
+            message: fileSucceeded
+              ? _('{{count}} book(s) synced', { count: fileSynced })
               : _('Sync failed'),
           });
         }
@@ -159,10 +140,6 @@ export const useBooksSync = () => {
           syncPendingRef.current = true;
           return;
         }
-        // Readest Cloud unchecked: the native book channel is gated (the auto
-        // library sync itself is useLibraryFileSync's).
-        const settingsNow = useSettingsStore.getState().settings;
-        if (!isReadestCloudEnabled(settingsNow)) return;
         const newBooks = getNewBooks();
         if (!newBooks.lastSyncedAt) return;
         // getNewBooks just read the live library, so every change up to now

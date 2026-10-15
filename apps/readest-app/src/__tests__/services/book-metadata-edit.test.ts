@@ -42,7 +42,7 @@ describe('saveBookMetadataEdit (#6584)', () => {
   });
 
   test('persists the edited tags and metadata to the library', async () => {
-    await saveBookMetadataEdit(envConfig, makeBook(), { ...metadata }, ['read'], false);
+    await saveBookMetadataEdit(envConfig, makeBook(), { ...metadata }, ['read']);
 
     const saved = useLibraryStore.getState().library[0]!;
     expect(saved.tags).toEqual(['read']);
@@ -53,7 +53,7 @@ describe('saveBookMetadataEdit (#6584)', () => {
   test('edits the library entry, not the stale snapshot the reader holds', async () => {
     useLibraryStore.getState().setLibrary([makeBook({ updatedAt: 500, readingStatus: 'reading' })]);
 
-    await saveBookMetadataEdit(envConfig, makeBook(), { ...metadata }, [], false);
+    await saveBookMetadataEdit(envConfig, makeBook(), { ...metadata }, []);
 
     const saved = useLibraryStore.getState().library[0]!;
     expect(saved.updatedAt).toBe(500);
@@ -74,7 +74,7 @@ describe('saveBookMetadataEdit (#6584)', () => {
       },
     });
 
-    await saveBookMetadataEdit(envConfig, makeBook(), { ...metadata }, ['read'], false);
+    await saveBookMetadataEdit(envConfig, makeBook(), { ...metadata }, ['read']);
 
     const readerBook = useBookDataStore.getState().getBookData('h1')!.book!;
     expect(readerBook.tags).toEqual(['read']);
