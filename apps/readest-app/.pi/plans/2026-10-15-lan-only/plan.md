@@ -861,6 +861,51 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 
 ---
 
+## 4.9 剩余工作清单（2026-10-16 盘点，含建议执行顺序）
+
+### A. 死代码 / 依赖收尾 —— 零风险，半天
+- `utils/access.ts` 里 **9 个已无消费者的导出**（TTS/翻译的配额与门控）：`isTTSInPlan`/`isVoiceTierInPlan`/`getTTSQuota`/`isCustomTranslatorAllowed`/`isCustomTTSAllowed`/`getTranslationQuota`/`getDailyTranslationPlanData`/`TTS_CACHE_PLANS`/`TTS_PLANS`（`getAccessToken`/`getUserID`/`validateUserAndToken` 仍有消费者，留）。
+- `types/quota.ts` 的 `UserDailyTTSQuota`/`UserDailyTranslationQuota`、`services/constants.ts` 的 `DEFAULT_DAILY_{TTS,TRANSLATION}_QUOTA`、`DEFAULT_STORAGE_QUOTA`、`runtimeConfig` 的 `storageFixedQuota`/`translationFixedQuota`（配额已经没有任何 UI/路由在算）。
+- `types/payment.ts` **全文孤儿**（0 消费者）⇒ 连同 `@stripe/react-stripe-js`/`@stripe/stripe-js`/`stripe`/`@googleapis/androidpublisher` 依赖一起删。
+- ✅ 已清：删掉的 `native-tts` 插件留下的 **4.9MB 陈旧 `.tauri/`+`build/` 残留**（被 gitignore，`git status` 看不见，只有 `git clean -ndX` 才列出来 —— 删插件时容易漏）。
+- 可选：`public/locales`（6.7MB / 35 语言）里已删功能的 i18n 键；要动就得写脚本校验剩余 key 集合，风险低但收益也低。
+
+### B. Rust 减肥 + CI 卫生 + 一次 APK —— 一天
+- CEF：`cef` feature、`.cargo/cef.toml`、`packages/tauri-runtime-cef-stub`、`try-appimage.yml`。
+- 桌面专属：`nightly_update.rs`(226) `discord_rpc.rs`(182) `browser_cookies_macos.rs`(116) `file_reveal.rs`(36) `linux_display.rs`(39) `linux_single_instance.rs`、`src/macos/**`(1811 行)、native-bridge `platform/{windows,macos,linux_cef,cdp}.rs`。
+- Android 侧 [A-4]：`start_server`(oauth 回环)、`BillingManager.kt`×2、`OAuthCallbackTarget.kt`。
+- ⚠️ `src/macos/**` 被 `#[cfg(desktop)]` 的入口代码调用，删它必须连桌面入口一起删；每刀之后都要重建 APK（~20 分钟/次，所以攒一次做）。
+- CI [P3a-8]：5 个 workflow 仍提到已删的东西（`koplugin`/`calibre`/`macOS`/`apple`/`lua`）。
+
+### C. 待拍板的五件（需要用户 yes/no；它们决定 B 的范围）
+1. 网页剪藏：`web_browser.rs`(887) + `clip_url.rs`(810) + `browser_fetch.rs` + `media_proxy.rs`(637) ≈ 2.8k 行 Rust。**注意与本地剪藏区分**：`services/send/{clipOptions,conversion}` + RSS 是本地管线，[C] 时已确认保留。
+2. LocalSend：Rust `localsend/`(2221) + `services/localsend` + `LocalSendForm`。**与 LAN 主题高度契合，建议留**。
+3. 遥测：`sentry_config.rs` + `tauri-plugin-sentry` + `@sentry/cli` ⇒ 要么删，要么保持"DSN 未配置即 no-op"（现在就是后者：DSN 走 manifestPlaceholder→env）。
+4. 墨水屏：`eink_identity.rs`(144) + `android/eink.rs` + `EinkRefreshController.kt`。
+5. 三个 submodule：`qcms`、`js-mdict`、`simplecc-wasm`（删哪个就得删对应功能：词典/简繁转换）。
+
+### D. 验证缺口（需要真机或用户）
+- [P0-5] Windows 防火墙 —— 真机走 WiFi 才作数。
+- [P4-4] 手机开书下载 —— **2026-10-15 模拟器已验到**（升级安装 → 点开镜像书 → 下载并回到上次位置），建议真机复验一次后勾掉。
+- [P4-5] `start.sh` 加看门狗（两个进程静默死过一次）。
+- [P5-1] Phase 5 验证矩阵。
+- [A-7]/[P1-4] 可视核对：设置面板无 TTS/翻译/账号（本轮只验到"阅读器工具栏无朗读按钮"）；冷启动无外部域名。
+- mac 键盘/剪贴板（无真机，长期挂）。
+
+### E. 可选扩展
+- [P3.5-1] file sync 覆盖扩展（settings/书架/字体/词典）。
+- [P2-5] WebDAV 做进 Next 路由；[P2-4] 外链资源收口（`fontBaseUrl`/WordLens/R2 词典源）。
+- [P7-1] demo 幽灵行 —— **唯一用户可见的 bug，今天截图里又复现了**（手机书库两张《指数基金投资指南》）。
+- [Phase 6] pnpm → bun。
+
+### 建议执行顺序（理由）
+1. **[P7-1] demo 幽灵行** —— 唯一用户可见 bug，已复现，改动小。
+2. **A 死代码 / 依赖收尾** —— 零风险，做完"代码里再也找不到 TTS/翻译/云"才算闭环。
+3. **C 五个拍板** —— 决定 B 的边界（先答再动手，避免白删/白留）。
+4. **B Rust 减肥 + CI + 一次 APK** —— 攒一次构建把语言栈收干净。
+5. **D 真机验证** —— 防火墙/矩阵/看门狗/可视核对。
+6. **E 可选扩展** —— P3.5、bun、P2-4/P2-5。
+
 ## 5. 风险表
 
 | 风险 | 影响 | 缓解 |

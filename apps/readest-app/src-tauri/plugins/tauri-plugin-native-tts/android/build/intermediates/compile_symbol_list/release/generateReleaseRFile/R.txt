@@ -1,4 +1,0 @@
-int drawable notification_icon 0x0
-int plurals readest_auto_library_count 0x0
-int string readest_auto_library_root 0x0
-int string readest_auto_selection_failed 0x0

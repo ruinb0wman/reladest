@@ -1,6 +1,0 @@
-R_DEF: Internal format may change without notice
-local
-drawable notification_icon
-plurals readest_auto_library_count
-string readest_auto_library_root
-string readest_auto_selection_failed
