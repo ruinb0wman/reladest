@@ -1006,7 +1006,7 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 | WP6 MDX/MDD | `69cfa622e` | 26 文件 / −2,938 行（含 submodule） | 816/9569 |
 | WP7 简繁转换 | `349b252c7` | 24 文件 / −507 行（含 submodule） | 815/9548 |
 | WP9 CI 卫生 | `359493812` | 3 workflow / −489 行 | 全部 workflow 仍可被 YAML 解析 |
-| WP10 APK | （进行中） | — | — |
+| WP10 APK | `64efd8b8a`/`71…`（3 个修 build 的提交） | 1 个 APK | 见下 |
 | WP8 Rust 减肥 | **待做（调整到 APK 之后）** | — | — |
 
 **为什么把 WP8 挪到最后**：WP3–WP5 已经删了 Rust（web_browser/media_proxy/eink/sentry + Kotlin 命令），必须先用一次 APK 构建验证；否则 WP8 再删 3.5k 行后构建失败就无法归因。构建反馈一次约 20 分钟，先验证再叠加是唯一能保证可定位的顺序。
@@ -1016,6 +1016,22 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 - `types/payment.ts`、`utils/storage.ts` 的 `getStorageType`、`DEFAULT_EINK_VIEW_SETTINGS`、`appService.isEink`、`window.__READEST_IS_EINK`、`getDictStyles`、`XML_ENTITIES`、`DEFAULT_DAILY_*_QUOTA` 等一串"死常量/死字段"（WP2/WP4/WP6）。
 - `sentry_config.rs` 之外：`build.rs` 的 DSN 烘烤 + 版本戳（只为 Sentry 存在）+ Android `--build-id=sha1`；`@sentry/browser` 注入随之消失（WP5）。
 - `native-tts` 插件删除后留下的 **4.9MB 陈旧构建残留**（gitignore 里，`git status` 看不见）。
+
+#### WP10 — APK 重建 + 验收 —— ✅ 2026-10-16 完成
+
+产物：`~/readest-lan/dist/readest-lan-v0.12.16-slim.apk`（57,672,846 B；签名 `CN=Readest LAN`，cert SHA-256 `21e30a9b…55e5e4` = 同一个 keystore ⇒ 可升级安装）。
+
+**模拟器验收**：升级安装后书库 **2 本**（毛泽东选集 / 指数基金投资指南，进度保留）、**无幽灵行**；菜单正常（只有 "Library Sync → 通过 WebDAV 同步书库"，无 Sign In）；长按进入多选 + 动作条（Open/Download/Send/Delete…）正常。
+
+**构建路上新增的 4 个坑（都是删 Rust/Kotlin 命令时留下的，只有 Android 构建能发现）**：
+1. **`build.rs` / `mobile.rs` / `models.rs` 各多一个或错位一个 `}`** —— 用 `python` 按块删除 Rust 函数时，`lstrip`/切片会带走或少带一个花括号。教训：**块删除后必须做括号平衡检查**，`build.rs` 的平衡错误在 WP5 就埋下了，直到第一次 Android 构建才炸。
+2. **删掉一个 Tauri 命令后要同步清 4 处**：`lib.rs` 的 `generate_handler!` 列表、`build.rs` 的 ACL 命令清单、`capabilities/*.json` 的 `allow-<cmd>` 条目、以及**插件的 `permissions/default.toml`**（后两处的漏网会报 `failed to resolve ACL: SetPermissionNotFound`，而这错看起来像运行时问题，实际是编译期宏 panic）。
+3. **`pnpm tauri android build` 会覆盖 `.next/standalone`** —— 它自己跑一次 web 构建（给 APK 内嵌用），产物落在 `.next` 下但没有 standalone 目录 ⇒ 之后 `pnpm lan:start` 会报"没找到 standalone 构建"。**APK 构建后必须重跑 `pnpm lan:build`**。
+4. **`ANDROID_SDK_ROOT` 与 `ANDROID_HOME` 同时存在会让 Gradle 直接失败**（本机 shell 里有 `ANDROID_SDK_ROOT=/opt/android-sdk`）⇒ 构建要用 `env -u ANDROID_SDK_ROOT JAVA_HOME=… ANDROID_HOME=$HOME/android-sdk pnpm tauri android build -t aarch64`。
+
+**模拟器上"点卡片不开书"的排查结论（非本次回归）**：`adb shell input tap` 点书卡无反应，但**长按有效**；用同一台模拟器装**上一版 APK（今天所有删除之前）行为完全一致** ⇒ 环境/输入模拟问题，不是代码回归。PC 端（bow）同样这份 bundle 用真实指针事件点卡片**能正常打开并渲染目录**（`/reader/06e01d70…`）。留待真机复验。
+
+**可视核对 [A-7]（PC 端）**：库菜单只有 "Library Sync（通过 WebDAV 同步书库）" + "设置/高级设置/关于"，**无登录/账号/云 provider**；设置面板的 tab 只有 字体/布局/主题/行为/语言/集成/自定义（**无账号 tab**）。⚠️ 未逐屏走查语言面板的简繁选项与行为面板的 Auto Full Refresh —— 由单元测试覆盖（LangPanel/ControlPanel/ImportMenu 的测试已随功能删改并通过）。
 
 ### 累计影响（预估）
 
