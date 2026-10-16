@@ -254,11 +254,6 @@ vi.mock('@/app/reader/components/annotator/DictionarySheet', () => ({
     </div>
   ),
 }));
-vi.mock('@/app/reader/components/annotator/TranslatorPopup', () => ({
-  default: ({ text }: { text: string }) => (
-    <div data-testid='translator-surface' data-text={text.trim()} />
-  ),
-}));
 vi.mock('@/app/reader/components/annotator/ProofreadPopup', () => ({
   default: () => <div data-testid='proofread-surface' />,
 }));
@@ -313,7 +308,6 @@ afterEach(cleanup);
 describe('a lookup surface survives the selection it is anchored to being republished', () => {
   test.each([
     ['onDictionarySelection', 'dictionary-surface'],
-    ['onTranslateSelection', 'translator-surface'],
     ['onProofreadSelection', 'proofread-surface'],
   ])('%s stays open when the native handles are suppressed', async (action, testId) => {
     render(<Annotator bookKey='book-1' contentInsets={{ top: 0, right: 0, bottom: 0, left: 0 }} />);
@@ -343,7 +337,6 @@ describe('a lookup surface survives the selection it is anchored to being republ
 describe('a lookup surface closes when its selection is cleared', () => {
   test.each([
     ['onDictionarySelection', 'dictionary-surface'],
-    ['onTranslateSelection', 'translator-surface'],
     ['onProofreadSelection', 'proofread-surface'],
   ])('%s closes instead of rendering without text', async (action, testId) => {
     render(<Annotator bookKey='book-1' contentInsets={{ top: 0, right: 0, bottom: 0, left: 0 }} />);
@@ -364,55 +357,6 @@ describe('a lookup surface closes when its selection is cleared', () => {
     await selectText();
     expect(screen.queryByTestId(testId)).toBeNull();
     expect(screen.getByTestId('annotation-toolbar')).toBeTruthy();
-  });
-});
-
-/**
- * #5821 — every PDF word selection on Android opened the translator popup.
- *
- * Fixed-layout books used to wire their own `contextmenu` listener in `onLoad`
- * that forced the translator surface open, from back when PDFs had no annotation
- * toolbar of their own. Android dispatches `contextmenu` for the long press that
- * selects a word, so the shortcut fired on every selection and buried the word —
- * and the dictionary the reader had asked for — under an unrequested
- * translation. iOS never reproduced it: WebKit dispatches no `contextmenu` for a
- * long-press selection.
- */
-describe('a context menu never opens a lookup surface by itself', () => {
-  // The ambient jsdom document, because jsdom implements `getSelection` only on
-  // the window's own document — a `createHTMLDocument` section doc has none, and
-  // the handler under test bails on it before doing anything at all.
-  const loadSection = async () => {
-    const doc = document;
-    const paragraph = doc.createElement('p');
-    paragraph.textContent = 'selected text';
-    doc.body.append(paragraph);
-    await act(async () => {
-      h.foliateHandlers?.['onLoad']?.(
-        new CustomEvent('load', { detail: { doc, index: 0 } }) as Event,
-      );
-    });
-    return { doc, paragraph };
-  };
-
-  test.each([
-    ['a fixed-layout book', true, 'PDF'],
-    ['a reflowable book', false, 'EPUB'],
-  ])('%s answers a contextmenu with no translator', async (_label, isFixedLayout, format) => {
-    h.book = { format, isFixedLayout };
-    render(<Annotator bookKey='book-1' contentInsets={{ top: 0, right: 0, bottom: 0, left: 0 }} />);
-    const { doc, paragraph } = await loadSection();
-
-    const range = doc.createRange();
-    range.selectNodeContents(paragraph);
-    doc.getSelection()?.removeAllRanges();
-    doc.getSelection()?.addRange(range);
-
-    await act(async () => {
-      paragraph.dispatchEvent(new Event('contextmenu', { bubbles: true, cancelable: true }));
-    });
-
-    expect(screen.queryByTestId('translator-surface')).toBeNull();
   });
 });
 

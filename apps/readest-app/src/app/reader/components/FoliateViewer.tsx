@@ -43,7 +43,6 @@ import {
   applyScrollbarStyle,
   applyScrollModeClass,
   applyThemeModeClass,
-  applyTranslationStyle,
   getOverlayerBlendMode,
   getPDFPageColors,
   getStyles,
@@ -81,7 +80,6 @@ import { TransformContext } from '@/services/transformers/types';
 import { transformContent } from '@/services/transformService';
 import { sanitizeSvg } from '@/services/transformers/sanitizer';
 import { lockScreenOrientation, setSelectionSuppressed } from '@/utils/bridge';
-import { useTextTranslation } from '../hooks/useTextTranslation';
 import { useBookCoverAutoSave } from '../hooks/useAutoSaveBookCover';
 import { useDiscordPresence } from '@/hooks/useDiscordPresence';
 import { manageSyntaxHighlighting } from '@/utils/highlightjs';
@@ -214,7 +212,6 @@ const FoliateViewer: React.FC<{
   useBookCoverAutoSave(bookKey);
   const bookOrbitSync = useKOSync(bookKey, bookOrbitProgressProvider);
   useFileSync(bookKey);
-  useTextTranslation(bookKey, viewRef.current);
 
   // Coalesce setProgress writes within a single animation frame.
   //
@@ -809,7 +806,6 @@ const FoliateViewer: React.FC<{
       // The reader can close while view.open() is pending; its cleanup has run.
       if (unmountedRef.current) removeTransformListenersRef.current();
       view.renderer.setStyles?.(getStyles(viewSettings, undefined, getLoadedFonts()));
-      applyTranslationStyle(viewSettings);
 
       doubleClickDisabled.current = viewSettings.disableDoubleClick!;
       const animated = viewSettings.animated!;

@@ -23,7 +23,6 @@ import {
   DEFAULT_BOOK_LANGUAGE,
   DEFAULT_BOOK_STYLE,
   DEFAULT_VIEW_CONFIG,
-  DEFAULT_TRANSLATOR_CONFIG,
   DEFAULT_ANNOTATOR_CONFIG,
   DEFAULT_SCREEN_CONFIG,
 } from '@/services/constants';
@@ -36,7 +35,6 @@ function makeViewSettings(overrides: Partial<ViewSettings> = {}): ViewSettings {
     ...DEFAULT_BOOK_LANGUAGE,
     ...DEFAULT_BOOK_STYLE,
     ...DEFAULT_VIEW_CONFIG,
-    ...DEFAULT_TRANSLATOR_CONFIG,
     ...DEFAULT_ANNOTATOR_CONFIG,
     ...DEFAULT_SCREEN_CONFIG,
     ...overrides,
@@ -452,7 +450,6 @@ describe('getLayoutStyles branches (via getStyles)', () => {
     // font/color/translation sections must still be present
     expect(css).toContain('--serif:');
     expect(css).toContain('--theme-bg-color');
-    expect(css).toContain('.translation-source');
   });
 
   it('includes paragraph layout rules when useBookLayout is false', () => {
@@ -873,82 +870,6 @@ describe('getColorStyles branches (via getStyles)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// getTranslationStyles branches
-// ---------------------------------------------------------------------------
-describe('getTranslationStyles branches (via getStyles)', () => {
-  const theme = makeThemeCode();
-
-  it('adds margin to translation-target-block when showTranslateSource is true', () => {
-    const vs = makeViewSettings({ showTranslateSource: true });
-    const css = getStyles(vs, theme);
-    expect(css).toContain('margin: 0.5em 0 !important');
-  });
-
-  it('does not add margin to translation-target-block when showTranslateSource is false', () => {
-    const vs = makeViewSettings({ showTranslateSource: false });
-    const css = getStyles(vs, theme);
-    expect(css).not.toContain('margin: 0.5em 0 !important');
-  });
-
-  it('always includes translation-source and translation-target classes', () => {
-    const vs = makeViewSettings({ showTranslateSource: false });
-    const css = getStyles(vs, theme);
-    expect(css).toContain('.translation-source');
-    expect(css).toContain('.translation-target');
-    expect(css).toContain('.translation-target.hidden');
-    expect(css).toContain('.translation-target-block');
-    expect(css).toContain('.translation-target-toc');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Translated text style (font, style, size, color)
-// ---------------------------------------------------------------------------
-describe('translated text style (via getStyles)', () => {
-  const theme = makeThemeCode();
-  const block = (css: string) => css.match(/\.translation-target-block\s*\{([^}]*)\}/)?.[1] ?? '';
-
-  it('leaves the translation looking like the book by default', () => {
-    const rules = block(getStyles(makeViewSettings(), theme));
-    expect(rules).not.toMatch(/font-size|color|font-family|font-style|font-weight/);
-  });
-
-  it('applies a configured font, style, size and color', () => {
-    const rules = block(
-      getStyles(
-        makeViewSettings({
-          translationFont: 'serif',
-          translationFontStyle: 'bold-italic',
-          translationFontSize: 0.85,
-          translationColor: '#ff0000',
-        }),
-        theme,
-      ),
-    );
-    expect(rules).toMatch(/font-family:\s*var\(--serif\)\s*!important/);
-    expect(rules).toMatch(/font-style:\s*italic\s*!important/);
-    expect(rules).toMatch(/font-weight:\s*bold\s*!important/);
-    expect(rules).toMatch(/font-size:\s*0\.85em\s*!important/);
-    expect(rules).toMatch(/color:\s*#ff0000\s*!important/);
-  });
-
-  it('applies italic without bold, and bold without italic', () => {
-    const italic = block(getStyles(makeViewSettings({ translationFontStyle: 'italic' }), theme));
-    expect(italic).toMatch(/font-style:\s*italic/);
-    expect(italic).not.toMatch(/font-weight/);
-    const bold = block(getStyles(makeViewSettings({ translationFontStyle: 'bold' }), theme));
-    expect(bold).toMatch(/font-weight:\s*bold/);
-    expect(bold).not.toMatch(/font-style/);
-  });
-
-  it('does not style translated TOC entries', () => {
-    const css = getStyles(makeViewSettings({ translationColor: '#ff0000' }), theme);
-    const toc = css.match(/\.translation-target-toc\s*\{([^}]*)\}/)?.[1] ?? '';
-    expect(toc).not.toContain('#ff0000');
-  });
-});
-
-// ---------------------------------------------------------------------------
 // getRubyStyles branches (Word Lens gloss <rt> size + color)
 // ---------------------------------------------------------------------------
 describe('getRubyStyles branches (via getStyles)', () => {
@@ -999,7 +920,6 @@ describe('getStyles integration', () => {
     // color styles
     expect(css).toContain('--theme-bg-color');
     // translation styles
-    expect(css).toContain('.translation-source');
   });
 
   it('uses default themeCode (via getThemeCode) when none is provided', () => {

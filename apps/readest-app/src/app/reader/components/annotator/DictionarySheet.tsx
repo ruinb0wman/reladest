@@ -8,24 +8,16 @@ import {
   DictionaryResultsHeader,
   DictionaryResultsBody,
 } from './DictionaryResultsView';
-import type { DictionarySelectionContext } from '@/services/dictionaries/types';
 
 interface DictionarySheetProps {
   word: string;
   lang?: string;
-  selection?: DictionarySelectionContext;
   onDismiss: () => void;
   onManage?: () => void;
 }
 
-const DictionarySheet: React.FC<DictionarySheetProps> = ({
-  word,
-  lang,
-  selection,
-  onDismiss,
-  onManage,
-}) => {
-  const state = useDictionaryResults({ word, lang, selection });
+const DictionarySheet: React.FC<DictionarySheetProps> = ({ word, lang, onDismiss, onManage }) => {
+  const state = useDictionaryResults({ word, lang });
   return (
     <Dialog
       isOpen

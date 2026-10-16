@@ -199,31 +199,6 @@ const selectPopupText = async (cfi?: string) => {
 // `wordlens-dictionary` route is the one selection source that survives this
 // harness's mocks -- `footnote-selection` always stamps `popup: true`, and
 // `onReadAloudSelection` deliberately bails on popup ranges.
-const selectMainViewText = async (text = 'the river rounded a steep shoulder of land') => {
-  const paragraph = document.createElement('p');
-  paragraph.textContent = text;
-  document.body.append(paragraph);
-  h.view = {
-    renderer: {
-      getContents: () => [{ doc: document, index: 0 }],
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    },
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getCFI: () => 'epubcfi(/6/2!/4/2)',
-    deselect: vi.fn(),
-  };
-  await act(async () => {
-    await eventDispatcher.dispatch('wordlens-dictionary', {
-      bookKey: 'book-1',
-      element: paragraph,
-      word: text,
-    });
-  });
-  return paragraph;
-};
-
 describe('Annotator popup shortcuts', () => {
   beforeEach(() => {
     h.actions = null;
@@ -276,27 +251,6 @@ describe('Annotator popup shortcuts', () => {
   // fell back to false. useTTSControl then took the startFromRange branch,
   // which begins at the top of the containing block and carries on through the
   // book -- reading from the start of the paragraph and past the selection.
-  test('onReadAloudSelection speaks only the selection', async () => {
-    render(<Annotator bookKey='book-1' contentInsets={{ top: 0, right: 0, bottom: 0, left: 0 }} />);
-    await selectMainViewText();
-
-    const speaks: { oneTime?: boolean; range?: Range }[] = [];
-    const capture = (event: CustomEvent) => {
-      speaks.push(event.detail);
-    };
-    eventDispatcher.on('tts-speak', capture);
-
-    let handled: boolean | undefined;
-    await act(async () => {
-      handled = h.actions?.['onReadAloudSelection']?.();
-    });
-    eventDispatcher.off('tts-speak', capture);
-
-    expect(handled).toBe(true);
-    expect(speaks).toHaveLength(1);
-    expect(speaks[0]!.oneTime).toBe(true);
-  });
-
   test('stores copied excerpts without inserting them into the Notebook editor', async () => {
     h.viewSettings.copyToNotebook = true;
     useNotebookDocumentStore.getState().hydrate('book', '# Existing notes', null);

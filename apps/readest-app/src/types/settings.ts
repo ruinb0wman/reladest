@@ -6,7 +6,6 @@ import { CustomTexture } from '@/styles/textures';
 import { HighlightColor, HighlightStyle, UserHighlightColor, ViewSettings } from './book';
 import { OPDSCatalog } from './opds';
 import { WebSource } from './webSource';
-import type { CustomTranslator, TranslationPrompt } from './translation';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
 import type { DictionarySettings, ImportedDictionary } from '@/services/dictionaries/types';
@@ -60,8 +59,6 @@ export interface ReadSettings {
   notebookWidth: string;
   isNotebookPinned: boolean;
   notebookActiveTab: NotebookTab;
-  translationProvider: string;
-  translateTargetLang: string;
   /**
    * Global Word Lens toggle: auto-download a gloss pack on demand when the
    * pair isn't cached locally. When off, the reader never fetches packs
@@ -232,7 +229,6 @@ export type SyncCategory =
   | 'font'
   | 'texture'
   | 'opds_catalog'
-  | 'custom_translator'
   | 'settings'
   | 'credentials'
   | 'stats';
@@ -245,7 +241,6 @@ export const SYNC_CATEGORIES: readonly SyncCategory[] = [
   'font',
   'texture',
   'opds_catalog',
-  'custom_translator',
   'settings',
   'stats',
   'credentials',
@@ -390,10 +385,6 @@ export interface SystemSettings {
   customDictionaries: ImportedDictionary[];
   dictionarySettings: DictionarySettings;
   opdsCatalogs: OPDSCatalog[];
-  /** User-configured translation backends; synced as `custom_translator`. */
-  customTranslators?: CustomTranslator[];
-  /** User translation prompts; synced as `translation_prompt`. */
-  translationPrompts?: TranslationPrompt[];
   /** Saved sites for the "From Web Browser" import (#5775). Device-local. */
   webSources?: WebSource[];
   metadataSeriesCollapsed: boolean;

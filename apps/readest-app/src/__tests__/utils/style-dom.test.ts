@@ -22,7 +22,6 @@ import {
   applyScrollModeClass,
   applyEinkModeAttribute,
   applyScrollbarStyle,
-  applyTranslationStyle,
   getThemeCode,
   getStyles,
   applyImageStyle,
@@ -38,7 +37,6 @@ import {
   DEFAULT_BOOK_STYLE,
   DEFAULT_BOOK_LANGUAGE,
   DEFAULT_VIEW_CONFIG,
-  DEFAULT_TRANSLATOR_CONFIG,
   DEFAULT_ANNOTATOR_CONFIG,
   DEFAULT_SCREEN_CONFIG,
 } from '@/services/constants';
@@ -53,7 +51,6 @@ const makeViewSettings = (overrides: Partial<ViewSettings> = {}): ViewSettings =
     ...DEFAULT_BOOK_STYLE,
     ...DEFAULT_BOOK_LANGUAGE,
     ...DEFAULT_VIEW_CONFIG,
-    ...DEFAULT_TRANSLATOR_CONFIG,
     ...DEFAULT_ANNOTATOR_CONFIG,
     ...DEFAULT_SCREEN_CONFIG,
     ...overrides,
@@ -184,48 +181,6 @@ describe('applyScrollbarStyle', () => {
 // ---------------------------------------------------------------------------
 // applyTranslationStyle
 // ---------------------------------------------------------------------------
-describe('applyTranslationStyle', () => {
-  beforeEach(() => {
-    const el = document.getElementById('translation-style');
-    if (el) el.remove();
-  });
-
-  it('creates a style element with translation CSS', () => {
-    const vs = makeViewSettings({ showTranslateSource: true });
-    applyTranslationStyle(vs);
-    const el = document.getElementById('translation-style') as HTMLStyleElement;
-    expect(el).not.toBeNull();
-    expect(el.textContent).toContain('.translation-source');
-    expect(el.textContent).toContain('.translation-target');
-    expect(el.textContent).toContain('.translation-target-block');
-  });
-
-  it('includes margin for translation-target-block when showTranslateSource is true', () => {
-    const vs = makeViewSettings({ showTranslateSource: true });
-    applyTranslationStyle(vs);
-    const el = document.getElementById('translation-style') as HTMLStyleElement;
-    expect(el.textContent).toContain('margin: 0.5em 0');
-  });
-
-  it('does not include margin for translation-target-block when showTranslateSource is false', () => {
-    const vs = makeViewSettings({ showTranslateSource: false });
-    applyTranslationStyle(vs);
-    const el = document.getElementById('translation-style') as HTMLStyleElement;
-    expect(el.textContent).not.toContain('margin: 0.5em 0');
-  });
-
-  it('replaces existing style element on second call', () => {
-    const vs1 = makeViewSettings({ showTranslateSource: true });
-    applyTranslationStyle(vs1);
-    const vs2 = makeViewSettings({ showTranslateSource: false });
-    applyTranslationStyle(vs2);
-    const elements = document.querySelectorAll('#translation-style');
-    expect(elements.length).toBe(1);
-    const el = elements[0] as HTMLStyleElement;
-    expect(el.textContent).not.toContain('margin: 0.5em 0');
-  });
-});
-
 // ---------------------------------------------------------------------------
 // getThemeCode
 // ---------------------------------------------------------------------------
@@ -401,7 +356,6 @@ describe('getStyles', () => {
     expect(css).toContain('--theme-primary-color:');
 
     // Translation section
-    expect(css).toContain('.translation-source');
   });
 
   it('includes user stylesheet content', () => {

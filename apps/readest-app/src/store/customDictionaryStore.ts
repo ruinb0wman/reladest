@@ -39,7 +39,6 @@ const DEFAULT_DICTIONARY_SETTINGS: DictionarySettings = {
     BUILTIN_PROVIDER_IDS.systemDictionary,
     BUILTIN_PROVIDER_IDS.wiktionary,
     BUILTIN_PROVIDER_IDS.wikipedia,
-    BUILTIN_PROVIDER_IDS.context,
     ...BUILTIN_WEB_ORDER,
   ],
   providerEnabled: {
@@ -51,7 +50,6 @@ const DEFAULT_DICTIONARY_SETTINGS: DictionarySettings = {
     [BUILTIN_PROVIDER_IDS.wikipedia]: true,
     // Opt-in: it needs an OpenAI-compatible custom translator and spends
     // the user's own API tokens on every lookup.
-    [BUILTIN_PROVIDER_IDS.context]: false,
     [BUILTIN_WEB_SEARCH_IDS.google]: false,
     [BUILTIN_WEB_SEARCH_IDS.urban]: false,
     [BUILTIN_WEB_SEARCH_IDS.merriamWebster]: false,
@@ -126,7 +124,6 @@ interface DictionaryStoreState {
   /** Auto-play a looked-up word's bundled pronunciation audio (#6265). */
   setAutoPlayPronunciation(enabled: boolean): void;
   /** Pick the custom translator the context dictionary asks (#5544). */
-  setContextTranslatorId(id: string): void;
 
   /** Add a custom web search (id is generated). Appended + enabled by default. */
   addWebSearch(name: string, urlTemplate: string): WebSearchEntry;
@@ -460,12 +457,6 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
     }));
   },
 
-  setContextTranslatorId: (id) => {
-    set((state) => ({
-      settings: { ...state.settings, contextTranslatorId: id },
-    }));
-  },
-
   addWebSearch: (name, urlTemplate) => {
     const trimmedName = name.trim();
     const trimmedUrl = urlTemplate.trim();
@@ -651,7 +642,6 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         autoPlayPronunciation:
           persistedSettings.autoPlayPronunciation ??
           DEFAULT_DICTIONARY_SETTINGS.autoPlayPronunciation,
-        contextTranslatorId: persistedSettings.contextTranslatorId,
       };
       set({ dictionaries, settings: settingsMerged });
     } catch (error) {

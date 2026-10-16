@@ -10,7 +10,6 @@ import {
   ParagraphModeConfig,
   ReadingRulerColor,
   ScreenConfig,
-  TranslatorConfig,
   ViewConfig,
   ViewSettings,
   ViewSettingsConfig,
@@ -217,7 +216,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
     font: true,
     texture: true,
     opds_catalog: true,
-    custom_translator: true,
     settings: true,
   },
 };
@@ -251,8 +249,6 @@ export const DEFAULT_READSETTINGS: ReadSettings = {
   notebookWidth: '25%',
   isNotebookPinned: false,
   notebookActiveTab: 'notes',
-  translationProvider: 'deepl',
-  translateTargetLang: 'EN',
   wordLensAutoDownload: true,
 
   customThemes: [],
@@ -441,19 +437,6 @@ export const DEFAULT_VIEW_CONFIG: ViewConfig = {
   readingRulerPosition: 33,
   readingRulerOpacity: 0.5,
   readingRulerColor: 'transparent',
-};
-
-export const DEFAULT_TRANSLATOR_CONFIG: TranslatorConfig = {
-  translationEnabled: false,
-  translationProvider: 'deepl',
-  translationPromptId: 'default',
-  translateTargetLang: '',
-  showTranslateSource: true,
-  ttsReadAloudText: 'both',
-  translationFont: '',
-  translationFontStyle: 'normal',
-  translationFontSize: 1,
-  translationColor: '',
 };
 
 export const DEFAULT_NOTE_EXPORT_CONFIG: NoteExportConfig = {

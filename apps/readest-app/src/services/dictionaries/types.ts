@@ -233,19 +233,12 @@ export interface DictionarySettings {
    * it; nothing is spoken when the entry has no recording.
    */
   autoPlayPronunciation?: boolean;
-  /**
-   * Custom translator (OpenAI-compatible) the context dictionary asks
-   * (#5544). Unset or stale ids fall back to the first available one.
-   */
-  contextTranslatorId?: string;
 }
 
 /** Stable ids for the built-in providers. */
 export const BUILTIN_PROVIDER_IDS = {
   wiktionary: 'builtin:wiktionary',
   wikipedia: 'builtin:wikipedia',
-  /** AI explanation of the selection in its passage, via a custom LLM translator (#5544). */
-  context: 'builtin:context',
   /**
    * "Sentinel" id for the OS-native dictionary (macOS Dictionary.app via the
    * `dict://` URL scheme; iOS `UIReferenceLibraryViewController`; Android

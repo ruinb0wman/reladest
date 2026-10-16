@@ -963,47 +963,6 @@ export const liftDarkTextColors = (root: Element) => {
   for (const [el, color] of lifts) el.style.setProperty('color', color, 'important');
 };
 
-const getTranslatedTextStyles = (viewSettings: ViewSettings) => {
-  const { translationFont, translationFontStyle, translationFontSize, translationColor } =
-    viewSettings;
-  return [
-    translationFont && `font-family: var(--${translationFont}) !important;`,
-    translationFontStyle?.includes('italic') && 'font-style: italic !important;',
-    translationFontStyle?.includes('bold') && 'font-weight: bold !important;',
-    translationFontSize &&
-      translationFontSize !== 1 &&
-      `font-size: ${translationFontSize}em !important;`,
-    translationColor && `color: ${translationColor} !important;`,
-  ]
-    .filter(Boolean)
-    .join('\n    ');
-};
-
-const getTranslationStyles = (viewSettings: ViewSettings) => `
-  .translation-source {
-  }
-  .translation-target {
-  }
-  /* The original is wrapped rather than erased so its CFIs stay resolvable;
-     cfi-skip keeps the wrapper invisible to CFI indexing. */
-  .translation-source-hidden {
-    display: none !important;
-  }
-  .translation-target.hidden {
-    display: none !important;
-  }
-  .translation-target-block {
-    display: block !important;
-    ${viewSettings.showTranslateSource ? 'margin: 0.5em 0 !important;' : ''}
-    ${getTranslatedTextStyles(viewSettings)}
-  }
-  .translation-target-toc {
-    display: block !important;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-`;
-
 const getWarichuStyles = () => `
   /* Warichu (割注/夹注) — double-line inline annotation */
   .warichu-pending {
@@ -1168,7 +1127,6 @@ export const getStyles = (
     viewSettings.backgroundTextureId,
     viewSettings.isEink,
   );
-  const translationStyles = getTranslationStyles(viewSettings);
   const warichuStyles = getWarichuStyles();
   const rubyStyles = getRubyStyles(viewSettings);
   const cjkLineFlowStyles = getCJKLineFlowStyles();
@@ -1182,7 +1140,7 @@ export const getStyles = (
   // the footnote aside's border show as a stray horizontal line (#4438). Keep it
   // ahead of the inlined custom `@font-face` rules.
   const epubNamespace = `@namespace epub "http://www.idpf.org/2007/ops";`;
-  return `${epubNamespace}\n${customFontFaces}\n${pageLayoutStyles}\n${paragraphLayoutStyles}\n${cjkLineFlowStyles}\n${fontStyles}\n${colorStyles}\n${dialogueStyles}\n${translationStyles}\n${warichuStyles}\n${rubyStyles}\n${userStylesheet}`;
+  return `${epubNamespace}\n${customFontFaces}\n${pageLayoutStyles}\n${paragraphLayoutStyles}\n${cjkLineFlowStyles}\n${fontStyles}\n${colorStyles}\n${dialogueStyles}\n${warichuStyles}\n${rubyStyles}\n${userStylesheet}`;
 };
 
 // Build a CSS chunk of `@font-face` rules for the given user custom
@@ -1202,21 +1160,6 @@ const getCustomFontFaces = (fonts: CustomFont[]): string =>
       }
     })
     .join('\n');
-
-export const applyTranslationStyle = (viewSettings: ViewSettings) => {
-  const styleId = 'translation-style';
-
-  const existingStyle = document.getElementById(styleId);
-  if (existingStyle) {
-    existingStyle.remove();
-  }
-
-  const styleElement = document.createElement('style');
-  styleElement.id = styleId;
-  styleElement.textContent = getTranslationStyles(viewSettings);
-
-  document.head.appendChild(styleElement);
-};
 
 export const transformStylesheet = (
   css: string,

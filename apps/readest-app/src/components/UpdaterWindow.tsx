@@ -11,14 +11,12 @@ import { Command } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
 import { desktopDir } from '@tauri-apps/api/path';
 import { isTauriAppPlatform } from '@/services/environment';
-import { useTranslator } from '@/hooks/useTranslator';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useSearchParams } from 'next/navigation';
 import { getAppVersion } from '@/utils/version';
 import { tauriDownload } from '@/utils/transfer';
 import { installPackage, verifyUpdateSignature, installNightlyUpdate } from '@/utils/bridge';
 import { join } from '@tauri-apps/api/path';
-import { getLocale } from '@/utils/misc';
 import { getAndroidPlatformKey, setLastShownReleaseNotesVersion } from '@/helpers/updater';
 import type { ResolvedNightlyUpdate } from '@/helpers/updater';
 import {
@@ -92,12 +90,6 @@ export const UpdaterContent = ({
   nightlyUpdate?: ResolvedNightlyUpdate;
 }) => {
   const _ = useTranslation();
-  const [targetLang, setTargetLang] = useState('EN');
-  const { translate } = useTranslator({
-    provider: 'azure',
-    sourceLang: 'AUTO',
-    targetLang,
-  });
   const { appService } = useEnv();
   const searchParams = useSearchParams();
   const currentVersion = getAppVersion();
@@ -116,10 +108,6 @@ export const UpdaterContent = ({
   const [downloaded, setDownloaded] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setTargetLang(getLocale());
-  }, []);
 
   useEffect(() => {
     const checkDesktopUpdate = async () => {
@@ -449,18 +437,6 @@ export const UpdaterContent = ({
           },
         ];
       }
-      if (!targetLang.toLowerCase().startsWith('en')) {
-        for (const entry of changelogs) {
-          try {
-            // Preserve the original English `notes`; store the translation
-            // separately so the "Show original" toggle can flip between them.
-            entry.translatedNotes = await translate(entry.notes, { useCache: true });
-          } catch (error) {
-            console.log('Failed to translate changelog:', error);
-          }
-        }
-      }
-
       setChangelogs(changelogs);
       setLastShownReleaseNotesVersion(newVersion);
     };

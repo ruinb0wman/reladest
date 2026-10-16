@@ -19,12 +19,6 @@ import {
 } from '@testing-library/react';
 import type { ReactNode } from 'react';
 
-import type {
-  DictionaryLookupContext,
-  DictionaryLookupOutcome,
-  DictionaryProvider,
-  DictionarySelectionContext,
-} from '@/services/dictionaries/types';
 import { BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
 import type { ImportedDictionary } from '@/services/dictionaries/types';
 import type { BaseDir } from '@/types/system';
@@ -35,6 +29,7 @@ import { useCustomDictionaryStore } from '@/store/customDictionaryStore';
 const waitFor = <T,>(callback: () => T | Promise<T>) =>
   waitForWithOptions(callback, { interval: 1 });
 
+import type { DictionaryLookupOutcome, DictionaryProvider } from '@/services/dictionaries/types';
 import {
   IFO_FIXTURE_NAME,
   IDX_FIXTURE_NAME,
@@ -305,7 +300,6 @@ const renderSheet = (
   props: Partial<{
     word: string;
     lang: string;
-    selection: DictionarySelectionContext;
     onDismiss: () => void;
     onManage: () => void;
   }> = {},
@@ -314,7 +308,6 @@ const renderSheet = (
     <DictionarySheet
       word={props.word ?? 'hello'}
       lang={props.lang}
-      selection={props.selection}
       onDismiss={props.onDismiss ?? (() => {})}
       onManage={props.onManage}
     />,
@@ -575,31 +568,6 @@ describe('DictionarySheet — in-content navigation', () => {
   });
 });
 
-describe('DictionarySheet — selection context (#5544)', () => {
-  it('hands the selection context to providers for the selected word only', async () => {
-    const seen: Record<string, DictionaryLookupContext['selection']> = {};
-    const nav = buildNavProvider('world');
-    providersForNextRender.push({
-      ...nav,
-      lookup: (word, ctx) => {
-        seen[word] = ctx.selection;
-        return nav.lookup(word, ctx);
-      },
-    });
-    const selection = { before: 'Say', after: 'to everyone.', targetLang: 'fr' };
-    renderSheet({ word: 'hello', selection });
-
-    const navLink = await waitFor(() => screen.getByTestId('nav-link'));
-    expect(seen['hello']).toEqual(selection);
-
-    await act(async () => {
-      fireEvent.click(navLink);
-    });
-    await waitFor(() => expect('world' in seen).toBe(true));
-    expect(seen['world']).toBeUndefined();
-  });
-});
-
 describe('DictionarySheet — republished selection (#5544)', () => {
   it('does not restart lookups when the same selection context arrives as a new object', async () => {
     let calls = 0;
@@ -613,18 +581,11 @@ describe('DictionarySheet — republished selection (#5544)', () => {
     });
     const { rerender } = renderSheet({
       word: 'hello',
-      selection: { before: 'Say', after: 'now.' },
     });
     await waitFor(() => screen.getByTestId('nav-link'));
     expect(calls).toBe(1);
 
-    rerender(
-      <DictionarySheet
-        word='hello'
-        selection={{ before: 'Say', after: 'now.' }}
-        onDismiss={() => {}}
-      />,
-    );
+    rerender(<DictionarySheet word='hello' onDismiss={() => {}} />);
     await act(async () => {});
     expect(calls).toBe(1);
   });

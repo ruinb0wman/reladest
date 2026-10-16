@@ -40,7 +40,6 @@ import {
   DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS,
   DEFAULT_EINK_VIEW_SETTINGS,
   DEFAULT_VIEW_CONFIG,
-  DEFAULT_TRANSLATOR_CONFIG,
   DEFAULT_NOTE_EXPORT_CONFIG,
   DEFAULT_ANNOTATOR_CONFIG,
   DEFAULT_SCREEN_CONFIG,
@@ -236,7 +235,6 @@ describe('services/constants', () => {
         font: true,
         texture: true,
         opds_catalog: true,
-        custom_translator: true,
         settings: true,
       });
     });
@@ -350,11 +348,6 @@ describe('services/constants', () => {
       expect(typeof DEFAULT_READSETTINGS.notebookWidth).toBe('string');
       expect(typeof DEFAULT_READSETTINGS.isNotebookPinned).toBe('boolean');
       expect(typeof DEFAULT_READSETTINGS.notebookActiveTab).toBe('string');
-    });
-
-    it('has translation settings', () => {
-      expect(typeof DEFAULT_READSETTINGS.translationProvider).toBe('string');
-      expect(typeof DEFAULT_READSETTINGS.translateTargetLang).toBe('string');
     });
 
     it('has highlight settings', () => {
@@ -631,17 +624,6 @@ describe('services/constants', () => {
   // ---------------------------------------------------------------------------
   // Translator config
   // ---------------------------------------------------------------------------
-  describe('DEFAULT_TRANSLATOR_CONFIG', () => {
-    it('has expected properties', () => {
-      expect(typeof DEFAULT_TRANSLATOR_CONFIG).toBe('object');
-      expect(typeof DEFAULT_TRANSLATOR_CONFIG.translationEnabled).toBe('boolean');
-      expect(typeof DEFAULT_TRANSLATOR_CONFIG.translationProvider).toBe('string');
-      expect(typeof DEFAULT_TRANSLATOR_CONFIG.translateTargetLang).toBe('string');
-      expect(typeof DEFAULT_TRANSLATOR_CONFIG.showTranslateSource).toBe('boolean');
-      expect(typeof DEFAULT_TRANSLATOR_CONFIG.ttsReadAloudText).toBe('string');
-    });
-  });
-
   // ---------------------------------------------------------------------------
   // Note export config
   // ---------------------------------------------------------------------------
