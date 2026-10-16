@@ -456,7 +456,6 @@ describe('services/constants', () => {
   describe('DEFAULT_BOOK_LANGUAGE', () => {
     it('has expected properties', () => {
       expect(typeof DEFAULT_BOOK_LANGUAGE.replaceQuotationMarks).toBe('boolean');
-      expect(typeof DEFAULT_BOOK_LANGUAGE.convertChineseVariant).toBe('string');
     });
   });
 

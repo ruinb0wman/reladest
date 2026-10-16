@@ -321,7 +321,6 @@ export const DEFAULT_BOOK_LAYOUT: BookLayout = {
 
 export const DEFAULT_BOOK_LANGUAGE: BookLanguage = {
   replaceQuotationMarks: true,
-  convertChineseVariant: 'none',
 };
 
 export const DEFAULT_BOOK_STYLE: BookStyle = {

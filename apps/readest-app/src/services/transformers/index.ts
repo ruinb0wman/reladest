@@ -4,7 +4,6 @@ import { languageTransformer } from './language';
 import { punctuationTransformer } from './punctuation';
 import { whitespaceTransformer } from './whitespace';
 import { sanitizerTransformer } from './sanitizer';
-import { simpleccTransformer } from './simplecc';
 import { styleTransformer } from './style';
 import { proofreadTransformer } from './proofread';
 import { warichuTransformer } from './warichu';
@@ -19,7 +18,6 @@ export const availableTransformers: Transformer[] = [
   styleTransformer,
   whitespaceTransformer,
   sanitizerTransformer,
-  simpleccTransformer,
   nbspTransformer,
   proofreadTransformer,
   warichuTransformer,

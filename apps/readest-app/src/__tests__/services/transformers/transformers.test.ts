@@ -10,11 +10,6 @@ vi.mock('@/utils/style', () => ({
   ),
 }));
 
-vi.mock('@/utils/simplecc', () => ({
-  initSimpleCC: vi.fn(),
-  runSimpleCC: vi.fn((text: string, _variant: string) => text),
-}));
-
 vi.mock('@/utils/lang', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/utils/lang')>();
   return {
@@ -362,7 +357,6 @@ describe('punctuationTransformer', () => {
   describe('when replaceQuotationMarks is true, no variant conversion', () => {
     const baseSettings = {
       replaceQuotationMarks: true,
-      convertChineseVariant: 'none' as const,
       vertical: false,
     } as ViewSettings;
 
@@ -375,84 +369,9 @@ describe('punctuationTransformer', () => {
     });
   });
 
-  describe('Chinese variant quotation mark conversion (Hans to Hant)', () => {
-    const settings = {
-      replaceQuotationMarks: true,
-      convertChineseVariant: 's2t' as const,
-      vertical: false,
-    } as ViewSettings;
-
-    test('converts left double curly quote to left corner bracket', async () => {
-      const result = await punctuationTransformer.transform(
-        makeCtx({ content: '\u201C', viewSettings: settings }),
-      );
-      // "\u201C" -> "\u300C" (「)
-      expect(result).toBe('\u300C');
-    });
-
-    test('converts right double curly quote to right corner bracket', async () => {
-      const result = await punctuationTransformer.transform(
-        makeCtx({ content: '\u201D', viewSettings: settings }),
-      );
-      // "\u201D" -> "\u300D" (」)
-      expect(result).toBe('\u300D');
-    });
-
-    test('converts left single curly quote to left double corner bracket', async () => {
-      const result = await punctuationTransformer.transform(
-        makeCtx({ content: '\u2018', viewSettings: settings }),
-      );
-      // "\u2018" -> "\u300E" (『)
-      expect(result).toBe('\u300E');
-    });
-
-    test('converts right single curly quote to right double corner bracket', async () => {
-      const result = await punctuationTransformer.transform(
-        makeCtx({ content: '\u2019', viewSettings: settings }),
-      );
-      // "\u2019" -> "\u300F" (』)
-      expect(result).toBe('\u300F');
-    });
-
-    test('converts mixed quotation marks in a sentence', async () => {
-      const html = '\u201C\u4F60\u597D\u201D\u4ED6\u8BF4\u2018\u518D\u89C1\u2019';
-      const result = await punctuationTransformer.transform(
-        makeCtx({ content: html, viewSettings: settings }),
-      );
-      expect(result).toContain('\u300C');
-      expect(result).toContain('\u300D');
-      expect(result).toContain('\u300E');
-      expect(result).toContain('\u300F');
-    });
-  });
-
-  describe('reverse punctuation transform with variant conversion', () => {
-    const settings = {
-      replaceQuotationMarks: true,
-      convertChineseVariant: 's2t' as const,
-      vertical: false,
-    } as ViewSettings;
-
-    test('reverses the conversion direction when reversePunctuationTransform is true', async () => {
-      // With s2t and reverse=true, the shouldReverse flag flips, so the mapping
-      // goes from Hant -> Hans instead of Hans -> Hant
-      const result = await punctuationTransformer.transform(
-        makeCtx({
-          content: '\u300C\u300D',
-          viewSettings: settings,
-          reversePunctuationTransform: true,
-        }),
-      );
-      // 「」 -> ""
-      expect(result).toContain('\u201C');
-      expect(result).toContain('\u201D');
-    });
-  });
-
   describe('vertical quotation mark conversion', () => {
     const settings = {
       replaceQuotationMarks: true,
-      convertChineseVariant: 'none' as const,
       vertical: true,
     } as ViewSettings;
 
@@ -543,22 +462,6 @@ describe('punctuationTransformer', () => {
       );
       // Hans reverse vertical: "\uFE43" (﹃) -> "\u201C" (")
       expect(result).toBe('\u201C');
-    });
-  });
-
-  describe('combined variant and vertical conversion', () => {
-    const settings = {
-      replaceQuotationMarks: true,
-      convertChineseVariant: 's2t' as const,
-      vertical: true,
-    } as ViewSettings;
-
-    test('applies variant conversion first, then vertical conversion', async () => {
-      // s2t converts "\u201C" -> "\u300C" (「), then vertical Hans converts "\u300C" -> "\uFE41" (﹁)
-      const result = await punctuationTransformer.transform(
-        makeCtx({ content: '\u201C', viewSettings: settings }),
-      );
-      expect(result).toBe('\uFE41');
     });
   });
 
@@ -929,55 +832,6 @@ describe('languageTransformer', () => {
 });
 
 // =============================================================================
-// simpleccTransformer
-// =============================================================================
-
-describe('simpleccTransformer', () => {
-  let simpleccTransformer: typeof import('@/services/transformers/simplecc').simpleccTransformer;
-
-  beforeEach(async () => {
-    ({ simpleccTransformer } = await import('@/services/transformers/simplecc'));
-  });
-
-  test('has the correct name', () => {
-    expect(simpleccTransformer.name).toBe('simplecc');
-  });
-
-  test('returns content unchanged when convertChineseVariant is "none"', async () => {
-    const html = '<html><body>Hello</body></html>';
-    const settings = { convertChineseVariant: 'none' as const } as ViewSettings;
-    const result = await simpleccTransformer.transform(
-      makeCtx({ content: html, viewSettings: settings }),
-    );
-    expect(result).toBe(html);
-  });
-
-  test('returns content unchanged when convertChineseVariant is undefined', async () => {
-    const html = '<html><body>Hello</body></html>';
-    const result = await simpleccTransformer.transform(makeCtx({ content: html }));
-    expect(result).toBe(html);
-  });
-
-  test('calls initSimpleCC and runSimpleCC when variant is set', async () => {
-    const { initSimpleCC, runSimpleCC } = await import('@/utils/simplecc');
-    const mockInit = initSimpleCC as ReturnType<typeof vi.fn>;
-    const mockRun = runSimpleCC as ReturnType<typeof vi.fn>;
-    mockInit.mockClear();
-    mockRun.mockClear();
-    mockRun.mockImplementation((text: string) => text.replace(/Hello/g, 'Converted'));
-
-    const html = '<html><body><p>Hello</p></body></html>';
-    const settings = { convertChineseVariant: 's2t' as const } as ViewSettings;
-    const result = await simpleccTransformer.transform(
-      makeCtx({ content: html, viewSettings: settings }),
-    );
-    expect(mockInit).toHaveBeenCalled();
-    expect(mockRun).toHaveBeenCalled();
-    expect(result).toContain('Converted');
-  });
-});
-
-// =============================================================================
 // nbspTransformer
 // =============================================================================
 
@@ -1125,7 +979,6 @@ describe('availableTransformers', () => {
     expect(names).toContain('style');
     expect(names).toContain('sanitizer');
     expect(names).toContain('language');
-    expect(names).toContain('simplecc');
     expect(names).toContain('proofread');
     expect(names).toContain('nbsp');
   });

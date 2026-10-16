@@ -285,7 +285,7 @@ describe('makeMarkdownBook', () => {
 });
 
 // #5406 follow-up: MD books get the same transformTarget 'data' pipeline as
-// EPUB/MOBI, so display transformers (proofread, simplecc, punctuation, ...)
+// EPUB/MOBI, so display transformers (proofread, punctuation, ...)
 // apply to Markdown books too. The paginator renders `loadContent()` via
 // srcdoc when it is defined, so the transformed content is what gets shown.
 describe('makeMarkdownBook display transforms', () => {

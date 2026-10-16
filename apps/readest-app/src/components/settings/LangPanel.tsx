@@ -8,7 +8,6 @@ import { saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 import { TRANSLATED_LANGS } from '@/services/constants';
-import { ConvertChineseVariant } from '@/types/book';
 import { SettingsPanelPanelProp } from './SettingsDialog';
 import { getDirFromLanguage } from '@/utils/rtl';
 import { isCJKEnv } from '@/utils/misc';
@@ -35,9 +34,6 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
   const [uiLanguage, setUILanguage] = useState(viewSettings.uiLanguage);
   const [replaceQuotationMarks, setReplaceQuotationMarks] = useState(
     viewSettings.replaceQuotationMarks,
-  );
-  const [convertChineseVariant, setConvertChineseVariant] = useState(
-    viewSettings.convertChineseVariant,
   );
   const [showCustomDictionaries, setShowCustomDictionaries] = useState(false);
   const [showWordLens, setShowWordLens] = useState(false);
@@ -129,46 +125,6 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [replaceQuotationMarks]);
 
-  const getConvertModeOptions: () => { value: ConvertChineseVariant; label: string }[] = () => {
-    return [
-      { value: 'none', label: _('No Conversion') },
-      { value: 's2t', label: _('Simplified to Traditional') },
-      { value: 't2s', label: _('Traditional to Simplified') },
-      { value: 's2tw', label: _('Simplified to Traditional (Taiwan)') },
-      { value: 's2hk', label: _('Simplified to Traditional (Hong Kong)') },
-      { value: 's2twp', label: _('Simplified to Traditional (Taiwan), with phrases') },
-      { value: 'tw2s', label: _('Traditional (Taiwan) to Simplified') },
-      { value: 'hk2s', label: _('Traditional (Hong Kong) to Simplified') },
-      { value: 'tw2sp', label: _('Traditional (Taiwan) to Simplified, with phrases') },
-    ];
-  };
-
-  const getConvertModeOption = () => {
-    const value = convertChineseVariant;
-    const availableOptions = getConvertModeOptions();
-    return availableOptions.find((o) => o.value === value) || availableOptions[0]!;
-  };
-
-  const handleSelectConvertMode = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const option = event.target.value as ConvertChineseVariant;
-    setConvertChineseVariant(option);
-  };
-
-  useEffect(() => {
-    if (convertChineseVariant === viewSettings.convertChineseVariant) return;
-    saveViewSettings(
-      envConfig,
-      bookKey,
-      'convertChineseVariant',
-      convertChineseVariant,
-      false,
-      false,
-    ).then(() => {
-      recreateViewer(envConfig, bookKey);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [convertChineseVariant]);
-
   if (showCustomDictionaries) {
     return (
       <div className='my-4 w-full'>
@@ -227,22 +183,6 @@ const LangPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
             checked={replaceQuotationMarks}
             onChange={() => setReplaceQuotationMarks(!replaceQuotationMarks)}
           />
-        </BoxedList>
-      )}
-
-      {(isCJKEnv() || view?.language.isCJK) && (
-        <BoxedList
-          title={_('Convert Simplified and Traditional Chinese')}
-          data-setting-id='settings.language.chineseConversion'
-        >
-          <SettingsRow label={_('Convert Mode')}>
-            <SettingsSelect
-              value={getConvertModeOption().value}
-              onChange={handleSelectConvertMode}
-              ariaLabel={_('Convert Mode')}
-              options={getConvertModeOptions()}
-            />
-          </SettingsRow>
         </BoxedList>
       )}
     </div>

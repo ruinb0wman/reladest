@@ -57,7 +57,6 @@ import {
   runOrDeferAction,
 } from '../../utils/deferredAction';
 import { Insets } from '@/types/misc';
-import { runSimpleCC } from '@/utils/simplecc';
 import { getWordCount, isSingleLookupTerm } from '@/utils/word';
 import { getIndexFromCfi } from '@/utils/cfi';
 import { writeTextToClipboard } from '@/utils/clipboard';
@@ -1770,12 +1769,7 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets; gridInsets?:
     if (!selection || !selection.text) return;
     handleDismissPopupAndSelection();
 
-    let term = selection.text;
-    const convertChineseVariant = viewSettings.convertChineseVariant;
-    if (convertChineseVariant && convertChineseVariant !== 'none') {
-      term = runSimpleCC(term, convertChineseVariant, true);
-    }
-    eventDispatcher.dispatch('search-term', { term, bookKey });
+    eventDispatcher.dispatch('search-term', { term: selection.text, bookKey });
   };
 
   const handleDictionary = () => {

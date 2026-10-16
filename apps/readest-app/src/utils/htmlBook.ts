@@ -169,7 +169,7 @@ export function buildHtmlBook(
   const toc = prune(root);
 
   // The same transform pipeline EPUB/MOBI content goes through: the reader
-  // attaches its content transformers (proofread, simplecc, punctuation, ...)
+  // attaches its content transformers (proofread, punctuation, ...)
   // to `book.transformTarget`, and the paginator renders `loadContent()` via
   // srcdoc when it is defined. Transformed content is cached per section and
   // invalidated by unload() (the paginator unloads a section whenever its view

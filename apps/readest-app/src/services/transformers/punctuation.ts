@@ -22,17 +22,6 @@ const verticalQuotationsMapHant: Record<string, string> = {
   '』': '﹄',
 };
 
-const quotationsMapHans2Hant = {
-  '“': '「',
-  '”': '」',
-  '‘': '『',
-  '’': '』',
-  '﹃': '﹁',
-  '﹄': '﹂',
-  '﹁': '﹃',
-  '﹂': '﹄',
-};
-
 export const punctuationTransformer: Transformer = {
   name: 'punctuation',
 
@@ -40,17 +29,6 @@ export const punctuationTransformer: Transformer = {
     if (!ctx.viewSettings.replaceQuotationMarks) return ctx.content;
 
     let result = ctx.content;
-
-    const convertChineseVariant = ctx.viewSettings.convertChineseVariant;
-    const reversePunctuationTransform = ctx.reversePunctuationTransform || false;
-    const shouldConvertChineseVariants = convertChineseVariant && convertChineseVariant !== 'none';
-    if (shouldConvertChineseVariants) {
-      for (const [s, t] of Object.entries(quotationsMapHans2Hant)) {
-        const shouldReverse = reversePunctuationTransform !== convertChineseVariant.includes('2s');
-        const [from, to] = shouldReverse ? [t, s] : [s, t];
-        result = result.replace(new RegExp(from, 'g'), to);
-      }
-    }
 
     const shouldTransformVertical = ctx.viewSettings.vertical;
     if (shouldTransformVertical) {

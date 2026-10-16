@@ -1,6 +1,4 @@
-import { ConvertChineseVariant } from '@/types/book';
 import { BookDoc, SectionFragment, TOCItem } from '@/libs/document';
-import { initSimpleCC, runSimpleCC } from '@/utils/simplecc';
 import { runWithConcurrency } from '@/utils/concurrency';
 import {
   cloneSectionFragments,
@@ -94,34 +92,14 @@ export const isBookNavCacheCurrent = (
   cachedNav: BookNav | null | undefined,
 ): cachedNav is BookNav => cachedNav?.version === BOOK_NAV_VERSION;
 
-const convertTocLabels = (items: TOCItem[], convertChineseVariant: ConvertChineseVariant) => {
-  items.forEach((item) => {
-    if (item.label) {
-      item.label = runSimpleCC(item.label, convertChineseVariant);
-    }
-    if (item.subitems) {
-      convertTocLabels(item.subitems, convertChineseVariant);
-    }
-  });
-};
-
-// Per-open transformations: label conversion (user setting) and optional sort.
-// Structural location/cfi baking lives in computeBookNav/hydrateBookNav so
-// the cached BookNav carries the expensive-to-derive fields across opens.
-export const updateToc = async (
-  bookDoc: BookDoc,
-  sortedTOC: boolean,
-  convertChineseVariant: ConvertChineseVariant,
-) => {
+// Per-open transformations: optional sort. Structural location/cfi baking lives
+// in computeBookNav/hydrateBookNav so the cached BookNav carries the
+// expensive-to-derive fields across opens.
+export const updateToc = async (bookDoc: BookDoc, sortedTOC: boolean) => {
   if (bookDoc.rendition?.layout === 'pre-paginated') return;
 
   const items = bookDoc?.toc || [];
   if (!items.length) return;
-
-  if (convertChineseVariant && convertChineseVariant !== 'none') {
-    await initSimpleCC();
-    convertTocLabels(items, convertChineseVariant);
-  }
 
   if (sortedTOC) sortTocItems(items);
 };
