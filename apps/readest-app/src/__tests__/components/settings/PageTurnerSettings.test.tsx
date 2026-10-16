@@ -13,7 +13,6 @@ const h = vi.hoisted(() => ({
         pageNext: null,
         sectionPrev: null,
         sectionNext: null,
-        refresh: null,
       },
     } satisfies HardwarePageTurnerSettings,
   },

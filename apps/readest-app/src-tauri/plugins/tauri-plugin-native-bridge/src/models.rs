@@ -503,19 +503,6 @@ pub struct GetSecureItemResponse {
 /// Android phone) — not a hard error.
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct RefreshEinkScreenResponse {
-    pub success: bool,
-    pub error: Option<String>,
-}
-
-/// Capability probe for a deep e-ink full refresh. `supported: false` means no
-/// known vendor mechanism is present on this device (e.g. a non-e-ink Android
-/// phone, or a panel we cannot drive), so the UI should not offer the option.
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct EinkRefreshSupportedResponse {
-    pub supported: bool,
-}
 
 /// `isBoox` is a device-identity check (always available); `rawDrawing` is
 /// true only when this build was compiled against the BOOX Pen SDK (the

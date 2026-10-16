@@ -10,7 +10,6 @@ extern crate objc;
 mod windows;
 
 #[cfg(target_os = "android")]
-mod android;
 
 use tauri::utils::config::BackgroundThrottlingPolicy;
 #[cfg(target_os = "macos")]
@@ -33,7 +32,6 @@ mod dir_scanner;
 #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
 mod discord_rpc;
 #[cfg(any(target_os = "android", test))]
-mod eink_identity;
 mod epub_parser;
 #[cfg(desktop)]
 mod file_reveal;
@@ -851,12 +849,6 @@ pub fn run() {
                 app.handle().plugin(tauri_plugin_cli::init())?;
             }
 
-            // Check for e-ink device on Android before building the window
-            #[cfg(target_os = "android")]
-            let is_eink = android::is_eink_device();
-            #[cfg(not(target_os = "android"))]
-            let is_eink = false;
-
             #[cfg(desktop)]
             let cli_access = true;
             #[cfg(not(desktop))]
@@ -899,7 +891,6 @@ pub fn run() {
             let init_script = format!(
                 r#"
                     window.__READEST_APP_RUN_ID__ = "{app_run_id}";
-                    if ({is_eink}) window.__READEST_IS_EINK = true;
                     if ({cli_access}) window.__READEST_CLI_ACCESS = true;
                     if ({is_appimage}) window.__READEST_IS_APPIMAGE = true;
                     if ({updater_disabled}) window.__READEST_UPDATER_DISABLED = true;
@@ -925,7 +916,6 @@ pub fn run() {
                     }});
                 "#,
                 app_run_id = app_run_id,
-                is_eink = is_eink,
                 cli_access = cli_access,
                 is_appimage = is_appimage,
                 updater_disabled = updater_disabled
@@ -934,11 +924,11 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
                 .background_throttling(BackgroundThrottlingPolicy::Disabled)
-                .background_color(if is_eink {
-                    tauri::window::Color(255, 255, 255, 255)
-                } else {
-                    tauri::window::Color(50, 49, 48, 255)
-                })
+                // The window colour before the WebView paints. E-ink devices used
+                // to get white here; without the device probe every platform takes
+                // the dark default and the first frame matches the app's own
+                // background.
+                .background_color(tauri::window::Color(50, 49, 48, 255))
                 .initialization_script(&init_script)
                 .on_navigation(move |url| {
                     if url.scheme() == "alipays" || url.scheme() == "alipay" {

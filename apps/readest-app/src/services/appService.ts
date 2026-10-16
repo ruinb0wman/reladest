@@ -58,7 +58,6 @@ export abstract class BaseAppService implements AppService {
   isPortableApp = false;
   isDesktopApp = false;
   isAppImage = false;
-  isEink = false;
   hasTrafficLight = false;
   hasWindow = false;
   hasWindowBar = false;
@@ -275,7 +274,6 @@ export abstract class BaseAppService implements AppService {
     return {
       fs: this.fs,
       isMobile: this.isMobile,
-      isEink: this.isEink,
       isAppDataSandbox: this.isAppDataSandbox,
     };
   }

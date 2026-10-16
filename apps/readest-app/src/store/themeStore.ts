@@ -23,7 +23,6 @@ import { StatusBarHiddenInsets } from '@/utils/insets';
 
 declare global {
   interface Window {
-    __READEST_IS_EINK?: boolean;
     onNativeColorSchemeChange?: (colorScheme: 'light' | 'dark') => void;
   }
 }
@@ -110,8 +109,9 @@ const getInitialThemeMode = (): ThemeMode => {
 
 const getInitialThemeColor = (): string => {
   if (typeof window !== 'undefined' && localStorage) {
-    const defaultColor = window.__READEST_IS_EINK ? 'contrast' : 'default';
-    return localStorage.getItem('themeColor') || defaultColor;
+    // The native e-ink probe that used to default this to 'contrast' is gone;
+    // an e-ink reader picks it in settings (it is a per-device preference now).
+    return localStorage.getItem('themeColor') || 'default';
   }
   return 'default';
 };

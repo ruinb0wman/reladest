@@ -113,7 +113,6 @@ export interface AppService {
   isPortableApp: boolean;
   isDesktopApp: boolean;
   isAppImage: boolean;
-  isEink: boolean;
   canCustomizeRootDir: boolean;
   canReadExternalDir: boolean;
   supportsCoverThumbnailOptimization: boolean;

@@ -155,7 +155,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
       pageNext: null,
       sectionPrev: null,
       sectionNext: null,
-      refresh: null,
     },
   },
   gamepadEnabled: true,
@@ -382,15 +381,6 @@ export const DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS: Partial<ViewSettings> = {
   overrideColor: false,
 };
 
-export const DEFAULT_EINK_VIEW_SETTINGS: Partial<ViewSettings> = {
-  isEink: true,
-  animated: false,
-  volumeKeysToFlip: true,
-  // Matches the text-sm the header/footer used to hard-code in e-ink mode,
-  // so e-ink devices keep their larger chrome once the size is configurable.
-  headerFooterFontSize: 14,
-};
-
 export const DEFAULT_PARAGRAPH_MODE_CONFIG: ParagraphModeConfig = {
   enabled: false,
 };
@@ -427,7 +417,6 @@ export const DEFAULT_VIEW_CONFIG: ViewConfig = {
   pageTurnStyle: 'push',
   isEink: false,
   isColorEink: false,
-  einkAutoRefreshInterval: 0,
 
   paragraphMode: DEFAULT_PARAGRAPH_MODE_CONFIG,
 

@@ -11,7 +11,6 @@ const storageKey = 'control-panel-update-reset';
 const defaultViewSettings = getDefaultViewSettings({
   fs: {} as FileSystem,
   isMobile: false,
-  isEink: false,
   isAppDataSandbox: false,
 });
 const appService = {

@@ -66,7 +66,6 @@ describe('mergeSyncedGlobalSettings: provider flags', () => {
 const defaultGlobalViewSettings = getDefaultViewSettings({
   fs: {} as FileSystem,
   isMobile: false,
-  isEink: false,
   isAppDataSandbox: false,
 });
 

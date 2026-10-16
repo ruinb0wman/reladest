@@ -2095,54 +2095,6 @@ class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
     }
 
     /**
-     * Trigger a deep e-ink full screen refresh (GC16 waveform) to clear
-     * ghosting. Driven by the page-turner "Refresh Page" action on e-ink
-     * Android devices. Runs on the UI thread against the window's decor view;
-     * [EinkRefreshController] probes each vendor mechanism and resolves
-     * `success: false` (not an error) when none is available.
-     */
-    @Command
-    fun refresh_eink_screen(invoke: Invoke) {
-        activity.runOnUiThread {
-            val ret = JSObject()
-            try {
-                val view = activity.window?.decorView
-                val ok = view != null && EinkRefreshController.refresh(view)
-                ret.put("success", ok)
-            } catch (e: Exception) {
-                Log.e("NativeBridgePlugin", "refresh_eink_screen failed", e)
-                ret.put("success", false)
-                ret.put("error", e.message ?: "unknown")
-            }
-            invoke.resolve(ret)
-        }
-    }
-
-    /**
-     * Whether this device exposes a deep e-ink full-refresh mechanism we can
-     * drive. A read-only capability probe against [EinkRefreshController] (class
-     * reflection plus a system-service lookup) — it never drives the panel — so
-     * it is safe to call once at startup to decide whether to offer the "Refresh
-     * Page" / "Auto Full Refresh" options.
-     */
-    @Command
-    fun is_eink_refresh_supported(invoke: Invoke) {
-        // A confirmed-absent vendor hook resolves `supported:false` — JS caches
-        // that as authoritative and keeps the option hidden. An inconclusive read
-        // (a hook the reflection layer could not definitively rule out) is not a
-        // negative: reject so the JS probe drops its cache and retries on the
-        // next mount rather than latching a wrong 'unsupported' for the session.
-        val ret = JSObject()
-        try {
-            ret.put("supported", EinkRefreshController.isSupported(activity.applicationContext))
-            invoke.resolve(ret)
-        } catch (t: Throwable) {
-            Log.e("NativeBridgePlugin", "is_eink_refresh_supported inconclusive", t)
-            invoke.reject("eink capability probe inconclusive")
-        }
-    }
-
-    /**
      * Snapshot a region of the webview for the mesh page-curl texture
      * (readest#555). The rect arrives in CSS pixels of the JS viewport;
      * scaling by the display density (devicePixelRatio) maps it to window

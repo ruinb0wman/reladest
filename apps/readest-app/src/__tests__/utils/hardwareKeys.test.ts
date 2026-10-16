@@ -220,7 +220,6 @@ describe('resolvePageTurn', () => {
       pageNext: { source: 'native', id: 'MediaNext', label: 'Media Next' },
       sectionPrev: { source: 'dom', id: 'PageUp', label: 'Page Up' },
       sectionNext: { source: 'dom', id: 'PageDown', label: 'Page Down' },
-      refresh: { source: 'native', id: 'MediaPlayPause', label: 'Media Play/Pause' },
     },
   };
 
@@ -238,10 +237,6 @@ describe('resolvePageTurn', () => {
 
   test('returns "sectionNext" for the sectionNext binding', () => {
     expect(resolvePageTurn(settings, { source: 'dom', id: 'PageDown' })).toBe('sectionNext');
-  });
-
-  test('returns "refresh" for the refresh binding', () => {
-    expect(resolvePageTurn(settings, { source: 'native', id: 'MediaPlayPause' })).toBe('refresh');
   });
 
   test('returns null for an unbound key', () => {
@@ -283,7 +278,6 @@ describe('Apple Pencil native keys (#5501)', () => {
         pageNext: { source: 'native', id: 'PencilDoubleTap', label: 'Pencil Double Tap' },
         sectionPrev: null,
         sectionNext: null,
-        refresh: null,
       },
     };
     expect(resolvePageTurn(pencilSettings, { source: 'native', id: 'PencilDoubleTap' })).toBe(

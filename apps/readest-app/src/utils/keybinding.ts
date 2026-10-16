@@ -5,16 +5,15 @@ export type KeyCandidate = Pick<
   KeyBinding,
   'source' | 'id' | 'ctrlKey' | 'altKey' | 'shiftKey' | 'metaKey' | 'altGraphKey'
 >;
-// `refresh` is an e-ink-only action (full screen refresh to clear ghosting);
-// the others navigate. All share the same key-binding machinery.
-export type PageTurnAction = 'pagePrev' | 'pageNext' | 'sectionPrev' | 'sectionNext' | 'refresh';
+// Every page-turner action navigates. (A fifth slot, `refresh`, drove a deep
+// e-ink full refresh; it went with the e-ink device support.)
+export type PageTurnAction = 'pagePrev' | 'pageNext' | 'sectionPrev' | 'sectionNext';
 
 export const PAGE_TURN_ACTIONS: PageTurnAction[] = [
   'pagePrev',
   'pageNext',
   'sectionPrev',
   'sectionNext',
-  'refresh',
 ];
 
 const NATIVE_KEY_LABELS: Record<string, string> = {

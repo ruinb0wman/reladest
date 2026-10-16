@@ -340,13 +340,6 @@ pub(crate) async fn clear_secure_item<R: Runtime>(
     app.native_bridge().clear_secure_item(payload)
 }
 
-#[command]
-pub(crate) async fn refresh_eink_screen<R: Runtime>(
-    app: AppHandle<R>,
-) -> Result<RefreshEinkScreenResponse> {
-    app.native_bridge().refresh_eink_screen()
-}
-
 /// Handwriting: capability probe backing `services/handwriting/capabilities.ts`.
 /// Always resolves (never a hard error) so a non-BOOX or non-mobile platform
 /// just gets `{ isBoox: false, rawDrawing: false }` and falls back to the
@@ -372,13 +365,6 @@ pub(crate) async fn start_raw_drawing<R: Runtime>(
 #[command]
 pub(crate) async fn stop_raw_drawing<R: Runtime>(app: AppHandle<R>) -> Result<()> {
     app.native_bridge().stop_raw_drawing()
-}
-
-#[command]
-pub(crate) async fn is_eink_refresh_supported<R: Runtime>(
-    app: AppHandle<R>,
-) -> Result<EinkRefreshSupportedResponse> {
-    app.native_bridge().is_eink_refresh_supported()
 }
 
 #[command]

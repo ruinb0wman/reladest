@@ -421,19 +421,6 @@ impl<R: Runtime> NativeBridge<R> {
     }
 }
 
-impl<R: Runtime> NativeBridge<R> {
-    pub fn refresh_eink_screen(&self) -> crate::Result<RefreshEinkScreenResponse> {
-        self.0
-            .run_mobile_plugin("refresh_eink_screen", ())
-            .map_err(Into::into)
-    }
-
-    pub fn is_eink_refresh_supported(&self) -> crate::Result<EinkRefreshSupportedResponse> {
-        self.0
-            .run_mobile_plugin("is_eink_refresh_supported", ())
-            .map_err(Into::into)
-    }
-
     pub fn query_pen_capabilities(&self) -> crate::Result<QueryPenCapabilitiesResponse> {
         self.0
             .run_mobile_plugin("query_pen_capabilities", ())

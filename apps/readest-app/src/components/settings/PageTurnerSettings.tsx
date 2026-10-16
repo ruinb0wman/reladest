@@ -6,7 +6,6 @@ import { useDeviceControlStore } from '@/store/deviceStore';
 import { saveSysSettings, saveViewSettings } from '@/helpers/settings';
 import { useResetViewSettings } from '@/hooks/useResetSettings';
 import { eventDispatcher } from '@/utils/event';
-import { useEinkRefreshSupported } from '@/hooks/useEinkRefreshSupported';
 import {
   normalizeNativeKey,
   normalizeDomKeyEvent,
@@ -44,10 +43,6 @@ const PageTurnerSettings: React.FC<PageTurnerSettingsProps> = ({ bookKey, onRegi
   configRef.current = config;
   const [listening, setListening] = useState<Slot | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // The 'Refresh Page' slot only fires a visible flash where a vendor
-  // full-refresh hook actually exists, so hide it (not just no-op) elsewhere.
-  const einkRefreshSupported = useEinkRefreshSupported();
-
   const persist = (next: HardwarePageTurnerSettings) => {
     setConfig(next);
     saveSysSettings(envConfig, 'hardwarePageTurner', next);
@@ -213,12 +208,6 @@ const PageTurnerSettings: React.FC<PageTurnerSettingsProps> = ({ bookKey, onRegi
         {renderSlot('pageNext', _('Next Page'))}
         {renderSlot('sectionPrev', _('Previous Section'))}
         {renderSlot('sectionNext', _('Next Section'))}
-        {/* Deep e-ink refresh clears ghosting; only meaningful in e-ink mode
-            on Android, where the native bridge can drive the panel. */}
-        {appService?.isAndroidApp &&
-          viewSettings.isEink &&
-          einkRefreshSupported &&
-          renderSlot('refresh', _('Refresh Page'))}
       </BoxedList>
     </div>
   );

@@ -406,10 +406,6 @@ impl<R: Runtime> NativeBridge<R> {
 
     /// E-ink panels exist only on the mobile (Android) side. Desktop has no
     /// e-ink controller, so this is unsupported here.
-    pub fn refresh_eink_screen(&self) -> crate::Result<RefreshEinkScreenResponse> {
-        Err(crate::Error::UnsupportedPlatformError)
-    }
-
     /// BOOX pen hardware doesn't exist on desktop; report no capability
     /// rather than erroring so callers can treat this the same as any other
     /// non-BOOX platform and fall back to the pointer backend.
@@ -427,10 +423,7 @@ impl<R: Runtime> NativeBridge<R> {
 
     /// E-ink panels exist only on the mobile (Android) side. Desktop has no
     /// e-ink controller, so the deep refresh is never supported here.
-    pub fn is_eink_refresh_supported(&self) -> crate::Result<EinkRefreshSupportedResponse> {
-        Ok(EinkRefreshSupportedResponse { supported: false })
-    }
-
+    
     pub fn update_bookshelf_widget(
         &self,
         _payload: UpdateBookshelfWidgetRequest,

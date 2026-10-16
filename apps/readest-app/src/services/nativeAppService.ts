@@ -73,7 +73,6 @@ import {
 
 declare global {
   interface Window {
-    __READEST_IS_EINK?: boolean;
     __READEST_IS_APPIMAGE?: boolean;
     __READEST_UPDATER_DISABLED?: boolean;
   }
@@ -585,7 +584,6 @@ export class NativeAppService extends BaseAppService {
   override isMobileApp = ['android', 'ios'].includes(OS_TYPE);
   override isDesktopApp = ['macos', 'windows', 'linux'].includes(OS_TYPE);
   override isAppImage = Boolean(window.__READEST_IS_APPIMAGE);
-  override isEink = Boolean(window.__READEST_IS_EINK);
   override hasTrafficLight = OS_TYPE === 'macos';
   override hasWindow = !(OS_TYPE === 'ios' || OS_TYPE === 'android');
   override hasWindowBar = !(OS_TYPE === 'ios' || OS_TYPE === 'android');

@@ -15,7 +15,6 @@ const hardwarePageTurner: HardwarePageTurnerSettings = {
     },
     sectionPrev: null,
     sectionNext: null,
-    refresh: null,
   },
 };
 

@@ -38,7 +38,6 @@ import {
   DEFAULT_MOBILE_VIEW_SETTINGS,
   DEFAULT_CJK_VIEW_SETTINGS,
   DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS,
-  DEFAULT_EINK_VIEW_SETTINGS,
   DEFAULT_VIEW_CONFIG,
   DEFAULT_NOTE_EXPORT_CONFIG,
   DEFAULT_ANNOTATOR_CONFIG,
@@ -281,7 +280,6 @@ describe('services/constants', () => {
       expect(hw.bindings.pageNext).toBeNull();
       expect(hw.bindings.sectionPrev).toBeNull();
       expect(hw.bindings.sectionNext).toBeNull();
-      expect(hw.bindings.refresh).toBeNull();
     });
   });
 
@@ -548,13 +546,6 @@ describe('services/constants', () => {
     it('DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS has overrideColor set', () => {
       expect(typeof DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS).toBe('object');
       expect(DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS.overrideColor).toBe(false);
-    });
-
-    it('DEFAULT_EINK_VIEW_SETTINGS has eink properties', () => {
-      expect(typeof DEFAULT_EINK_VIEW_SETTINGS).toBe('object');
-      expect(DEFAULT_EINK_VIEW_SETTINGS.isEink).toBe(true);
-      expect(DEFAULT_EINK_VIEW_SETTINGS.animated).toBe(false);
-      expect(DEFAULT_EINK_VIEW_SETTINGS.volumeKeysToFlip).toBe(true);
     });
   });
 

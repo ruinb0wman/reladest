@@ -124,15 +124,6 @@ export interface GetStorefrontRegionCodeResponse {
   error?: string;
 }
 
-export interface RefreshEinkScreenResponse {
-  success: boolean;
-  error?: string;
-}
-
-export interface EinkRefreshSupportedResponse {
-  supported: boolean;
-}
-
 export async function copyURIToPath(request: CopyURIRequest): Promise<CopyURIResponse> {
   const result = await invoke<CopyURIResponse>('plugin:native-bridge|copy_uri_to_path', {
     payload: request,
@@ -326,68 +317,6 @@ export async function getStorefrontRegionCode(): Promise<GetStorefrontRegionCode
     'plugin:native-bridge|get_storefront_region_code',
   );
   return result;
-}
-
-/**
- * Trigger a deep e-ink full screen refresh (GC / GC16 waveform) to clear
- * ghosting. Android-only; the native side probes several vendor mechanisms
- * via reflection and returns `success: false` on devices with no e-ink
- * controller. Other platforms reject with an unsupported-platform error.
- */
-export async function refreshEinkScreen(): Promise<RefreshEinkScreenResponse> {
-  return await invoke<RefreshEinkScreenResponse>('plugin:native-bridge|refresh_eink_screen');
-}
-
-/**
- * Whether this device exposes a deep e-ink full-refresh mechanism we can
- * drive (Onyx / NTX / Rockchip / Hanvon vendor hooks). Android-only; the native
- * side resolves the probe read-only (class reflection plus a system-service
- * lookup) — it never flashes the panel — so it is safe to call once at startup
- * to decide whether to offer the "Auto Full Refresh" / "Refresh Page" options.
- * Non-e-ink devices and other platforms report `supported: false`.
- */
-export async function isEinkRefreshSupported(): Promise<boolean> {
-  const response = await invoke<EinkRefreshSupportedResponse>(
-    'plugin:native-bridge|is_eink_refresh_supported',
-  );
-  return response.supported;
-}
-
-// Memoized so the capability probe — a one-shot, read-only query against the
-// vendor hooks — runs a single time per app session, no matter how many
-// settings surfaces read it. Only a successful probe is cached: a transient
-// rejection (e.g. the bridge not ready on first mount) clears the cache so a
-// later call can retry, instead of latching the option hidden for the session.
-let einkRefreshSupportedPromise: Promise<boolean> | null = null;
-let einkRefreshSupportedSettled: boolean | null = null;
-export function checkEinkRefreshSupported(): Promise<boolean> {
-  if (!einkRefreshSupportedPromise) {
-    einkRefreshSupportedPromise = isEinkRefreshSupported().then(
-      (supported) => {
-        einkRefreshSupportedSettled = supported;
-        return supported;
-      },
-      (error) => {
-        // A rejection is inconclusive (bridge not ready / native probe error),
-        // NOT a confirmed 'no hook': the command only rejects on a hard
-        // reflection failure. Drop the cache so a later call retries, and log
-        // why so the field case is distinguishable from a genuine negative.
-        console.error('eink refresh capability probe inconclusive, will retry:', error);
-        einkRefreshSupportedPromise = null;
-        return false;
-      },
-    );
-  }
-  return einkRefreshSupportedPromise;
-}
-
-// Synchronous view of a settled probe (`null` = not yet resolved). Lets the
-// auto-refresh loop skip the guaranteed no-op call on a device the probe
-// authoritatively ruled out, without awaiting. A false here only ever comes
-// from the probe itself, never from a refresh outcome — runtime misses on a
-// supported device are transient and must not disable the feature.
-export function getCachedEinkRefreshSupported(): boolean | null {
-  return einkRefreshSupportedSettled;
 }
 
 /** Webview region to snapshot, in CSS pixels of the viewport (origin top-left). */

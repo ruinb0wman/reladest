@@ -267,8 +267,6 @@ export interface HardwarePageTurnerSettings {
     pageNext: KeyBinding | null;
     sectionPrev: KeyBinding | null;
     sectionNext: KeyBinding | null;
-    /** E-ink full screen refresh (clears ghosting). Optional: absent on settings persisted before the feature existed. */
-    refresh?: KeyBinding | null;
   };
 }
 

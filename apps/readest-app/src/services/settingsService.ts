@@ -21,7 +21,6 @@ import {
   DEFAULT_MOBILE_SYSTEM_SETTINGS,
   DEFAULT_ANNOTATOR_CONFIG,
   DEFAULT_WORD_LENS_CONFIG,
-  DEFAULT_EINK_VIEW_SETTINGS,
   DEFAULT_VIEW_SETTINGS_CONFIG,
 } from './constants';
 import { DEFAULT_AI_SETTINGS } from './ai/constants';
@@ -31,7 +30,6 @@ import { safeLoadJSON, safeSaveJSON } from './persistence';
 export interface Context {
   fs: FileSystem;
   isMobile: boolean;
-  isEink: boolean;
   isAppDataSandbox: boolean;
 }
 
@@ -47,7 +45,6 @@ export function getDefaultViewSettings(ctx: Context): ViewSettings {
     ...DEFAULT_WORD_LENS_CONFIG,
     ...DEFAULT_VIEW_SETTINGS_CONFIG,
     ...(ctx.isMobile ? DEFAULT_MOBILE_VIEW_SETTINGS : {}),
-    ...(ctx.isEink ? DEFAULT_EINK_VIEW_SETTINGS : {}),
     ...(isCJKEnv() ? DEFAULT_CJK_VIEW_SETTINGS : {}),
   };
 }

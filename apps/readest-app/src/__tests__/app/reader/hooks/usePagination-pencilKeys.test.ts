@@ -63,7 +63,6 @@ const PENCIL_TURNER: HardwarePageTurnerSettings = {
     pageNext: { source: 'native', id: 'PencilDoubleTap', label: 'Pencil Double Tap' },
     sectionPrev: null,
     sectionNext: null,
-    refresh: null,
   },
 };
 
@@ -74,7 +73,6 @@ const MEDIA_TURNER: HardwarePageTurnerSettings = {
     pageNext: { source: 'native', id: 'MediaNext', label: 'Media Next' },
     sectionPrev: null,
     sectionNext: null,
-    refresh: null,
   },
 };
 
@@ -163,7 +161,6 @@ describe('usePagination Apple Pencil bindings (#5501)', () => {
         pageNext: { source: 'native', id: 'MediaNext', label: 'Media Next' },
         sectionPrev: null,
         sectionNext: null,
-        refresh: null,
       },
     };
     const view = makeView();

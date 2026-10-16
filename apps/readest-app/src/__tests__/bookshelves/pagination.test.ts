@@ -52,7 +52,6 @@ beforeEach(() => {
       pagePrev: { source: 'native', id: 'MediaPrevious', label: 'Media Previous' },
       sectionNext: null,
       sectionPrev: null,
-      refresh: null,
     },
   };
   scroller = document.createElement('div');
