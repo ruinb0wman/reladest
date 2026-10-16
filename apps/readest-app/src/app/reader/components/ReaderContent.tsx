@@ -7,7 +7,6 @@ import { Book } from '@/types/book';
 import { useEnv } from '@/context/EnvContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { flushPendingLibrarySave, useBookDataStore } from '@/store/bookDataStore';
-import { useLibraryStore } from '@/store/libraryStore';
 import { useReaderStore } from '@/store/readerStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useAndroidGamepadConnection } from '@/hooks/useAndroidGamepadConnection';
@@ -19,7 +18,6 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { UnlistenFn } from '@tauri-apps/api/event';
 import { tauriHandleClose, tauriHandleOnCloseWindow } from '@/utils/window';
 import { isTauriAppPlatform } from '@/services/environment';
-import { splitLibraryOpenIds } from '@/utils/audiobook';
 import { uniqueId } from '@/utils/misc';
 import { eventDispatcher } from '@/utils/event';
 import { transitionAway } from '@/utils/viewTransition';
@@ -49,7 +47,6 @@ import Notebook from './notebook/Notebook';
 import LocalSendManager from '@/components/localsend/LocalSendManager';
 import BooksGrid from './BooksGrid';
 import SettingsDialog from '@/components/settings/SettingsDialog';
-import AudiobookPairingDialog from './audiobook/AudiobookPairingDialog';
 import HardcoverLinkDialog from './hardcover/HardcoverLinkDialog';
 import PageboundLinkDialog from './pagebound/PageboundLinkDialog';
 import ModalPortal from '@/components/ModalPortal';
@@ -80,7 +77,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
   const { initViewState, getViewState, clearViewState } = useReaderStore();
   const { isSettingsDialogOpen, settingsDialogBookKey } = useSettingsStore();
   const [showDetailsBook, setShowDetailsBook] = useState<Book | null>(null);
-  const [audiobookBookKey, setAudiobookBookKey] = useState<string | null>(null);
   const [hardcoverLinkBookKey, setHardcoverLinkBookKey] = useState<string | null>(null);
   const [pageboundLinkBookKey, setPageboundLinkBookKey] = useState<string | null>(null);
   const isInitiating = useRef(false);
@@ -109,22 +105,7 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
     const bookIds = ids || searchParams?.get('ids') || pathname.split('/reader/')[1] || '';
     const requestedIds = bookIds.split(BOOK_IDS_SEPARATOR).filter(Boolean);
 
-    // A streaming audiobook has no document to load - a deep link naming one
-    // (a stale bookmark, an "Open With" link, etc.) must not reach
-    // initViewState/loadBookContent. A lone audiobook id redirects to the
-    // player; one mixed into a multi-book deep link is just dropped, and the
-    // rest of the reader opens normally. Same split the library's own open
-    // paths use (src/utils/audiobook.ts), so a stray ABS id is handled
-    // identically everywhere it could turn up.
-    const { getBookByHash } = useLibraryStore.getState();
-    const { audiobookHash, readerIds: initialIds } = splitLibraryOpenIds(
-      requestedIds,
-      getBookByHash,
-    );
-    if (audiobookHash) {
-      router.replace(`/player?id=${audiobookHash}`);
-      return;
-    }
+    const initialIds = requestedIds;
     // Back from a page opened over the reader, e.g. the account page (#6607):
     // the books are still open, so show them again instead of loading anew.
     if (useReaderStore.getState().areBooksOpen(initialIds)) return;
@@ -157,10 +138,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
   }, []);
 
   useEffect(() => {
-    const handleManageAudiobook = (event: CustomEvent) => {
-      const detail = event.detail as { bookKey?: string } | undefined;
-      if (detail?.bookKey) setAudiobookBookKey(detail.bookKey);
-    };
     const handleLinkHardcoverBook = (event: CustomEvent) => {
       const detail = event.detail as { bookKey?: string } | undefined;
       if (detail?.bookKey) setHardcoverLinkBookKey(detail.bookKey);
@@ -169,11 +146,9 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
       const detail = event.detail as { bookKey?: string } | undefined;
       if (detail?.bookKey) setPageboundLinkBookKey(detail.bookKey);
     };
-    eventDispatcher.on('manage-audiobook', handleManageAudiobook);
     eventDispatcher.on('hardcover-link-book', handleLinkHardcoverBook);
     eventDispatcher.on('pagebound-link-book', handleLinkPageboundBook);
     return () => {
-      eventDispatcher.off('manage-audiobook', handleManageAudiobook);
       eventDispatcher.off('hardcover-link-book', handleLinkHardcoverBook);
       eventDispatcher.off('pagebound-link-book', handleLinkPageboundBook);
     };
@@ -434,13 +409,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
         onGoToLibrary={handleCloseBooksToLibrary}
       />
       {isSettingsDialogOpen && <SettingsDialog bookKey={settingsDialogBookKey} />}
-      {audiobookBookKey && getBookData(audiobookBookKey)?.bookDoc && (
-        <AudiobookPairingDialog
-          bookKey={audiobookBookKey}
-          bookDoc={getBookData(audiobookBookKey)!.bookDoc!}
-          onClose={() => setAudiobookBookKey(null)}
-        />
-      )}
       {hardcoverLinkBookKey && (
         <HardcoverLinkDialog
           bookKey={hardcoverLinkBookKey}

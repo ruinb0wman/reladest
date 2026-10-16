@@ -9,7 +9,7 @@
  *   - `both`   : drop the file and the cover, tombstone the row.
  *   - `purge`  : erase the app-generated Books/<hash>/ directory entirely —
  *                managed book file, cover, config.json (progress, notes,
- *                bookmarks) and nav.json — plus the per-book TTS cache.
+ *                bookmarks) and nav.json.
  *
  * It still refuses to touch an `external` source (a book imported "in place", or
  * a transiently-opened file): deleting a book from Readest must never remove the
@@ -20,7 +20,6 @@ import { FileSystem, DeleteAction } from '@/types/system';
 import { Book } from '@/types/book';
 import { getDir, getCoverFilename } from '@/utils/book';
 import { resolveBookContentSource } from './bookContent';
-import { getAbsOfflineDir } from '@/utils/audiobook';
 
 export async function deleteBook(
   fs: FileSystem,
@@ -52,25 +51,7 @@ export async function deleteBook(
       if (await fs.exists(dir, 'Books')) {
         await fs.removeDir(dir, 'Books', true);
       }
-      // The per-book TTS audio cache lives under Cache (kept out of Books/
-      // so backups and sync never pick it up); purge erases every trace of
-      // the book, so drop it too. Non-purge deletes leave it: like
-      // config.json, a re-downloaded book resumes with a warm audio cache.
-      const ttsCacheDir = `tts-cache/${book.hash}`;
-      if (await fs.exists(ttsCacheDir, 'Cache')) {
-        await fs.removeDir(ttsCacheDir, 'Cache', true);
-      }
     }
-
-    // An offline Audiobookshelf download keeps its tracks beside the book
-    // (#6256); purge already wiped the whole directory above.
-    if (book.format === 'ABS' && deleteAction !== 'purge') {
-      const offlineDir = getAbsOfflineDir(book.hash);
-      if (await fs.exists(offlineDir, 'Books')) {
-        await fs.removeDir(offlineDir, 'Books', true);
-      }
-    }
-    book.absDownloadedAt = null;
 
     if (deleteAction === 'both' && (await fs.exists(getCoverFilename(book), 'Books'))) {
       await fs.removeFile(getCoverFilename(book), 'Books');

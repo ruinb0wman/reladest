@@ -14,7 +14,6 @@ import { getActiveFileSyncBackends } from '@/services/sync/cloudSyncProvider';
 import { isDemoBook } from '@/services/demoBooks';
 import { isFeedBook } from '@/services/rss/feedBookUrl';
 import { ensureFeedBookCover } from '@/services/rss/feedBook';
-import { fetchAbsBookCover } from '@/services/audiobookshelf/librarySync';
 import { runFileLibrarySyncPass } from '@/services/sync/file/runLibrarySync';
 import {
   pickFresherReadingStatus,
@@ -23,7 +22,6 @@ import {
   pickFresherMetadata,
 } from '@/app/library/utils/libraryUtils';
 import { getBookChangedAt, getPrimaryLanguage, pickFresherGroup } from '@/utils/book';
-import { isAudiobook, parseAbsFilePath } from '@/utils/audiobook';
 
 export const useBooksSync = () => {
   const _ = useTranslation();
@@ -70,12 +68,6 @@ export const useBooksSync = () => {
       // peers chase a non-existent path instead of downloading).
       // `altFilePaths` (the other on-disk names that resolve to the same book)
       // is device-local for exactly the same reason.
-      //
-      // An ABS book is the one format whose `filePath` is NOT device-local —
-      // `abs://<serverId>/<itemId>` is its entire identity — so it keeps
-      // riding along in `metadata.absSource` (reconcileAbsBooks writes it) and
-      // is rebuilt by transformBookFromDB. The strip below still applies to it:
-      // the device-field convention holds, only the mirror crosses.
       .map(({ filePath: _filePath, altFilePaths: _altFilePaths, ...rest }): Book => rest);
     return {
       books: newBooks,
@@ -194,16 +186,7 @@ export const useBooksSync = () => {
         .library.filter(isDemoBook)
         .map((book) => book.hash),
     );
-    const cloudBooks = syncedBooks.filter(
-      // An ABS row arrives with its `abs://` filePath rebuilt from
-      // `metadata.absSource` (transformBookFromDB). A row that still has none
-      // — pushed before the mirror existed, when the push stripped filePath
-      // and carried nothing in its place — is dead on arrival: nothing can
-      // resolve the server or item it came from. Drop it rather than shelving
-      // an unopenable entry.
-      (book) =>
-        !demoHashes.has(book.hash) && !(isAudiobook(book) && !parseAbsFilePath(book.filePath)),
-    );
+    const cloudBooks = syncedBooks.filter((book) => !demoHashes.has(book.hash));
     if (!cloudBooks.length) return;
 
     // Process old books first so that when we update the library the order is preserved
@@ -296,26 +279,15 @@ export const useBooksSync = () => {
     // `uploadedAt` gates adoption so a peer never shelves a book whose file it
     // cannot fetch. A feed book has no file to fetch — it is rebuilt from
     // `metadata.feedUrl` — so it would never pass that gate and the
-    // subscription stayed stuck on the device that added it (issue #5307). An
-    // ABS book is fileless for the same reason: it streams from the
-    // Audiobookshelf server named in its `abs://` filePath.
+    // subscription stayed stuck on the device that added it (issue #5307).
     const newBooks = cloudBooks.filter(
       (newBook) =>
         !bookHashesInLibrary.has(newBook.hash) &&
-        (newBook.uploadedAt || isFeedBook(newBook) || isAudiobook(newBook)) &&
+        (newBook.uploadedAt || isFeedBook(newBook)) &&
         !newBook.deletedAt,
     );
 
     const processNewBook = async (newBook: Book) => {
-      // An ABS book's cover is not in cloud storage either; fetch it from its
-      // Audiobookshelf server so the book is shelved with its cover, not a
-      // placeholder waiting for the next ABS cover backfill. Best effort: a
-      // throw here would reject the batch and drop every new book in it.
-      if (appService) {
-        await fetchAbsBookCover(appService, newBook).catch((error) => {
-          console.warn('ABS cover fetch failed; shelving without it:', error);
-        });
-      }
       // A feed book has no cover in cloud storage; its cover is derived from the
       // feed descriptor, so this device regenerates the same image locally.
       newBook.coverImageUrl =

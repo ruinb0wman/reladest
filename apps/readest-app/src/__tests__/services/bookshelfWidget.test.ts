@@ -195,24 +195,6 @@ describe('buildBookshelfWidgetSnapshot', () => {
     });
     expect(snapshot.shelfId).toBe(sciFi.id);
   });
-
-  it('includes tts only when the playing book is one of the tiles shown', async () => {
-    const settings = settingsWith();
-    const result = evaluateWidgetShelves(library, settings, [RECENT_BOOKSHELF_ID])(
-      RECENT_BOOKSHELF_ID,
-    );
-    const build = (bookHash: string) =>
-      buildBookshelfWidgetSnapshot(result, RECENT_BOOKSHELF_ID, grid, {
-        settings,
-        appService,
-        _,
-        emptyTitle: '',
-        playback: { active: true, playing: false, bookHash },
-      });
-    expect((await build('r4')).tts).toEqual({ active: true, playing: false });
-    // r1 matches the shelf but falls outside the 1x3 grid.
-    expect((await build('r1')).tts).toBeUndefined();
-  });
 });
 
 describe('buildBookshelfWidgetCatalog', () => {

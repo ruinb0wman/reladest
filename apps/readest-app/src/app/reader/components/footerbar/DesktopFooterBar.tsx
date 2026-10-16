@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { FaHeadphones } from 'react-icons/fa6';
 import { RiArrowLeftSLine, RiArrowRightSLine } from 'react-icons/ri';
 import { RiArrowGoBackLine, RiArrowGoForwardLine } from 'react-icons/ri';
 import { RiArrowLeftDoubleLine, RiArrowRightDoubleLine } from 'react-icons/ri';
@@ -18,12 +17,10 @@ const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
   progressFraction,
   navigationHandlers,
   forceMobileLayout,
-  onSpeakText,
 }) => {
   const _ = useTranslation();
-  const { hoveredBookKey, getView, getViewState, getViewSettings } = useReaderStore();
+  const { hoveredBookKey, getView, getViewSettings } = useReaderStore();
   const view = getView(bookKey);
-  const viewState = getViewState(bookKey);
   const viewSettings = getViewSettings(bookKey);
 
   const [progressValue, setProgressValue] = React.useState(
@@ -109,11 +106,6 @@ const DesktopFooterBar: React.FC<FooterBarChildProps> = ({
         aria-label={_('Jump to Location')}
         value={progressValue}
         onChange={(e) => handleProgressChange(parseInt(e.target.value, 10))}
-      />
-      <Button
-        icon={<FaHeadphones className={viewState?.ttsEnabled ? 'text-blue-500' : ''} />}
-        onClick={onSpeakText!}
-        label={_('Speak')}
       />
       {!viewSettings?.showPaginationButtons && (
         <Button

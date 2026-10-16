@@ -131,29 +131,6 @@ describe('refreshReadingWidget', () => {
     expect(vi.mocked(updateReadingWidget).mock.lastCall![0].stats).toContain(pageStat);
   });
 
-  it('omits the page stats for an audiobook, whose progress is in seconds', async () => {
-    const { updateReadingWidget, getReadingWidgetInstances } = await bridge();
-    mocks.library = [
-      mk({
-        hash: 'a',
-        format: 'OPDSAUDIO',
-        readingStatus: 'reading',
-        progress: [1200, 25000],
-        duration: 25000,
-      }),
-    ];
-    vi.mocked(getReadingWidgetInstances).mockResolvedValueOnce({
-      instances: [
-        instance(1, { showTimeLeft: true, showPagesRemaining: true, showPageCount: true }),
-      ],
-    });
-    await refreshReadingWidget(androidAppService, _);
-    const { stats } = vi.mocked(updateReadingWidget).mock.lastCall![0];
-
-    expect(stats.some((stat) => stat.includes('pages left') || stat.includes(' / '))).toBe(false);
-    expect(stats.some((stat) => stat.endsWith('left'))).toBe(true);
-  });
-
   it('still publishes when the reference page count cannot be loaded', async () => {
     const { updateReadingWidget, getReadingWidgetInstances } = await bridge();
     mocks.library = [mk({ hash: 'a', readingStatus: 'reading', progress: [50, 100] })];
@@ -233,34 +210,6 @@ describe('refreshReadingWidget', () => {
 
     expect(req.stats.filter((stat) => stat.includes('pages left'))).toHaveLength(1);
     expect(req.stats[1]).toContain('and 9 pages left');
-  });
-
-  it('includes tts only when the playing book matches the selected book', async () => {
-    const { updateReadingWidget, getReadingWidgetInstances } = await bridge();
-    mocks.library = [mk({ hash: 'a', readingStatus: 'reading', progress: [1, 10], updatedAt: 1 })];
-
-    vi.mocked(getReadingWidgetInstances).mockResolvedValueOnce({
-      instances: [instance(1)],
-    });
-    await refreshReadingWidget(androidAppService, _, {
-      active: true,
-      playing: true,
-      bookHash: 'other',
-    });
-    expect(vi.mocked(updateReadingWidget).mock.lastCall![0].tts).toBeUndefined();
-
-    vi.mocked(getReadingWidgetInstances).mockResolvedValueOnce({
-      instances: [instance(1)],
-    });
-    await refreshReadingWidget(androidAppService, _, {
-      active: true,
-      playing: true,
-      bookHash: 'a',
-    });
-    expect(vi.mocked(updateReadingWidget).mock.lastCall![0].tts).toEqual({
-      active: true,
-      playing: true,
-    });
   });
 
   it('skips a redundant push when the snapshot is unchanged, and republishes when it changes', async () => {

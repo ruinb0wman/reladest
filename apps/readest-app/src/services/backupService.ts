@@ -8,17 +8,11 @@ import { SystemSettings } from '@/types/settings';
 import type { PageStatEvent, StatBook } from '@/types/statistics';
 import { StatisticsDb } from '@/services/statistics/statisticsDb';
 import { getBookDirOfPath, getLibraryFilename } from '@/utils/book';
-import { getAbsOfflineDir } from '@/utils/audiobook';
 import { stampBookConfigSchema } from '@/utils/serializer';
 import { configureZip } from '@/utils/zip';
 
 /** Book file extensions for identifying book files in backup directories. */
 const BOOK_EXTS = new Set(Object.values(EXTS));
-
-const isAbsOfflineEntry = (entryName: string): boolean => {
-  const dir = getBookDirOfPath(entryName);
-  return !!dir && entryName.startsWith(`${getAbsOfflineDir(dir)}/`);
-};
 
 /** Root-level zip entry name for the backed-up global settings snapshot. */
 export const SETTINGS_BACKUP_FILENAME = 'settings.json';
@@ -92,8 +86,8 @@ export const BACKUP_SETTINGS_BLACKLIST = [
 /**
  * Credential dot-paths stripped from backups unless `includeCredentials`
  * is set. OPDS catalog, Audiobookshelf server, custom translator and custom
- * TTS credentials live inside the `opdsCatalogs` / `absServers` /
- * `customTranslators` / `customTTSServices` arrays and are handled separately in
+ * Credentials live inside the `opdsCatalogs` / `customTranslators` arrays and
+ * are handled separately in
  * `sanitizeSettingsForBackup`.
  */
 export const BACKUP_SETTINGS_CREDENTIAL_FIELDS = [
@@ -159,30 +153,10 @@ export function sanitizeSettingsForBackup(
         return rest;
       });
     }
-    if (Array.isArray(clone.absServers)) {
-      clone.absServers = clone.absServers.map((server) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const {
-          username: _username,
-          password: _password,
-          accessToken: _accessToken,
-          refreshToken: _refreshToken,
-          ...rest
-        } = server;
-        return rest;
-      });
-    }
     if (Array.isArray(clone.customTranslators)) {
       clone.customTranslators = clone.customTranslators.map((translator) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { apiKey: _apiKey, ...rest } = translator;
-        return rest;
-      });
-    }
-    if (Array.isArray(clone.customTTSServices)) {
-      clone.customTTSServices = clone.customTTSServices.map((service) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { apiKey: _apiKey, ...rest } = service;
         return rest;
       });
     }
@@ -378,7 +352,6 @@ async function collectBackupEntries(
     .map((file) => ({ file, entryName: file.path.replace(/\\/g, '/') }))
     // Offline Audiobookshelf audio (#6256) is re-downloadable and can run to
     // gigabytes, each file read into memory here.
-    .filter(({ entryName }) => !isAbsOfflineEntry(entryName))
     // A restore killed mid-file leaves its `.part` temp file behind.
     .filter(({ entryName }) => !entryName.endsWith('.part'));
   return { texts, files: bookFiles };

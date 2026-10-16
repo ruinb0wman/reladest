@@ -13,7 +13,6 @@ import { useEnv } from '@/context/EnvContext';
 import { useThemeStore } from '@/store/themeStore';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { useSettingsStore } from '@/store/settingsStore';
-import { isAbsBookOrphaned, useABSServerStore } from '@/store/absServerStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useMedianPageDurationsSecs } from '@/hooks/useMedianPageDurationSecs';
@@ -49,7 +48,6 @@ import { MIMETYPES, EXTS } from '@/libs/document';
 import { makeSafeFilename } from '@/utils/misc';
 import { isTauriAppPlatform } from '@/services/environment';
 import { isLocalSendEnabled } from '@/services/localsend/devicePrefs';
-import { splitLibraryOpenIds } from '@/utils/audiobook';
 
 import { useSpatialNavigation } from '../hooks/useSpatialNavigation';
 import DeleteConfirmAlert from '@/components/DeleteConfirmAlert';
@@ -240,20 +238,9 @@ const Bookshelf: React.FC<BookshelfProps> = ({
     [router, searchParams],
   );
 
-  // ABS books whose server row hasn't reached this device (or was removed)
-  // can't stream, have no cover source, and can't be opened — hide them from
-  // every shelf derivation (grid, groups, recent shelf, search). They stay in
-  // the store and keep syncing; they reappear the moment the server row
-  // lands. `absServers` and `settings.absServers` are deps because the orphan
-  // check reads the server store with a settings fallback, both of which
-  // hydrate asynchronously after the cached library first renders. Keying on
-  // the one settings field it reads keeps unrelated settings writes from
-  // re-filtering and re-sorting every shelf.
-  const absServers = useABSServerStore((state) => state.servers);
   const visibleBooks = useMemo(
-    () => libraryBooks.filter((book) => !book.deletedAt && !isAbsBookOrphaned(book)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [libraryBooks, absServers, settings.absServers],
+    () => libraryBooks.filter((book) => !book.deletedAt),
+    [libraryBooks],
   );
 
   const filteredBooks = useMemo(() => {
@@ -443,20 +430,9 @@ const Bookshelf: React.FC<BookshelfProps> = ({
 
   const openSelectedBooks = () => {
     handleSetSelectMode(false);
-    const { audiobookHash, readerIds, droppedAudiobooks } = splitLibraryOpenIds(
-      getSelectedBooks(),
-      (hash) => libraryBooks.find((book) => book.hash === hash),
-    );
-    if (audiobookHash) {
-      router.push(`/player?id=${audiobookHash}`);
-      return;
-    }
-    if (droppedAudiobooks) {
-      eventDispatcher.dispatch('toast', {
-        message: _('Audiobooks open in the player'),
-        type: 'info',
-      });
-    }
+    // The selection used to be split between the reader and the audiobook
+    // player; every selected book opens in the reader now.
+    const readerIds = getSelectedBooks();
     if (readerIds.length === 0) return;
     if (appService?.hasWindow && settings.openBookInNewWindow) {
       showReaderWindow(appService, readerIds);

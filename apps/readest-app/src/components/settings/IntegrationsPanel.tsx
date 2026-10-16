@@ -11,7 +11,6 @@ import {
   RiDiscordLine,
   RiWifiLine,
   RiCloudLine,
-  RiHeadphoneLine,
 } from 'react-icons/ri';
 import { useAppRouter } from '@/hooks/useAppRouter';
 import { useEnv } from '@/context/EnvContext';
@@ -21,7 +20,6 @@ import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 import { useQuotaStats } from '@/hooks/useQuotaStats';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useCustomOPDSStore } from '@/store/customOPDSStore';
-import { useABSServerStore } from '@/store/absServerStore';
 import { useFileSyncStore } from '@/store/fileSyncStore';
 import { useLocalSendStore } from '@/store/localsendStore';
 import { CatalogManager } from '@/app/opds/components/CatalogManager';
@@ -35,7 +33,6 @@ import {
 } from '@/services/localsend/devicePrefs';
 import { navigateToLogin, navigateToProfile } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
-import ABSForm from './integrations/ABSForm';
 import BookOrbitForm from './integrations/BookOrbitForm';
 import ReadwiseForm from './integrations/ReadwiseForm';
 import HardcoverForm from './integrations/HardcoverForm';
@@ -68,7 +65,6 @@ type SubPage =
   | 'pagebound'
   | 'notion'
   | 'opds'
-  | 'audiobookshelf'
   | 'localsend'
   | null;
 
@@ -92,8 +88,6 @@ const IntegrationsPanel: React.FC = () => {
   const { settings, requestedSubPage, setRequestedSubPage } = useSettingsStore();
   const opdsCatalogs = useCustomOPDSStore((s) => s.catalogs);
   const opdsCount = opdsCatalogs.filter((c) => !c.deletedAt).length;
-  const absServers = useABSServerStore((s) => s.servers);
-  const absCount = absServers.filter((s) => !s.deletedAt).length;
   // The device name Nearby BookDrop announces once its service is running,
   // so the integrations row can show it in place of a bare "On".
   const localSendAlias = useLocalSendStore((s) => s.status?.alias);
@@ -128,12 +122,6 @@ const IntegrationsPanel: React.FC = () => {
   // handles backfilling contentId for legacy entries.
   useEffect(() => {
     void useCustomOPDSStore.getState().loadCustomOPDSCatalogs(envConfig);
-  }, [envConfig]);
-
-  // Same hydration as above, for the Audiobookshelf server list — keeps the
-  // Content Sources row's server count accurate on first open.
-  useEffect(() => {
-    void useABSServerStore.getState().loadABSServers(envConfig);
   }, [envConfig]);
 
   // Android Back / Esc: when any integrations sub-page (KOSync, WebDAV,
@@ -180,7 +168,6 @@ const IntegrationsPanel: React.FC = () => {
       requestedSubPage === 'pagebound' ||
       requestedSubPage === 'notion' ||
       requestedSubPage === 'opds' ||
-      requestedSubPage === 'audiobookshelf' ||
       requestedSubPage === 'localsend'
     ) {
       setSubPage(requestedSubPage);
@@ -291,12 +278,6 @@ const IntegrationsPanel: React.FC = () => {
         <CatalogManager inSubPage />
       </div>
     );
-  if (subPage === 'audiobookshelf')
-    return (
-      <div className='my-4 w-full'>
-        <ABSForm onBack={() => setSubPage(null)} />
-      </div>
-    );
   const bookOrbitStatus = settings.bookorbit?.enabled
     ? settings.bookorbit.username
       ? _('Connected as {{user}}', { user: settings.bookorbit.username })
@@ -350,7 +331,6 @@ const IntegrationsPanel: React.FC = () => {
 
   const opdsStatus =
     opdsCount > 0 ? _('{{count}} catalog', { count: opdsCount }) : _('No catalogs');
-  const absStatus = absCount > 0 ? _('{{count}} server', { count: absCount }) : _('No servers');
   // Enabled rows show the announced device name (falling back to the stored
   // custom alias, then a bare "On" until the service reports its alias).
   const localSendName = localSendAlias || getLocalSendAlias();
@@ -487,12 +467,6 @@ const IntegrationsPanel: React.FC = () => {
               title={_('OPDS Catalogs')}
               status={opdsStatus}
               onClick={() => setSubPage('opds')}
-            />
-            <IntegrationRow
-              icon={RiHeadphoneLine}
-              title={_('Audiobookshelf')}
-              status={absStatus}
-              onClick={() => setSubPage('audiobookshelf')}
             />
           </div>
         </div>

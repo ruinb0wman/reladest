@@ -6,9 +6,7 @@ import { CustomTexture } from '@/styles/textures';
 import { HighlightColor, HighlightStyle, UserHighlightColor, ViewSettings } from './book';
 import { OPDSCatalog } from './opds';
 import { WebSource } from './webSource';
-import { ABSServer } from './audiobookshelf';
 import type { CustomTranslator, TranslationPrompt } from './translation';
-import type { CustomTTSService } from './customTTS';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
 import type { DictionarySettings, ImportedDictionary } from '@/services/dictionaries/types';
@@ -234,9 +232,7 @@ export type SyncCategory =
   | 'font'
   | 'texture'
   | 'opds_catalog'
-  | 'abs_server'
   | 'custom_translator'
-  | 'custom_tts'
   | 'settings'
   | 'credentials'
   | 'stats';
@@ -249,9 +245,7 @@ export const SYNC_CATEGORIES: readonly SyncCategory[] = [
   'font',
   'texture',
   'opds_catalog',
-  'abs_server',
   'custom_translator',
-  'custom_tts',
   'settings',
   'stats',
   'credentials',
@@ -396,13 +390,10 @@ export interface SystemSettings {
   customDictionaries: ImportedDictionary[];
   dictionarySettings: DictionarySettings;
   opdsCatalogs: OPDSCatalog[];
-  absServers: ABSServer[];
   /** User-configured translation backends; synced as `custom_translator`. */
   customTranslators?: CustomTranslator[];
   /** User translation prompts; synced as `translation_prompt`. */
   translationPrompts?: TranslationPrompt[];
-  /** User OpenAI-compatible speech services; synced as `custom_tts`. */
-  customTTSServices?: CustomTTSService[];
   /** Saved sites for the "From Web Browser" import (#5775). Device-local. */
   webSources?: WebSource[];
   metadataSeriesCollapsed: boolean;

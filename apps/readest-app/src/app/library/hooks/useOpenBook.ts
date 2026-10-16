@@ -7,7 +7,6 @@ import { useAppRouter } from '@/hooks/useAppRouter';
 import { hasFileSyncMirror, useMakeBookAvailable } from '@/hooks/useMakeBookAvailable';
 import { eventDispatcher } from '@/utils/event';
 import { navigateToReader, showReaderWindow } from '@/utils/nav';
-import { isAbsEbook, isAudiobook } from '@/utils/audiobook';
 
 interface UseOpenBookOptions {
   setLoading: Dispatch<SetStateAction<boolean>>;
@@ -33,14 +32,6 @@ export const useOpenBook = ({ setLoading, handleBookDownload }: UseOpenBookOptio
 
   const openBook = useCallback(
     async (book: Book, cfi?: string, options?: { highlightSearchResult?: boolean }) => {
-      // A streaming audiobook has no local file and no document loader path -
-      // it opens in the full-screen player instead of the reader. Short-circuit
-      // before any of the file-availability logic below, which assumes a real
-      // file backs `book.filePath`.
-      if (isAudiobook(book)) {
-        router.push(`/player?id=${book.hash}`);
-        return;
-      }
       // In-place books point at a file outside Books/<hash>/ that the user (or
       // another app) may have moved, renamed, or deleted between sessions. Probe
       // the source before navigating: if it's gone, drop the stale record
@@ -54,13 +45,7 @@ export const useOpenBook = ({ setLoading, handleBookDownload }: UseOpenBookOptio
       // missing LOCAL file is not evidence that the user wants the REMOTE copy
       // destroyed, and there the book is very likely still on the mirror;
       // `makeBookAvailable` below fetches it back instead.
-      if (
-        book.filePath &&
-        !isAbsEbook(book) &&
-        !book.uploadedAt &&
-        !book.deletedAt &&
-        !hasFileSyncMirror()
-      ) {
+      if (book.filePath && !book.uploadedAt && !book.deletedAt && !hasFileSyncMirror()) {
         const available = await appService?.isBookAvailable(book);
         if (!available) {
           eventDispatcher.dispatch('toast', {

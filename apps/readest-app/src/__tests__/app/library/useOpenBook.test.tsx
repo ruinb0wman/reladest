@@ -134,19 +134,3 @@ describe('useOpenBook — a missing local file must not delete the cloud copy (#
     expect(navigateToReader).not.toHaveBeenCalled();
   });
 });
-
-describe('useOpenBook — audiobooks open in the player, not the reader', () => {
-  it('routes an ABS book straight to /player without touching file-availability logic', async () => {
-    const book = makeBook({ format: 'ABS', filePath: 'abs://srv1/item1' });
-
-    const { result, handleBookDownload } = setup();
-    await result.current.openBook(book);
-    await flushNavigation();
-
-    expect(routerPush).toHaveBeenCalledWith('/player?id=h1');
-    expect(navigateToReader).not.toHaveBeenCalled();
-    expect(isBookAvailable).not.toHaveBeenCalled();
-    expect(handleBookDownload).not.toHaveBeenCalled();
-    expect(deleteIntents).toEqual([]);
-  });
-});

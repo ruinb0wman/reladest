@@ -7,7 +7,6 @@ import { useReaderStore } from '@/store/readerStore';
 import { useBookTransferActions } from '@/app/library/hooks/useBookTransferActions';
 import { isTauriAppPlatform } from '@/services/environment';
 import { LibraryGroupByType } from '@/types/settings';
-import { isAudiobook } from '@/utils/audiobook';
 import { navigateToReader } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
 import {
@@ -16,7 +15,6 @@ import {
   parseWidgetEditShelfDeepLink,
   parseWidgetGroupDeepLink,
 } from '@/utils/deeplink';
-import { setPendingTTSAutoplay } from '@/utils/ttsAutoplay';
 import { isMainAppWindow } from '@/utils/window';
 import { markLaunchUrl } from '@/utils/deeplinkConsume';
 import { useMakeBookAvailable } from './useMakeBookAvailable';
@@ -83,13 +81,6 @@ export function useOpenLaunchLinks() {
         releaseLaunchLinkGate();
         return;
       }
-      // A streaming audiobook has no document: always open it in the player,
-      // before the reader checks (an in-place switch would hang on the spinner).
-      if (isAudiobook(book)) {
-        router.push(`/player?id=${bookHash}`);
-        return;
-      }
-
       // Only bookKeys are displayed; viewStates keeps stale detached views, and
       // a goTo on one would leave the reader stuck (#4887).
       if (cfi) {
@@ -133,8 +124,6 @@ export function useOpenLaunchLinks() {
         id: 'launchBookUrls',
         needsLibrary: true,
         open: () => {
-          // Android Auto cold-resume: start read-aloud once this book's view inits.
-          if (book.autoplay) setPendingTTSAutoplay(book.bookHash);
           return openBook(book.bookHash);
         },
       };

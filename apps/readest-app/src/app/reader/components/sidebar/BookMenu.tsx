@@ -12,7 +12,6 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useParallelViewStore } from '@/store/parallelViewStore';
 import { isWebAppPlatform } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
-import { canPairAudiobook } from '@/utils/audiobook';
 import { FIXED_LAYOUT_FORMATS } from '@/types/book';
 import { DOWNLOAD_READEST_URL } from '@/services/constants';
 import { saveViewSettings } from '@/helpers/settings';
@@ -39,7 +38,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
   const { parallelViews, setParallel, unsetParallel } = useParallelViewStore();
   const viewSettings = getViewSettings(sideBarBookKey!);
   const bookData = sideBarBookKey ? getBookData(sideBarBookKey) : null;
-  const showPairAudiobook = canPairAudiobook(bookData);
   const showTOCThumbnails = viewSettings?.showTOCThumbnails ?? true;
 
   const [isSortedTOC, setIsSortedTOC] = React.useState(viewSettings?.sortedTOC || false);
@@ -165,11 +163,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     eventDispatcher.dispatch('clear-annotations', { bookKey: sideBarBookKey });
     setIsDropdownOpen?.(false);
   };
-  const handleManageAudiobook = () => {
-    eventDispatcher.dispatch('manage-audiobook', { bookKey: sideBarBookKey });
-    setIsDropdownOpen?.(false);
-  };
-
   return (
     <Menu
       className={clsx('book-menu dropdown-content z-20 shadow-2xl', menuClassName)}
@@ -272,14 +265,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
       )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
       <MenuItem label={_('Proofread')} onClick={showProofreadRulesWindow} />
-      {showPairAudiobook && (
-        <MenuItem
-          label={
-            getConfig(sideBarBookKey!)?.audiobook ? _('Manage Audiobook') : _('Pair Audiobook')
-          }
-          onClick={handleManageAudiobook}
-        />
-      )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
       <MenuItem label={_('Export Annotations')} onClick={handleExportAnnotations} />
       <MenuItem label={_('Import Annotations')} onClick={handleImportAnnotations} />

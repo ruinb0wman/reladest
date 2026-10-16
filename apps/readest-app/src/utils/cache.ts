@@ -1,6 +1,5 @@
 import { AppService, BaseDir, FileItem } from '@/types/system';
 import { Book } from '@/types/book';
-import { getAudiobookDirectory } from '@/services/audiobook/storage';
 import { getBookDirOfPath } from './book';
 
 export interface CacheClearProgress {
@@ -65,9 +64,7 @@ export const getCacheEntries = async (
  * Sidecars that are never reclaimed. A plain (non-purge) delete keeps them in
  * a soft-deleted book's dir on purpose so a re-download resumes with its
  * cover, progress, and notes, and a transiently opened file keeps its
- * progress in a dir no saved row owns. The paired audiobook copies under
- * `audiobook/` stay with them: config.json still points at those files, and
- * only the pairing's own removal path clears that association.
+ * progress in a dir no saved row owns.
  */
 const KEPT_SIDECARS = new Set(['cover.png', 'config.json', 'nav.json']);
 
@@ -83,7 +80,7 @@ const ORPHAN_SETTLE_MS = 60 * 60 * 1000;
  * Files under Books/ that no live library book owns, as deletable entries:
  * everything but the kept sidecars in a `<hash>/` dir with no library row
  * (an import killed before the library was saved) or with a soft-deleted one
- * (a book file a cloud tombstone never removed, a paired audiobook copy, a
+ * (a book file a cloud tombstone never removed, a
  * feed's article cache). Root-level library metadata is never an orphan.
  * Neither kind shows in the library UI, which is how they went unnoticed in
  * #5837.
@@ -126,7 +123,6 @@ export const getOrphanedBookEntries = async (
     if (!dir || liveHashes.has(dir)) continue;
     const path = file.path.replace(/\\/g, '/');
     if (KEPT_SIDECARS.has(path.slice(dir.length + 1))) continue;
-    if (path.startsWith(`${getAudiobookDirectory(dir)}/`)) continue;
     if (!(await isSettled(dir))) continue;
     entries.push({ base: 'Books', path: file.path, size: file.size || 0 });
   }

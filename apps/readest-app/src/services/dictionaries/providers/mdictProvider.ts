@@ -17,7 +17,6 @@
  * `meta.encrypt`) and surfaces as `unsupported`.
  */
 import { eventDispatcher } from '@/utils/event';
-import { SILENCE_DATA } from '@/services/tts/TTSData';
 import { stubTranslation as _ } from '@/utils/misc';
 import { getDictStyles, liftDarkTextColors } from '@/utils/style';
 import type { DictionaryProvider, ImportedDictionary } from '../types';
@@ -269,6 +268,12 @@ const audioBlobFor = (path: string, data: Uint8Array<ArrayBuffer>): Blob =>
 // a silent source *synchronously* in the click handler unlocks it; swapping
 // `src` afterwards keeps playing on the already-unlocked element.
 let dictAudio: HTMLAudioElement | null = null;
+
+// A silent MP3 used to unlock the audio element inside the click gesture. It
+// used to live in the TTS module (which is gone); the data URL is all this
+// needs, so it is local now.
+const SILENCE_DATA =
+  'data:audio/mp3;base64,//MkxAAHiAICWABElBeKPL/RANb2w+yiT1g/gTok//lP/W/l3h8QO/OCdCqCW2Cw//MkxAQHkAIWUAhEmAQXWUOFW2dxPu//9mr60ElY5sseQ+xxesmHKtZr7bsqqX2L//MkxAgFwAYiQAhEAC2hq22d3///9FTV6tA36JdgBJoOGgc+7qvqej5Zu7/7uI9l//MkxBQHAAYi8AhEAO193vt9KGOq+6qcT7hhfN5FTInmwk8RkqKImTM55pRQHQSq//MkxBsGkgoIAABHhTACIJLf99nVI///yuW1uBqWfEu7CgNPWGpUadBmZ////4sL//MkxCMHMAH9iABEmAsKioqKigsLCwtVTEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVV//MkxCkECAUYCAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
 
 // Resolved audio blob URLs, keyed by the element that plays them. The MDX body
 // is untrusted markup, so a URL parked in one of its attributes and read back

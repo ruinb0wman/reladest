@@ -9,13 +9,7 @@ import {
   MdKeyboardArrowDown,
   MdKeyboardArrowUp,
 } from 'react-icons/md';
-import {
-  IoAdd,
-  IoRemove,
-  IoSettingsSharp,
-  IoVolumeHigh,
-  IoVolumeMediumOutline,
-} from 'react-icons/io5';
+import { IoAdd, IoRemove, IoSettingsSharp } from 'react-icons/io5';
 import { ViewSettings } from '@/types/book';
 import { Insets } from '@/types/misc';
 import { useEnv } from '@/context/EnvContext';
@@ -41,7 +35,6 @@ interface ParagraphBarProps {
   onNext: () => void;
   onClose: () => void;
   /** True when a TTS session is engaged (playing/paused) — drives the audio glyph. */
-  ttsActive?: boolean;
   /** Toggle read-along: start TTS from the focused paragraph, or stop it. */
   onToggleTtsAudio?: () => void;
   /** Index into PARAGRAPH_FONT_SCALE_OPTIONS for the display settings (#5246). */
@@ -63,8 +56,6 @@ const ParagraphBar: React.FC<ParagraphBarProps> = ({
   onPrev,
   onNext,
   onClose,
-  ttsActive = false,
-  onToggleTtsAudio,
   fontScaleIndex,
   onFontScaleIndexChange,
   viewSettings,
@@ -330,30 +321,6 @@ const ParagraphBar: React.FC<ParagraphBarProps> = ({
         >
           <NextIcon size={iconSize26} />
         </button>
-
-        {onToggleTtsAudio && (
-          // Audio (TTS) toggle — starts read-along from the focused paragraph,
-          // or stops it when engaged (#3235). Active state uses a filled glyph +
-          // eink-bordered surface so it reads in e-ink without relying on color.
-          <button
-            type='button'
-            onClick={onToggleTtsAudio}
-            disabled={isLoading}
-            className={clsx(
-              BAR_BUTTON,
-              ttsActive && 'text-primary eink-bordered not-eink:bg-base-200',
-              isLoading && 'pointer-events-none opacity-50',
-            )}
-            title={ttsActive ? _('Pause audio') : _('Play audio')}
-            aria-label={ttsActive ? _('Pause audio') : _('Play audio')}
-          >
-            {ttsActive ? (
-              <IoVolumeHigh size={iconSize26} aria-hidden='true' />
-            ) : (
-              <IoVolumeMediumOutline size={iconSize26} aria-hidden='true' />
-            )}
-          </button>
-        )}
 
         <button
           type='button'

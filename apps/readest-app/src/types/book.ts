@@ -1,9 +1,5 @@
 import type { InkStroke } from '@/services/handwriting/model';
 import { BookMetadata } from '@/libs/document';
-import { TTSHighlightOptions } from '@/services/tts/types';
-import { TTSHighlightGranularity } from '@/services/tts/types';
-import { TTSMediaMetadataMode } from '@/services/tts/types';
-import { TTSPlayerStyle } from '@/services/tts/types';
 import type { AnnotationLinkType } from '@/utils/deeplink';
 import { AnnotationToolType } from './annotator';
 
@@ -418,27 +414,6 @@ export interface ViewConfig {
   readingRulerColor: ReadingRulerColor;
 }
 
-export interface TTSConfig {
-  ttsRate: number;
-  ttsSentenceGap: number;
-  ttsParagraphGap: number;
-  ttsVoice: string;
-  // Prefer the book's own recorded narration (EPUB 3 Media Overlays) over
-  // synthesized speech. Defaults on, so a read-along book is read by its
-  // narrator; picking a synthetic voice while that book is open clears it.
-  // Distinct from ttsVoice because ttsVoice inherits the global default and so
-  // cannot tell "never chose" from "chose a synthetic voice for this book".
-  ttsUseNarration: boolean;
-  ttsLocation: string;
-  ttsHighlightOptions: TTSHighlightOptions;
-  ttsHighlightGranularity: TTSHighlightGranularity;
-  ttsMediaMetadata: TTSMediaMetadataMode;
-  ttsPlayerStyle: TTSPlayerStyle;
-  ttsSkipInlineAnnotations: boolean;
-  // Sentence-by-sentence Read Aloud: pause after every sentence (#5233).
-  ttsPauseAfterSentence: boolean;
-}
-
 export interface TranslatorConfig {
   translateSourceLang?: string;
   translationEnabled: boolean;
@@ -559,7 +534,6 @@ export interface ViewSettings
     BookFont,
     BookLanguage,
     ViewConfig,
-    TTSConfig,
     TranslatorConfig,
     ScreenConfig,
     ProofreadRulesConfig,

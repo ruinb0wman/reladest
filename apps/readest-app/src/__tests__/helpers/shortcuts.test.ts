@@ -26,37 +26,12 @@ describe('Shortcut entry structure', () => {
   });
 });
 
-describe('TTS play/pause shortcut', () => {
-  it('should have onTTSPlayPause shortcut with space', async () => {
-    const shortcuts = await getDefaults();
-    expect(shortcuts.onTTSPlayPause.keys).toEqual([' ']);
-  });
-
-  it('should also have space in onGoRight as fallback', async () => {
+describe('space binding', () => {
+  // The bare space key used to also be TTS play/pause; with that shortcut gone
+  // it belongs to page-turn alone.
+  it('is claimed by onGoRight', async () => {
     const shortcuts = await getDefaults();
     expect(shortcuts.onGoRight.keys).toContain(' ');
-  });
-});
-
-describe('TTS navigation shortcuts', () => {
-  it('should have onTTSGoNextSentence shortcut with ctrl+] and cmd+]', async () => {
-    const shortcuts = await getDefaults();
-    expect(shortcuts.onTTSGoNextSentence.keys).toEqual(['ctrl+]', 'cmd+]']);
-  });
-
-  it('should have onTTSGoPreviousSentence shortcut with ctrl+[ and cmd+[', async () => {
-    const shortcuts = await getDefaults();
-    expect(shortcuts.onTTSGoPreviousSentence.keys).toEqual(['ctrl+[', 'cmd+[']);
-  });
-
-  it('should have onTTSGoNextParagraph shortcut with ctrl+shift+} and cmd+shift+}', async () => {
-    const shortcuts = await getDefaults();
-    expect(shortcuts.onTTSGoNextParagraph.keys).toEqual(['ctrl+shift+}', 'cmd+shift+}']);
-  });
-
-  it('should have onTTSGoPreviousParagraph shortcut with ctrl+shift+{ and cmd+shift+{', async () => {
-    const shortcuts = await getDefaults();
-    expect(shortcuts.onTTSGoPreviousParagraph.keys).toEqual(['ctrl+shift+{', 'cmd+shift+{']);
   });
 });
 
@@ -121,15 +96,7 @@ describe('getShortcutsForDisplay', () => {
     const mod = await getModule();
     const result = mod.getShortcutsForDisplay(true);
     const sectionNames = result.map((s) => s.section);
-    expect(sectionNames).toEqual([
-      'General',
-      'Navigation',
-      'Text to Speech',
-      'Selection',
-      'Zoom',
-      'Window',
-      'Notes',
-    ]);
+    expect(sectionNames).toEqual(['General', 'Navigation', 'Selection', 'Zoom', 'Window', 'Notes']);
   });
 
   it('assigns every action to a visible section', async () => {
@@ -292,12 +259,6 @@ describe('Default bindings that always fire', () => {
     'onToggleAutoScroll',
     'onOpenFontLayoutSettings',
     'onShowSearchBar',
-    'onToggleTTS',
-    'onTTSGoNextSentence',
-    'onTTSGoPreviousSentence',
-    'onTTSGoNextParagraph',
-    'onTTSGoPreviousParagraph',
-    'onTTSHighlightSentence',
     'onReloadPage',
     'onGoLeft',
     'onGoRight',

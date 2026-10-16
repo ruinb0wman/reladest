@@ -15,7 +15,6 @@ import { coalesceAsync } from '@/utils/coalesceAsync';
 import type {
   BookshelfWidgetCatalog,
   BookshelfWidgetInstance,
-  BookshelfWidgetTts,
   UpdateBookshelfWidgetRequest,
 } from '@/utils/bridge';
 import { bookshelfName, RECENT_BOOKSHELF_ID } from '@/services/bookshelves/definitions';
@@ -115,10 +114,6 @@ export const buildBookshelfWidgetItems = async (
   });
 };
 
-/** A playing TTS session plus the book it is reading, which decides which
- * widgets get the transport bar. */
-export type BookshelfWidgetPlayback = BookshelfWidgetTts & { bookHash: string };
-
 /** One widget's snapshot: its shelf as the Library presents it, cut to the
  * grid, with the transport bar only when the playing book is one of the tiles
  * shown (a loose book or a member of a shown group). `shelfId` is the one the
@@ -132,21 +127,12 @@ export const buildBookshelfWidgetSnapshot = async (
     appService: AppService;
     _: Translate;
     emptyTitle: string;
-    playback?: BookshelfWidgetPlayback;
     booksDir?: string;
   },
 ): Promise<BookshelfWidgetSnapshot> => {
-  const { settings, appService, _, emptyTitle, playback, booksDir } = options;
+  const { settings, appService, _, emptyTitle, booksDir } = options;
   const capacity = clampGrid(grid.gridRows) * clampGrid(grid.gridColumns);
   const items = presentBookshelf(result, settings, '').slice(0, capacity);
-  const isShown = (hash: string) =>
-    items.some((item) =>
-      'books' in item ? item.books.some((b) => b.hash === hash) : item.hash === hash,
-    );
-  const tts =
-    playback && isShown(playback.bookHash)
-      ? { active: playback.active, playing: playback.playing }
-      : undefined;
   const { definition } = result;
   const groupBy = resolveBookshelfGroupBy(
     definition,
@@ -158,7 +144,6 @@ export const buildBookshelfWidgetSnapshot = async (
     // Heading visibility is the native-only showShelfName setting; the name is always sent.
     sectionTitle: shelfTitle(definition, _),
     emptyTitle,
-    ...(tts ? { tts } : {}),
   };
 };
 
@@ -192,11 +177,7 @@ export const buildBookshelfWidgetCatalog = (
 const lastPublished = new Map<number, string>();
 let lastCatalog = '';
 
-const refreshBookshelfWidgetImpl = async (
-  appService: AppService,
-  _: Translate,
-  playback?: BookshelfWidgetPlayback,
-): Promise<void> => {
+const refreshBookshelfWidgetImpl = async (appService: AppService, _: Translate): Promise<void> => {
   if (!appService.isMobileApp) return;
   const library = useLibraryStore.getState().library;
   const { settings } = useSettingsStore.getState();
@@ -243,7 +224,7 @@ const refreshBookshelfWidgetImpl = async (
         shelfFor(target.shelfId),
         target.shelfId,
         target,
-        { settings, appService, _, emptyTitle, playback, booksDir },
+        { settings, appService, _, emptyTitle, booksDir },
       );
       const request = { ...snapshot, appWidgetId: target.appWidgetId };
       const fingerprint = JSON.stringify(request);

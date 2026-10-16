@@ -32,7 +32,6 @@ const props = (progressValid: boolean): FooterBarChildProps => ({
   actionTab: '',
   forceMobileLayout: false,
   onSetActionTab: () => {},
-  onSpeakText: () => {},
   navigationHandlers: {
     onPrevPage: () => {},
     onNextPage: () => {},

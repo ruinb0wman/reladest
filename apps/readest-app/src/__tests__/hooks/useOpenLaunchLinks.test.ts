@@ -6,7 +6,6 @@ import { cleanup, renderHook } from '@testing-library/react';
 // reader is already mounted used to be treated like any other book and
 // dispatched into the reader in place ('open-book-in-reader'), which drives
 // useBooksManager's initViewState down the document-loader path a streaming
-// ABS book has no file for - the reader hangs on the spinner. An audiobook
 // must route to the player instead, the same way a library tap on an ABS
 // book already does (router.push('/player?id=...')), regardless of whether
 // a reader happens to be mounted underneath.
@@ -16,7 +15,6 @@ const routerPushMock = vi.fn();
 
 const books: Record<string, { hash: string; format: string }> = {
   epubBook: { hash: 'epubBook', format: 'EPUB' },
-  absBook: { hash: 'absBook', format: 'ABS' },
 };
 
 const libraryState = {
@@ -74,7 +72,6 @@ vi.mock('@/store/readerStore', () => {
 import { useOpenLaunchLinks } from '@/hooks/useOpenLaunchLinks';
 import { eventDispatcher } from '@/utils/event';
 
-const urlFor = (hash: string) => `readest://book/${hash}`;
 const CFI = 'epubcfi(/6/4!/4/2)';
 const annotationUrlFor = (hash: string) =>
   `readest://book/${hash}/annotation/note1?cfi=${encodeURIComponent(CFI)}`;
@@ -88,61 +85,6 @@ const collectSwitch = () => {
     stop: () => eventDispatcher.off('open-book-in-reader', handler),
   };
 };
-
-describe('useOpenLaunchLinks — audiobook deep link', () => {
-  beforeEach(() => {
-    navigateToReaderMock.mockReset();
-    routerPushMock.mockReset();
-  });
-  afterEach(() => {
-    cleanup();
-    window.history.replaceState({}, '', '/');
-  });
-
-  it('routes a plain-book deep link into the already-mounted reader as before', async () => {
-    window.history.replaceState({}, '', '/reader?ids=other');
-    const { switched, stop } = collectSwitch();
-
-    renderHook(() => useOpenLaunchLinks());
-    await eventDispatcher.dispatch('app-incoming-url', { urls: [urlFor('epubBook')] });
-    await Promise.resolve();
-    stop();
-
-    expect(switched).toHaveBeenCalledWith(expect.objectContaining({ bookHash: 'epubBook' }));
-    expect(routerPushMock).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    ['a plain book link', () => urlFor('absBook')],
-    ['an annotation link', () => annotationUrlFor('absBook')],
-  ])('routes an audiobook deep link (%s) straight to the player when no reader is mounted', async (_label, url) => {
-    window.history.replaceState({}, '', '/library');
-
-    renderHook(() => useOpenLaunchLinks());
-    await eventDispatcher.dispatch('app-incoming-url', { urls: [url()] });
-    await Promise.resolve();
-
-    expect(routerPushMock).toHaveBeenCalledWith('/player?id=absBook');
-    expect(navigateToReaderMock).not.toHaveBeenCalled();
-  });
-
-  it('routes an audiobook deep link to the player instead of pushing it into an already-mounted reader', async () => {
-    window.history.replaceState({}, '', '/reader?ids=epubBook');
-    const { switched, stop } = collectSwitch();
-
-    renderHook(() => useOpenLaunchLinks());
-    await eventDispatcher.dispatch('app-incoming-url', { urls: [urlFor('absBook')] });
-    await Promise.resolve();
-    stop();
-
-    expect(routerPushMock).toHaveBeenCalledWith('/player?id=absBook');
-    // Must not take the reader in-place-switch ingress - that drives
-    // initViewState down the document-loader path and hangs (no file to load
-    // for a streaming ABS book).
-    expect(switched).not.toHaveBeenCalled();
-    expect(navigateToReaderMock).not.toHaveBeenCalled();
-  });
-});
 
 describe('useOpenLaunchLinks — reader already mounted (annotation link)', () => {
   beforeEach(() => {

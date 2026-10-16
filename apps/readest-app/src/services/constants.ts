@@ -11,7 +11,6 @@ import {
   ReadingRulerColor,
   ScreenConfig,
   TranslatorConfig,
-  TTSConfig,
   ViewConfig,
   ViewSettings,
   ViewSettingsConfig,
@@ -40,8 +39,6 @@ import {
   DEFAULT_MARKER_WIDTH,
 } from './handwriting/model';
 import { DEFAULT_ANNOTATION_TOOLBAR_ITEMS } from '@/utils/annotationToolbar';
-import { DEFAULT_SENTENCE_GAP_SEC } from './tts/EdgeTTSClient';
-import { DEFAULT_PARAGRAPH_GAP_SEC } from './tts/TTSController';
 
 export const DATA_SUBDIR = 'Readest';
 export const LOCAL_BOOKS_SUBDIR = `${DATA_SUBDIR}/Books`;
@@ -220,9 +217,7 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
     font: true,
     texture: true,
     opds_catalog: true,
-    abs_server: true,
     custom_translator: true,
-    custom_tts: true,
     settings: true,
   },
 };
@@ -446,21 +441,6 @@ export const DEFAULT_VIEW_CONFIG: ViewConfig = {
   readingRulerPosition: 33,
   readingRulerOpacity: 0.5,
   readingRulerColor: 'transparent',
-};
-
-export const DEFAULT_TTS_CONFIG: TTSConfig = {
-  ttsRate: 1.3,
-  ttsSentenceGap: DEFAULT_SENTENCE_GAP_SEC,
-  ttsParagraphGap: DEFAULT_PARAGRAPH_GAP_SEC,
-  ttsVoice: '',
-  ttsUseNarration: true,
-  ttsLocation: '',
-  ttsHighlightOptions: { style: 'highlight', color: '#808080' },
-  ttsHighlightGranularity: 'word',
-  ttsMediaMetadata: 'sentence',
-  ttsPlayerStyle: 'full',
-  ttsSkipInlineAnnotations: false,
-  ttsPauseAfterSentence: false,
 };
 
 export const DEFAULT_TRANSLATOR_CONFIG: TranslatorConfig = {

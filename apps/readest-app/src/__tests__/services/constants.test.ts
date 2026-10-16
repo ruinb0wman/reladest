@@ -40,7 +40,6 @@ import {
   DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS,
   DEFAULT_EINK_VIEW_SETTINGS,
   DEFAULT_VIEW_CONFIG,
-  DEFAULT_TTS_CONFIG,
   DEFAULT_TRANSLATOR_CONFIG,
   DEFAULT_NOTE_EXPORT_CONFIG,
   DEFAULT_ANNOTATOR_CONFIG,
@@ -237,9 +236,7 @@ describe('services/constants', () => {
         font: true,
         texture: true,
         opds_catalog: true,
-        abs_server: true,
         custom_translator: true,
-        custom_tts: true,
         settings: true,
       });
     });
@@ -631,26 +628,6 @@ describe('services/constants', () => {
   // ---------------------------------------------------------------------------
   // TTS config
   // ---------------------------------------------------------------------------
-  describe('DEFAULT_TTS_CONFIG', () => {
-    it('has expected properties', () => {
-      expect(typeof DEFAULT_TTS_CONFIG).toBe('object');
-      expect(typeof DEFAULT_TTS_CONFIG.ttsRate).toBe('number');
-      expect(DEFAULT_TTS_CONFIG.ttsRate).toBeGreaterThan(0);
-      expect(typeof DEFAULT_TTS_CONFIG.ttsSentenceGap).toBe('number');
-      expect(DEFAULT_TTS_CONFIG.ttsSentenceGap).toBeGreaterThan(0);
-      expect(typeof DEFAULT_TTS_CONFIG.ttsVoice).toBe('string');
-      expect(typeof DEFAULT_TTS_CONFIG.ttsLocation).toBe('string');
-      expect(typeof DEFAULT_TTS_CONFIG.ttsMediaMetadata).toBe('string');
-      expect(DEFAULT_TTS_CONFIG.ttsSkipInlineAnnotations).toBe(false);
-    });
-
-    it('has ttsHighlightOptions with style and color', () => {
-      expect(typeof DEFAULT_TTS_CONFIG.ttsHighlightOptions).toBe('object');
-      expect(typeof DEFAULT_TTS_CONFIG.ttsHighlightOptions.style).toBe('string');
-      expect(typeof DEFAULT_TTS_CONFIG.ttsHighlightOptions.color).toBe('string');
-    });
-  });
-
   // ---------------------------------------------------------------------------
   // Translator config
   // ---------------------------------------------------------------------------

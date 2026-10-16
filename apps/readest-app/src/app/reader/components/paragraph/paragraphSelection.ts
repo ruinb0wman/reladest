@@ -1,4 +1,4 @@
-import { getTextSubRange, rangeTextExcludingInert } from '@/services/tts/wordHighlight';
+import { getTextSubRange, rangeTextExcludingInert } from './rangeText';
 
 // The document selection when it is a non-empty range inside `container`;
 // null for no selection, a collapsed one, or one made somewhere else.

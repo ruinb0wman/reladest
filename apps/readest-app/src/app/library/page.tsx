@@ -25,7 +25,6 @@ import { DEFAULT_NEARBY_WORDS } from '@/utils/searchConfig';
 import { clearLibrarySearchHistory, loadLibrarySearchHistory } from './utils/searchHistory';
 import type { LibrarySearchTarget } from '@/types/book';
 import { navigateToLibrary, navigateToLogin, navigateToReader } from '@/utils/nav';
-import { splitLibraryOpenIds } from '@/utils/audiobook';
 import { listFormater, markBookDeleted } from '@/utils/book';
 import { getImportErrorMessage } from '@/services/errors';
 import { ingestFile } from '@/services/ingestService';
@@ -52,10 +51,8 @@ import { useDemoBooks } from './hooks/useDemoBooks';
 import { useBooksSync } from './hooks/useBooksSync';
 import { useLibraryFileSync } from './hooks/useLibraryFileSync';
 import { useBookTransferActions } from './hooks/useBookTransferActions';
-import { useAbsOfflineDownload } from './hooks/useAbsOfflineDownload';
 import { useAutoImportFolders } from './hooks/useAutoImportFolders';
 import { useOPDSSubscriptions } from '@/hooks/useOPDSSubscriptions';
-import { useABSSync } from '@/hooks/useABSSync';
 import { useBookDataStore } from '@/store/bookDataStore';
 import { useBackgroundTexture } from '@/hooks/useBackgroundTexture';
 import { getLibraryViewSettings } from '@/helpers/settings';
@@ -111,7 +108,6 @@ import ImportFromFolderDialog, {
 } from './components/ImportFromFolderDialog';
 import WebSourcesDialog from './components/WebSourcesDialog';
 import ImportNovelDialog from './components/ImportNovelDialog';
-import NowPlayingBar from './components/NowPlayingBar';
 import { convertToEpubWithWorker } from '@/services/send/conversion/conversionWorker';
 import type { WebBrowserPage } from '@/services/webBrowser/webBrowser';
 import ClipSignInAlert from '@/components/ClipSignInAlert';
@@ -366,7 +362,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   // parity with useBooksSync. No-op when no provider is enabled.
   useLibraryFileSync();
   const { checkOPDSSubscriptions } = useOPDSSubscriptions();
-  useABSSync();
   const { isDragging } = useDragDropImport();
 
   usePullToRefresh(
@@ -672,23 +667,8 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       const bookIds = pendingNavigationBookIds;
       setPendingNavigationBookIds(null);
       if (bookIds.length > 0) {
-        const { audiobookHash, readerIds, droppedAudiobooks } = splitLibraryOpenIds(
-          bookIds,
-          (hash) => libraryBooks.find((book) => book.hash === hash),
-        );
-        if (audiobookHash) {
-          router.push(`/player?id=${audiobookHash}`);
-          return;
-        }
-        if (droppedAudiobooks) {
-          eventDispatcher.dispatch('toast', {
-            message: _('Audiobooks open in the player'),
-            type: 'info',
-          });
-        }
-        if (readerIds.length > 0) {
-          navigateToReader(router, readerIds);
-        }
+        // The ids used to be split between the reader and the audiobook player.
+        navigateToReader(router, bookIds);
       }
     }
   }, [pendingNavigationBookIds, appService, router, libraryBooks]);
@@ -1186,35 +1166,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       }
     };
   };
-
-  // Audiobookshelf offline downloads (#6256): the shelf's context menu asks
-  // through events so the handlers need not be threaded through every shelf.
-  // Removing the copy is "Remove from Device Only".
-  const { handleBookOfflineDownload, handleBooksOfflineDownload, offlinePremiumLabel } =
-    useAbsOfflineDownload();
-  const offlineHandlersRef = useRef({
-    download: handleBooksOfflineDownload,
-    remove: handleBookDelete('local'),
-  });
-  offlineHandlersRef.current = {
-    download: handleBooksOfflineDownload,
-    remove: handleBookDelete('local'),
-  };
-  useEffect(() => {
-    // `books` from a select-mode bulk Download, `book` from a context menu.
-    const onDownload = (event: CustomEvent) => {
-      offlineHandlersRef.current.download(event.detail.books ?? [event.detail.book]);
-    };
-    const onRemove = async (event: CustomEvent) => {
-      await offlineHandlersRef.current.remove(event.detail.book);
-    };
-    eventDispatcher.on('abs-offline-download', onDownload);
-    eventDispatcher.on('abs-offline-remove', onRemove);
-    return () => {
-      eventDispatcher.off('abs-offline-download', onDownload);
-      eventDispatcher.off('abs-offline-remove', onRemove);
-    };
-  }, []);
 
   const handleUpdateMetadata = (book: Book, metadata: BookMetadata, tags: string[]) =>
     saveBookMetadataEdit(envConfig, book, metadata, tags);
@@ -2023,7 +1974,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           onOpenFeeds={handleShowFeeds}
         />
       )}
-      <NowPlayingBar isSelectMode={isSelectMode} />
       {showDetailsBook && (
         <BookDetailModal
           isOpen={!!showDetailsBook}
@@ -2035,8 +1985,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
           handleBookDeleteLocalCopy={handleBookDelete('local')}
           handleBookPurge={handleBookDelete('purge')}
           handleBookMetadataUpdate={handleUpdateMetadata}
-          handleBookOfflineDownload={isTauriAppPlatform() ? handleBookOfflineDownload : undefined}
-          offlinePremiumLabel={offlinePremiumLabel}
           onMetadataValueClick={handleMetadataValueClick}
         />
       )}

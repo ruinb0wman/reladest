@@ -209,7 +209,6 @@
     "clipboard-manager:allow-read-text",
     "device-info:default",
     "turso:default",
-    "native-tts:default",
     "native-bridge:default",
     "sentry:default",
     "allow-start-server",

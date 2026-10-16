@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="readest_auto_library_count">
+        <item quantity="one">%d book</item>
+        <item quantity="other">%d books</item>
+    </plurals>
+    <string name="readest_auto_library_root">Library</string>
+    <string name="readest_auto_selection_failed">Couldn\'t open this book</string>
+</resources>

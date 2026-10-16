@@ -96,8 +96,7 @@ describe('getOrphanedBookEntries (#5837)', () => {
 
   it('reclaims everything but the kept sidecars in a soft-deleted book dir', async () => {
     // A plain delete keeps cover.png, config.json and nav.json on purpose (a
-    // re-download resumes with them), and config.json still points at the
-    // paired audiobook copies. A lingering book file or a feed's article
+    // re-download resumes with them). A lingering book file or a feed's article
     // cache are leftovers to reclaim.
     const readDirectory = vi
       .fn()
@@ -107,7 +106,6 @@ describe('getOrphanedBookEntries (#5837)', () => {
           `${DELETED}/cover.png`,
           `${DELETED}/config.json`,
           `${DELETED}/nav.json`,
-          `${DELETED}/audiobook/1-2-track.m4b`,
           `${DELETED}/articles/x.html`,
         ),
       );
@@ -117,7 +115,7 @@ describe('getOrphanedBookEntries (#5837)', () => {
 
     expect(entries).toEqual([
       { base: 'Books', path: `${DELETED}/book.pdf`, size: 10 },
-      { base: 'Books', path: `${DELETED}/articles/x.html`, size: 60 },
+      { base: 'Books', path: `${DELETED}/articles/x.html`, size: 50 },
     ]);
   });
 

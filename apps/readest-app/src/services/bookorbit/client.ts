@@ -15,8 +15,6 @@ import { withOriginSuppressed } from '@/app/opds/utils/opdsReq';
 import { isTauriAppPlatform } from '@/services/environment';
 import { normalizeCustomHeaders } from '@/utils/customHeaders';
 import type { BookOrbitSettings } from '@/types/settings';
-import { isSupportedManifest } from './manifest';
-import type { BookOrbitManifest } from './manifest';
 
 /** Body of `PUT /api/v1/audiobooks/:id/playback-state`, validated server-side. */
 export interface BookOrbitPlaybackStateWrite {
@@ -52,14 +50,6 @@ export type BookOrbitTarget = Pick<
   /** Short-lived bearer token, cached between requests by the caller. */
   accessToken?: string;
 };
-
-/** Raised when the server speaks a manifest schema this build does not know. */
-export class UnsupportedManifestError extends Error {
-  constructor(schema: unknown, version: unknown) {
-    super(`unsupported BookOrbit manifest: ${String(schema)} v${String(version)}`);
-    this.name = 'UnsupportedManifestError';
-  }
-}
 
 export class BookOrbitAuthError extends Error {
   constructor() {
@@ -183,15 +173,6 @@ export class BookOrbitClient {
     // The store owns the durable copy: a token refreshed here has to reach the
     // next session, and any other client reading the row.
     this.#onTokensUpdated({ accessToken });
-  }
-
-  async getManifest(bookId: number): Promise<BookOrbitManifest> {
-    const manifest = await this.#request<unknown>(`/api/v1/audiobooks/${bookId}/manifest`);
-    if (!isSupportedManifest(manifest)) {
-      const m = manifest as { schema?: unknown; schemaVersion?: unknown } | null;
-      throw new UnsupportedManifestError(m?.schema, m?.schemaVersion);
-    }
-    return manifest;
   }
 
   getPlaybackState(bookId: number): Promise<BookOrbitPlaybackState> {

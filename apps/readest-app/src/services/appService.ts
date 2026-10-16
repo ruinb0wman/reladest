@@ -23,7 +23,6 @@ import { getLibraryFilename, getLibraryBackupFilename } from '@/utils/book';
 import { getFilename } from '@/utils/path';
 
 import { getOSPlatform } from '@/utils/misc';
-import { buildAbsEbookUrl, isAbsEbook, parseAbsFilePath } from '@/utils/audiobook';
 import { isStoragePermissionError, requestStoragePermission } from '@/utils/permission';
 import { CustomTextureInfo } from '@/styles/textures';
 import { CustomFont, CustomFontInfo } from '@/styles/fonts';
@@ -419,45 +418,10 @@ export abstract class BaseAppService implements AppService {
   }
 
   async deleteBook(book: Book, deleteAction: DeleteAction): Promise<void> {
-    const loadTTSCleanup = async () => {
-      const [downloads, cache, sessions] = await Promise.all([
-        import('@/services/tts/ttsDownloadManager'),
-        import('@/services/tts/providers/bookCacheStore'),
-        import('@/services/tts/TTSSessionManager'),
-      ]);
-      return {
-        downloadManager: downloads.ttsDownloadManager,
-        clearDownloads: cache.clearBookTTSDownloads,
-        sessionManager: sessions.ttsSessionManager,
-      };
-    };
-    let ttsCleanup: Awaited<ReturnType<typeof loadTTSCleanup>> | undefined;
-
-    // Purge recursively removes the cache directory, so its open TTS database
-    // must be quiesced before the filesystem delete. Other local actions keep
-    // failure semantics unchanged and clean up only after their delete lands.
-    if (deleteAction === 'purge') {
-      ttsCleanup = await loadTTSCleanup();
-      await ttsCleanup.downloadManager.removeBook(book.hash);
-      await ttsCleanup.sessionManager.stopBook(book.hash, 'deleted');
-    }
+    // Purging used to quiesce the open TTS database first (its cache directory
+    // is removed recursively) and then clear a book's downloaded audio and
+    // stop its session. TTS is gone, so deletion is purely a file operation.
     await deleteBookLocally(this.fs, book, deleteAction);
-    if (deleteAction === 'cloud') return;
-    ttsCleanup ??= await loadTTSCleanup();
-
-    // Keep cleanup at the shared local-deletion boundary so library actions,
-    // sync-driven removal, and account purge all follow the same contract.
-    // The book deletion has already succeeded; cache housekeeping is
-    // best-effort and must not turn that success into a failed delete.
-    if (deleteAction !== 'purge') {
-      await ttsCleanup.downloadManager.removeBook(book.hash);
-      await ttsCleanup.sessionManager.stopBook(book.hash, 'deleted');
-    }
-    try {
-      await ttsCleanup.clearDownloads(this, book.hash);
-    } catch (err) {
-      console.warn('Failed to clear downloaded TTS audio for deleted book', err);
-    }
   }
 
   async exportBook(book: Book): Promise<boolean> {
@@ -483,19 +447,6 @@ export abstract class BaseAppService implements AppService {
   }
 
   async loadBookContent(book: Book): Promise<BookContent> {
-    if (isAbsEbook(book)) {
-      const parsed = parseAbsFilePath(book.filePath);
-      if (parsed) {
-        const { findABSServerById } = await import('@/store/absServerStore');
-        const server = findABSServerById(parsed.serverId);
-        if (server) {
-          return BookSvc.loadBookContent(this.fs, {
-            ...book,
-            url: buildAbsEbookUrl(server, parsed.itemId),
-          });
-        }
-      }
-    }
     return BookSvc.loadBookContent(this.fs, book);
   }
 

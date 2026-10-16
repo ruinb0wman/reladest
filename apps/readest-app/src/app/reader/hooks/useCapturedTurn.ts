@@ -492,7 +492,7 @@ export const useCapturedTurn = (bookKey: string, viewRef: React.RefObject<Foliat
           preparePaintRaf = 0;
           if (cleanedUp || document.hidden) return;
           const currentViewState = useReaderStore.getState().viewStates[bookKey];
-          if (!currentViewState?.inited || currentViewState.ttsEnabled) return;
+          if (!currentViewState?.inited) return;
           // The observer below schedules a fresh post-paint surface after the
           // last covering dialog or popup has left the composited page.
           if (isPreparedSurfaceBlockedByOverlay()) return;

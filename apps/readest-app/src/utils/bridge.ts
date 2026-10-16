@@ -546,6 +546,12 @@ export interface BookshelfWidgetBookPayload {
   coverPath: string;
 }
 
+/**
+ * Vestigial: the TTS transport payload the reading/bookshelf widgets used to
+ * receive. Nothing publishes it any more (TTS was removed), but the native
+ * widget protocol still declares the field, so the shape stays until the Kotlin
+ * side is regenerated without it.
+ */
 export interface BookshelfWidgetTts {
   active: boolean;
   playing: boolean;

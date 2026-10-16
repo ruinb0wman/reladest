@@ -26,7 +26,6 @@ import BrightnessOverlay from './BrightnessOverlay';
 import { usePagination, viewPagination } from '../hooks/usePagination';
 import { useFoliateEvents } from '../hooks/useFoliateEvents';
 import { useProgressSync } from '../hooks/useProgressSync';
-import { useABSProgressSync } from '../hooks/useABSProgressSync';
 import { useProgressAutoSave } from '../hooks/useProgressAutoSave';
 import { useBackgroundTexture } from '@/hooks/useBackgroundTexture';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
@@ -113,7 +112,6 @@ import ImageViewer from './ImageViewer';
 import ImageContextMenu from './ImageContextMenu';
 import TableViewer from './TableViewer';
 import ExternalLinkConfirm from './ExternalLinkConfirm';
-import { getTTSMiniPlayerClearance } from '../utils/ttsMiniPlayerPosition';
 import { getDrawingDockClearance } from '../utils/drawingDock';
 
 declare global {
@@ -212,7 +210,6 @@ const FoliateViewer: React.FC<{
 
   useUICSS(bookKey);
   useProgressSync(bookKey);
-  useABSProgressSync(bookKey);
   useProgressAutoSave(bookKey);
   useBookCoverAutoSave(bookKey);
   const bookOrbitSync = useKOSync(bookKey, bookOrbitProgressProvider);
@@ -926,14 +923,7 @@ const FoliateViewer: React.FC<{
     // full-width blank bar that steals space from the book text.
     const showBottomFooter = footerReservesBand(viewSettings) && !viewSettings.vertical;
     const moreTopInset = showTopHeader ? Math.max(0, 16 - insets.top) : 0;
-    // Only the persistent 'minimal' card reserves a band; the 'full' one
-    // auto-hides with the toolbar and overlaps instead (#5310).
-    const miniPlayerClearance = viewState?.ttsEnabled
-      ? getTTSMiniPlayerClearance(viewSettings, gridInsets.bottom * 0.33)
-      : 0;
-    const moreBottomInset = showBottomFooter
-      ? Math.max(0, Math.max(miniPlayerClearance, 16) - insets.bottom)
-      : Math.max(0, miniPlayerClearance);
+    const moreBottomInset = showBottomFooter ? Math.max(0, 16 - insets.bottom) : 0;
     const moreRightInset = showDoubleBorderHeader ? 32 : 0;
     const moreLeftInset = showDoubleBorderFooter ? 32 : 0;
     // The drawing dock stays up for the whole drawing session, so the text
@@ -965,10 +955,7 @@ const FoliateViewer: React.FC<{
       // floor, so a negative top margin keeps the scroll viewport glued to the
       // lifted header band instead of running under it (#5303).
       const scrollTop = headerVisible ? topMargin : 0;
-      const scrollBottom = Math.max(
-        footerVisible ? Math.max(footerBarHeight, miniPlayerClearance) : miniPlayerClearance,
-        drawingDock?.bottom ?? 0,
-      );
+      const scrollBottom = Math.max(footerVisible ? footerBarHeight : 0, drawingDock?.bottom ?? 0);
       setScrollMargins({ top: bookData?.isFixedLayout ? 0 : scrollTop, bottom: scrollBottom });
     } else {
       setScrollMargins({ top: 0, bottom: 0 });
@@ -1166,10 +1153,7 @@ const FoliateViewer: React.FC<{
     viewSettings?.showFooter,
     viewSettings?.scrolled,
     viewSettings?.noContinuousScroll,
-    viewState?.ttsEnabled,
     viewState?.drawingEnabled,
-    // Switching Player Style changes whether a band is reserved at all.
-    viewSettings?.ttsPlayerStyle,
     // footerReservesBand inputs: the band must collapse/return live when the
     // user flips these settings.
     viewSettings?.showStickyProgressBar,

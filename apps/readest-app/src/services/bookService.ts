@@ -7,7 +7,6 @@ import {
   BookFormat,
   BookLookupIndex,
   BookNote,
-  PairedAudiobook,
   FIXED_LAYOUT_FORMATS,
   ImportBookOptions,
 } from '@/types/book';
@@ -30,9 +29,6 @@ import type { BookNav } from '@/services/nav';
 import { partialMD5, md5 } from '@/utils/md5';
 import { getBaseFilename, getFilename, stripDuplicateMarker } from '@/utils/path';
 import { BookDoc, DocumentLoader } from '@/libs/document';
-import { hasMediaOverlays } from '@/services/tts/mediaOverlay';
-import { getAudiobookDirectory, isAudiobookFilePath } from '@/services/audiobook/storage';
-import { isAudiobook } from '@/utils/audiobook';
 import { tryNativeParseEpub } from '@/utils/tauriEpubBridge';
 import { tryNativeParseMobi } from '@/utils/tauriMobiBridge';
 import { tryNativeParsePdf } from '@/utils/tauriPdfBridge';
@@ -352,40 +348,7 @@ export async function computeCoverHash(fs: FileSystem, book: Book): Promise<stri
 interface BookMergeResult {
   configData?: string;
   duplicates: Book[];
-  audiobookSourceHash?: string;
 }
-
-const migratePairedAudiobook = async (
-  fs: FileSystem,
-  association: PairedAudiobook,
-  sourceHash: string,
-  targetHash: string,
-): Promise<PairedAudiobook> => {
-  if (sourceHash === targetHash) return association;
-  // Streamed from a server: no files under the old hash to carry over.
-  if (association.source) return association;
-
-  const targetDirectory = getAudiobookDirectory(targetHash);
-  await fs.createDir(targetDirectory, 'Books', true);
-  const copiedPaths: string[] = [];
-  try {
-    const files = [];
-    for (const file of association.files) {
-      if (!isAudiobookFilePath(sourceHash, file.path)) {
-        throw new Error(`Invalid paired audiobook path: ${file.path}`);
-      }
-      const filename = file.path.slice(`${getAudiobookDirectory(sourceHash)}/`.length);
-      const path = `${targetDirectory}/${filename}`;
-      await fs.copyFile(file.path, 'Books', path, 'Books');
-      copiedPaths.push(path);
-      files.push({ ...file, path });
-    }
-    return { ...association, files };
-  } catch (error) {
-    await Promise.allSettled(copiedPaths.map((path) => fs.removeFile(path, 'Books')));
-    throw error;
-  }
-};
 
 /**
  * Merge duplicate book entries that share the same metaHash and format as `book`,
@@ -439,7 +402,6 @@ export async function mergeBooks(
   }
 
   let mergedConfigData: string | undefined;
-  let audiobookSourceHash: string | undefined;
   if (configs.length > 0) {
     const baseEntry = configs.reduce((best, entry) => {
       const bestPage = best.config.progress?.[0] ?? 0;
@@ -459,22 +421,10 @@ export async function mergeBooks(
     }
     base.booknotes = [...noteMap.values()];
 
-    const audiobookEntry = base.audiobook
-      ? baseEntry
-      : configs
-          .filter(({ config }) => config.audiobook)
-          .sort(
-            (a, b) => (b.config.audiobook?.createdAt ?? 0) - (a.config.audiobook?.createdAt ?? 0),
-          )[0];
-    if (audiobookEntry?.config.audiobook) {
-      base.audiobook = audiobookEntry.config.audiobook;
-      audiobookSourceHash = audiobookEntry.book.hash;
-    }
-
     mergedConfigData = serializeRawConfig(base);
   }
 
-  return { configData: mergedConfigData, duplicates, audiobookSourceHash };
+  return { configData: mergedConfigData, duplicates };
 }
 
 // --- Book Import ---
@@ -732,7 +682,6 @@ export async function importBook(
       // Cached here because the library list never opens the book: it is a
       // property of the file, so it is re-derived on every (re)import rather
       // than synced as user data.
-      hasNarration: hasMediaOverlays(loadedBook) || undefined,
       pageCount: getBookDocPageCount(loadedBook, format),
       metadata: loadedBook.metadata,
       createdAt: existingBook ? existingBook.createdAt : Date.now(),
@@ -867,24 +816,13 @@ export async function importBook(
     const coverHash = await computeCoverHash(fs, book);
     book.coverHash = coverHash;
     if (existingBook) existingBook.coverHash = coverHash;
-    const prepareConfig = async (
-      configData: string,
-      audiobookSourceHash?: string,
-    ): Promise<Partial<BookConfig>> => {
+    const prepareConfig = async (configData: string): Promise<Partial<BookConfig>> => {
       const config: Partial<BookConfig> = JSON.parse(configData);
       config.bookHash = hash;
       config.metaHash = metaHash;
       // The notes now belong to a new hash: push them all again, or peers that
       // match by the new hash/metaHash never receive the older ones.
       config.lastSyncedAtNotes = 0;
-      if (config.audiobook && audiobookSourceHash) {
-        config.audiobook = await migratePairedAudiobook(
-          fs,
-          config.audiobook,
-          audiobookSourceHash,
-          hash,
-        );
-      }
       return config;
     };
 
@@ -924,13 +862,13 @@ export async function importBook(
       // Migrate config from old directory to new directory, updating bookHash and metaHash
       // Use aggregated best config when available from deduplication
       if (bestConfigData) {
-        const config = await prepareConfig(bestConfigData, mergeResult?.audiobookSourceHash);
+        const config = await prepareConfig(bestConfigData);
         await fs.writeFile(getConfigFilename(book), 'Books', serializeRawConfig(config));
       } else {
         const oldConfigPath = `${oldBookDir}/config.json`;
         if (await fs.exists(oldConfigPath, 'Books')) {
           const configData = (await fs.readFile(oldConfigPath, 'Books', 'text')) as string;
-          const config = await prepareConfig(configData, oldBookDir);
+          const config = await prepareConfig(configData);
           await fs.writeFile(getConfigFilename(book), 'Books', serializeRawConfig(config));
         } else {
           await saveBookConfigFn(book, INIT_BOOK_CONFIG);
@@ -938,7 +876,7 @@ export async function importBook(
       }
     } else if (bestConfigData) {
       // Exact hash match with duplicates removed — adopt the best config
-      const config = await prepareConfig(bestConfigData, mergeResult?.audiobookSourceHash);
+      const config = await prepareConfig(bestConfigData);
       await fs.writeFile(getConfigFilename(book), 'Books', serializeRawConfig(config));
     }
 
@@ -1056,8 +994,6 @@ export async function importBook(
 // --- Book Content & Config ---
 
 export async function isBookAvailable(fs: FileSystem, book: Book): Promise<boolean> {
-  // ABS books stream from the server and have no local/cloud file to resolve.
-  if (isAudiobook(book)) return true;
   return (await resolveBookContentSource(fs, book)).kind !== 'missing';
 }
 
