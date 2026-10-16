@@ -498,12 +498,6 @@ pub struct GetSecureItemResponse {
     pub error: Option<String>,
 }
 
-/// Result of a deep e-ink full screen refresh. `success: false` means no
-/// known e-ink controller responded on this device (e.g. a non-e-ink
-/// Android phone) — not a hard error.
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-
 /// `isBoox` is a device-identity check (always available); `rawDrawing` is
 /// true only when this build was compiled against the BOOX Pen SDK (the
 /// `booxPen` Gradle flavor) and the SDK reports it can drive raw drawing on
