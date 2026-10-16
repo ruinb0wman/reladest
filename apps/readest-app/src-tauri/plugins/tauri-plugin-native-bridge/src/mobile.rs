@@ -421,6 +421,8 @@ impl<R: Runtime> NativeBridge<R> {
     }
 }
 
+impl<R: Runtime> NativeBridge<R> {
+
     pub fn query_pen_capabilities(&self) -> crate::Result<QueryPenCapabilitiesResponse> {
         self.0
             .run_mobile_plugin("query_pen_capabilities", ())
