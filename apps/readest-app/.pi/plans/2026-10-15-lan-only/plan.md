@@ -1007,7 +1007,8 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 | WP7 简繁转换 | `349b252c7` | 24 文件 / −507 行（含 submodule） | 815/9548 |
 | WP9 CI 卫生 | `359493812` | 3 workflow / −489 行 | 全部 workflow 仍可被 YAML 解析 |
 | WP10 APK | `64efd8b8a`/`71…`（3 个修 build 的提交） | 1 个 APK | 见下 |
-| WP8 Rust 减肥 | **待做（调整到 APK 之后）** | — | — |
+| WP8-A Rust 减肥（CEF/桌面/macOS/platform） | `042518246` | 39 文件 / **−4,234 行** | **Android target `cargo check` 0 error**（1m19s / 27s） |
+| WP8-B 剩余（nightly_update+updater、IAP 链、Kotlin [A-4]、惰性 `cfg(desktop)` 体、桌面配置） | **待做**（需一次构建验证 Kotlin/gradle） | — | — |
 
 **为什么把 WP8 挪到最后**：WP3–WP5 已经删了 Rust（web_browser/media_proxy/eink/sentry + Kotlin 命令），必须先用一次 APK 构建验证；否则 WP8 再删 3.5k 行后构建失败就无法归因。构建反馈一次约 20 分钟，先验证再叠加是唯一能保证可定位的顺序。
 
@@ -1054,6 +1055,24 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 | V11 | WP8 之后的 APK | WP8 完成后再构建一次并复验 V1–V7 | 本轮按用户要求**未做 APK 构建**，等全部改完手动测 |
 
 **已验项（模拟器 2026-10-16）**：升级安装保留书库与进度（2 本）、无幽灵行、菜单/长按动作条正常、APK 签名与旧版同证书。
+
+#### WP8 — Rust 减肥（分两批）
+
+**WP8-A（`042518246`，已完成，39 文件 / −4,234 行）**：CEF 整套（`cef` feature + `tauri-runtime-cef`/`zbus` 依赖 + `.cargo/cef.toml` + `packages/tauri-runtime-cef-stub` 自带 `[patch.crates-io]` + `AppRuntime`/`cef_entry_point`/sandbox/CDP + `linux_display.rs` + `linux_single_instance.rs` + `try-appimage.yml`）；桌面专属模块（`discord_rpc`/`browser_cookies_macos`（含 `browser_fetch.rs` 的 macos 分支）/`file_reveal`/`spawn_fresh_browser`/`window_state`/`src/macos/**` 全部）；**插件的整个 desktop 实现**（`desktop.rs` + `platform/{windows,macos,linux_cef,cdp}.rs`）；以及各自的命令注册 / build.rs ACL 清单 / capabilities 授权 / 插件 `permissions/default.toml` 条目。另加 OAuth 回环（`start_server` + `tauri-plugin-oauth` + `oauth:allow-*`）与插件的 `auth_with_custom_tab`（Rust 侧）。
+
+**验证方式（本次的关键）**：`cargo check -p Readest --lib --release --target aarch64-linux-android --features "tauri/custom-protocol"` —— 复用 APK 构建留下的热缓存，**1m19s / 27s 跑完，0 error**（只删 Android 编不到的东西，所以这条检查足以证明没破坏 Android 构建）。命令模板见下。
+```
+NDK=$HOME/android-sdk/ndk/27.3.13750724
+TC=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin
+env -u ANDROID_SDK_ROOT ANDROID_HOME=$HOME/android-sdk NDK_HOME=$NDK PATH="$TC:$PATH" \
+  CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TC/aarch64-linux-android26-clang" \
+  CC_aarch64_linux_android="$TC/aarch64-linux-android26-clang" AR_aarch64_linux_android="$TC/llvm-ar" \
+  cargo check -p Readest --lib --release --target aarch64-linux-android \
+  --features "tauri/custom-protocol tauri/custom-protocol"
+```
+
+**WP8-B（待做，需要一次真实构建）**：① `nightly_update.rs` + `is_updater_disabled`/`verify_update_signature`/`install_nightly_update` 三个命令 + `tauri-plugin-updater` + TS 侧 UpdaterWindow/`is_updater_disabled` 调用链；② IAP 链（`utils/iap.ts` 死包装 → Rust `iap_*` 命令 → 插件 `mobile.rs` 方法 → Kotlin 的 5 个 `iap_*` handler + `BillingManager.kt`（foss/googleplay 两个 flavor）→ gradle flavor 与 billing 依赖）；③ Kotlin 的 [A-4]（`auth_with_custom_tab` handler + `OAuthCallbackTarget.kt` + 它的单测 + `handleIntent` 的 auth 分支）；④ 残留的惰性 `#[cfg(desktop)]` 体（updater/CLI/single-instance/窗口状态/`restore_main_window_state`）；⑤ 桌面配置文件（`tauri.windows.conf.json`、`tauri.conf.json` 的 linux/windows bundle 段、`capabilities-extra/webdriver.json` 的 webdriver 特性）。
+**为什么这批要等构建**：Kotlin 与 gradle 改动在本地无法编译验证（`cargo check` 看不到 Kotlin），必须在一次 `pnpm tauri android build` 里一起验；而 WP8-A 只删 `cfg(desktop)`/非 Android `target_os` 的东西，所以那条检查就够了。
 
 ### 累计影响（预估）
 
