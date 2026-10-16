@@ -1,9 +1,7 @@
 [workspace]
 # The readest forks under packages/ are pulled in through [patch.crates-io]
-# below, not listed as members: the Linux CEF build (see
-# apps/readest-app/src-tauri/.cargo/cef.toml) patches tauri and the plugins to
-# upstream git instead, and a member fork would still sit in the graph and
-# clash on `links` with the git copy.
+# below, not listed as members: a member fork would still sit in the graph and
+# clash on `links` with the patched copy.
 members = [
   "apps/readest-app/src-tauri"
 ]
@@ -47,9 +45,6 @@ rust-version = "1.90"
 
 [patch.crates-io]
 tauri = { path = "packages/tauri/crates/tauri" }
-# The Linux CEF runtime crate exists only on feat/cef; .cargo/cef.toml takes it
-# from there. Other builds only need it to resolve. See the stub's manifest.
-tauri-runtime-cef = { path = "packages/tauri-runtime-cef-stub" }
 
 [profile.release]
 # The Android library is 95% of the APK, and one codegen unit is the one knob

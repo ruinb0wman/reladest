@@ -6,24 +6,17 @@ use tauri::{
 
 pub use models::*;
 
-#[cfg(desktop)]
-mod desktop;
-#[cfg(mobile)]
 mod mobile;
 
 mod commands;
 mod error;
 mod models;
-mod platform;
 
 pub use error::{Error, Result};
 
 use std::path::PathBuf;
 use tauri::AppHandle;
 
-#[cfg(desktop)]
-use desktop::NativeBridge;
-#[cfg(mobile)]
 use mobile::NativeBridge;
 
 /// Extensions to [`tauri::App`], [`tauri::AppHandle`] and [`tauri::Window`] to access the native-bridge APIs.
@@ -56,7 +49,6 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("native-bridge")
         .invoke_handler(tauri::generate_handler![
             commands::auth_with_safari,
-            commands::auth_with_custom_tab,
             commands::copy_uri_to_path,
             commands::render_pdf_cover,
             commands::save_image_to_gallery,
@@ -113,10 +105,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::icloud_ensure_downloaded,
         ])
         .setup(|app, api| {
-            #[cfg(mobile)]
             let native_bridge = mobile::init(app, api)?;
-            #[cfg(desktop)]
-            let native_bridge = desktop::init(app, api)?;
             app.manage(native_bridge);
             app.manage(DirectoryCallbackState::<R>::default());
             Ok(())

@@ -33,14 +33,6 @@ impl<R: Runtime> NativeBridge<R> {
 }
 
 impl<R: Runtime> NativeBridge<R> {
-    pub fn auth_with_custom_tab(&self, payload: AuthRequest) -> crate::Result<AuthResponse> {
-        self.0
-            .run_mobile_plugin("auth_with_custom_tab", payload)
-            .map_err(Into::into)
-    }
-}
-
-impl<R: Runtime> NativeBridge<R> {
     pub fn copy_uri_to_path(&self, payload: CopyURIRequest) -> crate::Result<CopyURIResponse> {
         self.0
             .run_mobile_plugin("copy_uri_to_path", payload)

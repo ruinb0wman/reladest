@@ -1,6 +1,5 @@
 const COMMANDS: &[&str] = &[
     "auth_with_safari",
-    "auth_with_custom_tab",
     "copy_uri_to_path",
     "render_pdf_cover",
     "save_image_to_gallery",

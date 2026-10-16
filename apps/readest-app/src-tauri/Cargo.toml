@@ -16,22 +16,15 @@ crate-type = ["staticlib", "cdylib", "lib"]
 
 [features]
 default = ["wry"]
-# WebView2 / WKWebView runtime, and on Linux the WebKitGTK one, which is left
-# only for the webdriver test harness (scripts/test-tauri.sh) — every Linux
-# build that ships runs on CEF and turns this off
-# (`--no-default-features --features cef`, see scripts/tauri.mjs).
+# The webview runtime: WebView2, WKWebView on iOS, and the Android WebView.
+# (A Linux desktop build used to run on CEF instead; that runtime is gone with
+# the desktop targets.)
 wry = ["tauri/wry", "tauri/x11", "tauri/dbus"]
-# Chromium Embedded Framework runtime, the Linux runtime (`pnpm tauri`). On
-# feat/cef the runtime is its own crate, which tauri-build and the tauri CLI
-# detect to build and bundle for CEF. It is only real when .cargo/cef.toml
-# takes it from feat/cef; every other build resolves it to the empty stub in
-# packages/tauri-runtime-cef-stub (see the root Cargo.toml).
-cef = ["dep:tauri-runtime-cef", "dep:zbus", "tauri-plugin-native-bridge/cef"]
 # Internal feature to suppress warnings from old objc crate
 cargo-clippy = []
 # Enable WebDriver plugin for E2E testing (use with `tauri build --debug --features webdriver`)
 webdriver = ["tauri-plugin-webdriver"]
-devtools = ["tauri/devtools", "tauri-runtime-cef?/devtools"]
+devtools = ["tauri/devtools"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -55,11 +48,9 @@ reqwest = { version = "0.12", default-features = false, features = [
   "json",
   "stream",
 ] }
-# `default-features = false` so the Linux CEF build (`pnpm tauri`) can pick
-# the webview runtime: tauri's defaults are spelled out here and `wry` (with
-# its `x11` and `dbus` options, which feat/cef's runtime-less tauri lacks)
-# comes back through this crate's own `default` feature, so every other build
-# is unchanged. See .cargo/cef.toml.
+# `default-features = false` with tauri's defaults spelled out here: `wry`
+# (and its `x11`/`dbus` options) comes back through this crate's own `default`
+# feature.
 tauri = { version = "2", default-features = false, features = [
   "protocol-asset",
   "compression",
@@ -80,7 +71,6 @@ tauri-plugin-http = { version = "2", features = [
 ] }
 tauri-plugin-shell = "2"
 tauri-plugin-process = "2"
-tauri-plugin-oauth = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-sign-in-with-apple = "1.0.2"
@@ -168,17 +158,8 @@ objc2-foundation = { version = "0.3", features = ["NSError", "NSArray"] }
 
 # Linux uses the XDG desktop portal for dialogs instead of rfd's gtk3 backend.
 # rfd's gtk3 chooser pumps GTK on a private thread, and that thread iterates
-# the default GLib main context that CEF's browser process also runs its X11
-# event source on, so mouse events get dispatched off Chromium's UI thread
-# and mojo aborts the app (SIGTRAP) as soon as the dialog closes. The portal
-# runs out of process over D-Bus; other platforms keep the native chooser.
 [target.'cfg(target_os = "linux")'.dependencies]
 tauri-plugin-dialog = { version = "2", default-features = false, features = ["xdg-portal"] }
-# The CEF runtime, enabled by the `cef` feature above.
-tauri-runtime-cef = { version = "0.1", optional = true }
-# Hands a relaunch to the running instance before CEF starts, see
-# src/linux_single_instance.rs.
-zbus = { version = "5", optional = true }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 tauri-plugin-dialog = "2"

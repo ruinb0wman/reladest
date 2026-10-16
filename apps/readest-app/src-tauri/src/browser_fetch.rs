@@ -135,10 +135,6 @@ async fn browser_cookies<R: tauri::Runtime>(
                 .map(|r| r.cookies)
                 .map_err(|e| e.to_string())
         }
-        #[cfg(target_os = "macos")]
-        {
-            crate::browser_cookies_macos::cookies(&webview, &url, set_cookies)
-        }
         #[cfg(all(desktop, not(target_os = "macos")))]
         {
             for header in set_cookies {

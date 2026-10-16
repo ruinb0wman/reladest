@@ -56,7 +56,6 @@ dependencies = [
  "tauri-plugin-http",
  "tauri-plugin-log",
  "tauri-plugin-native-bridge",
- "tauri-plugin-oauth",
  "tauri-plugin-opener",
  "tauri-plugin-os",
  "tauri-plugin-persisted-scope",
@@ -71,7 +70,6 @@ dependencies = [
  "tauri-plugin-websocket",
  "tauri-plugin-webview-upgrade",
  "tauri-plugin-window-state",
- "tauri-runtime-cef",
  "thiserror 2.0.20",
  "tokio",
  "tokio-stream",
@@ -80,7 +78,6 @@ dependencies = [
  "walkdir",
  "windows 0.61.3",
  "winreg 0.52.0",
- "zbus",
  "zip 2.4.2",
 ]
 
@@ -7989,26 +7986,10 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-plugin",
- "tauri-runtime-cef",
  "thiserror 2.0.20",
  "webview2-com",
  "windows-core 0.61.2",
  "windows-native-keyring-store",
-]
-
-[[package]]
-name = "tauri-plugin-oauth"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de12964768a2beb9d673580694f45211bb354336e7b127476bde807093c047e3"
-dependencies = [
- "httparse",
- "log",
- "serde",
- "tauri",
- "tauri-plugin",
- "thiserror 2.0.20",
- "url",
 ]
 
 [[package]]
@@ -8294,10 +8275,6 @@ dependencies = [
  "webview2-com",
  "windows 0.61.3",
 ]
-
-[[package]]
-name = "tauri-runtime-cef"
-version = "0.1.0"
 
 [[package]]
 name = "tauri-runtime-wry"

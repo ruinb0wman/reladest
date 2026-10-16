@@ -9,11 +9,7 @@ extern crate objc;
 #[cfg(target_os = "windows")]
 mod windows;
 
-#[cfg(target_os = "android")]
-
 use tauri::utils::config::BackgroundThrottlingPolicy;
-#[cfg(target_os = "macos")]
-use tauri::TitleBarStyle;
 
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
@@ -22,44 +18,27 @@ use tauri_plugin_fs::FsExt;
 #[cfg(desktop)]
 use tauri::{Listener, Url};
 mod backup_zip;
-#[cfg(target_os = "macos")]
-mod browser_cookies_macos;
 mod browser_fetch;
 mod clip_url;
 mod comic_parser;
 mod cover_thumbnail;
 mod dir_scanner;
-#[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
-mod discord_rpc;
 #[cfg(any(target_os = "android", test))]
 mod epub_parser;
-#[cfg(desktop)]
-mod file_reveal;
-#[cfg(all(target_os = "linux", any(feature = "cef", test)))]
-mod linux_display;
-#[cfg(all(target_os = "linux", any(feature = "cef", test)))]
-mod linux_single_instance;
 mod localsend;
-#[cfg(target_os = "macos")]
-mod macos;
 mod mobi_parser;
 mod nightly_update;
 mod parser_common;
 mod pdf_parser;
 mod range_file;
-#[cfg(desktop)]
-mod spawn_fresh_browser;
 mod transfer_file;
-#[cfg(desktop)]
-mod window_state;
 #[cfg(target_os = "windows")]
 use tauri::webview::ScrollBarStyle;
-use tauri::{command, Emitter, WebviewUrl, WebviewWindowBuilder, Window};
+use tauri::{command, Emitter, WebviewUrl, WebviewWindowBuilder};
 #[cfg(target_os = "android")]
 use tauri_plugin_native_bridge::register_select_directory_callback;
 #[cfg(target_os = "android")]
 use tauri_plugin_native_bridge::{NativeBridgeExt, OpenExternalUrlRequest};
-use tauri_plugin_oauth::start;
 #[cfg(not(target_os = "android"))]
 use tauri_plugin_opener::OpenerExt;
 use transfer_file::{download_file, upload_file};
@@ -239,16 +218,6 @@ fn set_window_open_with_files<R: tauri::Runtime>(app: &AppHandle<R>, files: Vec<
     if let Err(e) = window.eval(&script) {
         eprintln!("Failed to set open files variable: {e}");
     }
-}
-
-#[command]
-async fn start_server<R: tauri::Runtime>(window: Window<R>) -> Result<u16, String> {
-    start(move |url| {
-        // Because of the unprotected localhost port, you must verify the URL here.
-        // Preferebly send back only the token, or nothing at all if you can handle everything else in Rust.
-        let _ = window.emit("redirect_uri", url);
-    })
-    .map_err(|err| err.to_string())
 }
 
 #[tauri::command]
@@ -489,67 +458,16 @@ struct SingleInstancePayload {
     cwd: String,
 }
 
-/// The webview runtime this build drives: CEF on Linux, Wry everywhere else
-/// (the `cef` feature is a no-op off Linux, see Cargo.toml). Named explicitly
-/// so the app is statically dispatched on both tauri graphs: on feat/cef the
-/// runtime lives in its own crate and `Builder::default()` would be the
-/// type-erased `tauri::DynRuntime`.
-///
-/// The one Linux build that is still Wry is the webdriver test harness
-/// (scripts/test-tauri.sh): tauri-plugin-webdriver drives the webview through
-/// webkit2gtk there and has no CEF backend.
-#[cfg(all(feature = "cef", target_os = "linux"))]
-type AppRuntime = tauri_runtime_cef::CefRuntime;
-#[cfg(not(all(feature = "cef", target_os = "linux")))]
+/// The webview runtime this build drives. Named explicitly because
+/// `Builder::default()` would be the type-erased `tauri::DynRuntime`.
 type AppRuntime = tauri::Wry;
 
 #[cfg(desktop)]
 const SINGLE_INSTANCE_DBUS_ID: &str = "com.bilingify.readest";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-#[cfg_attr(
-    all(feature = "cef", target_os = "linux"),
-    tauri_runtime_cef::cef_entry_point
-)]
 pub fn run() {
-    // The CEF runtime forces X11, even on Wayland. Check before initializing
-    // Tauri, which otherwise hides the missing display behind CreateWindow.
-    // cef_entry_point routes helper processes away before reaching this code.
-    #[cfg(all(feature = "cef", target_os = "linux"))]
-    if let Err(message) = linux_display::check_display(std::env::var_os("DISPLAY").as_deref()) {
-        eprintln!("{message}");
-        std::process::exit(1);
-    }
-
-    #[cfg(all(feature = "cef", target_os = "linux"))]
-    linux_single_instance::forward_to_running_instance(SINGLE_INSTANCE_DBUS_ID);
-
-
     let builder = tauri::Builder::<AppRuntime>::new();
-
-    #[cfg(all(feature = "cef", target_os = "linux"))]
-    let builder = {
-        // Chromium runs unsandboxed, as it always has here. The runtime's
-        // default keeps the sandbox outside AppImages, but where unprivileged
-        // user namespaces are restricted (Ubuntu 24.04+) that needs a
-        // root-owned setuid chrome-sandbox, which only the deb installs:
-        // Flatpak, Nix and unpacked builds would abort at startup instead.
-        let cef =
-            tauri_runtime_cef::Cef::default().sandbox(tauri_runtime_cef::SandboxPolicy::Disabled);
-        // `READEST_CDP_PORT=9222` starts CEF's DevTools protocol server on that
-        // port, so a debugger or test driver can attach over the Chrome DevTools
-        // Protocol on 127.0.0.1 (see docs/testing.md). The runtime refuses a
-        // `--remote-debugging-port` switch it was not asked for, so this is the
-        // only way in.
-        let cef = match std::env::var("READEST_CDP_PORT").map(|port| port.parse::<u16>()) {
-            Ok(Ok(port)) => cef.remote_debugging(tauri_runtime_cef::RemoteDebugging::Port {
-                port,
-                allowed_origins: Vec::new(),
-            }),
-            _ => cef,
-        };
-        builder.runtime(cef)
-    };
 
     let builder = builder
         .plugin(
@@ -561,15 +479,11 @@ pub fn run() {
         )
         .plugin(tauri_plugin_websocket::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_oauth::init())
         .invoke_handler(tauri::generate_handler![
-            start_server,
             download_file,
             upload_file,
             get_environment_variable,
             get_executable_dir,
-            #[cfg(desktop)]
-            file_reveal::reveal_item_in_dir,
             get_webview_version,
             #[cfg(desktop)]
             is_updater_disabled,
@@ -586,20 +500,6 @@ pub fn run() {
             mobi_parser::extract_mobi_cover_full,
             pdf_parser::parse_pdf_metadata,
             pdf_parser::render_pdf_cover,
-            #[cfg(target_os = "macos")]
-            macos::safari_auth::auth_with_safari,
-            #[cfg(target_os = "macos")]
-            macos::apple_auth::start_apple_sign_in,
-            #[cfg(target_os = "macos")]
-            macos::traffic_light::set_traffic_lights,
-            #[cfg(target_os = "macos")]
-            macos::traffic_light::set_window_title,
-            #[cfg(target_os = "macos")]
-            macos::system_dictionary::show_lookup_popover,
-            #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
-            discord_rpc::update_book_presence,
-            #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
-            discord_rpc::clear_book_presence,
             clip_url::clip_url,
             browser_fetch::fetch_web_browser_resource,
             localsend::commands::localsend_start,
@@ -613,8 +513,6 @@ pub fn run() {
             localsend::commands::localsend_cancel_receive,
             localsend::commands::localsend_send_files,
             localsend::commands::localsend_cancel_send,
-            #[cfg(desktop)]
-            spawn_fresh_browser::spawn_fresh_browser,
             nightly_update::verify_update_signature,
             #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
             nightly_update::install_nightly_update,
@@ -664,29 +562,6 @@ pub fn run() {
     // window-state plugin loads it, so a bad `.window-state.json` (e.g. the
     // Windows minimized `-32000` sentinel) can't crash WebView2 on launch.
     // See https://github.com/readest/readest/issues/4398.
-    #[cfg(desktop)]
-    let builder = builder.plugin(window_state::init());
-
-    // The main window restores its saved geometry manually on Windows (see
-    // `restore_main_window_state`): restoring into the freshly created hidden
-    // window bakes the stale creation-time client area into the saved size,
-    // growing the window on every launch (#6373).
-    #[cfg(desktop)]
-    let window_state = tauri_plugin_window_state::Builder::default();
-    #[cfg(all(desktop, windows))]
-    let window_state = window_state.skip_initial_state("main");
-    #[cfg(desktop)]
-    let builder = builder.plugin(window_state.build());
-
-    #[cfg(target_os = "macos")]
-    let builder = builder.plugin(macos::traffic_light::init());
-
-    #[cfg(target_os = "macos")]
-    let builder = builder.plugin(macos::window::init());
-
-    #[cfg(target_os = "macos")]
-    let builder = builder.plugin(macos::safari_auth::init());
-
     #[cfg(target_os = "ios")]
     let builder = builder.plugin(tauri_plugin_sign_in_with_apple::init());
 
@@ -708,12 +583,6 @@ pub fn run() {
             {
                 use tauri::Manager;
                 app.add_capability(include_str!("../capabilities-extra/webdriver.json"))?;
-            }
-            #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
-            {
-                use std::sync::{Arc, Mutex};
-                let discord_client = Arc::new(Mutex::new(discord_rpc::DiscordRpcClient::new()));
-                app.manage(discord_client);
             }
             app.manage(localsend::LocalSendState::default());
 
@@ -870,15 +739,6 @@ pub fn run() {
                 win_builder.inner_size(width, height).resizable(true)
             };
 
-            // The overlay title bar draws its title over the app's own header,
-            // so `macos::window::init()` hides the title text and the window
-            // can carry a real name for the Window menu and VoiceOver.
-            #[cfg(target_os = "macos")]
-            let win_builder = win_builder
-                .decorations(true)
-                .title_bar_style(TitleBarStyle::Overlay)
-                .title("Readest");
-
             #[cfg(all(not(target_os = "macos"), desktop))]
             let win_builder = {
                 let mut builder = win_builder
@@ -956,38 +816,6 @@ pub fn run() {
             // let win = win_builder.build().unwrap();
             // win.open_devtools();
 
-            #[cfg(target_os = "macos")]
-            {
-                let window = win_builder.build().unwrap();
-                // On macOS, closing a window (via Cmd+W or the red traffic light)
-                // should not quit the app — only Cmd+Q should — and normally hides
-                // instead of minimizing (#5240): the app keeps running in the dock
-                // and the window is restored when the user reopens the app from the
-                // dock. On Tahoe the hide is defensive against the `orderOut:`
-                // phantom-window regression (#4875); see
-                // `macos::window::hide_main_window` for the fullscreen-failure
-                // fallback.
-                let window_for_close = window.clone();
-                window.on_window_event(move |event| match event {
-                    tauri::WindowEvent::CloseRequested { api, .. } => {
-                        api.prevent_close();
-                        macos::window::hide_main_window(&window_for_close);
-                    }
-                    // Safety net for JS-side `show()` callers (e.g.
-                    // `ensureMainLibraryWindow` in src/utils/nav.ts re-shows a hidden
-                    // main window from a reader window without a dock Reopen): the
-                    // window can only become key after it is back on screen, so any
-                    // pending defensively-zeroed frame must be restored by now.
-                    tauri::WindowEvent::Focused(true) => {
-                        macos::window::restore_main_window_frame(&window_for_close);
-                    }
-                    _ => {}
-                });
-            }
-
-            #[cfg(target_os = "macos")]
-            macos::menu::setup_macos_menu(app.handle())?;
-
             app.handle().emit("window-ready", ()).unwrap();
 
             Ok(())
@@ -1020,21 +848,9 @@ pub fn run() {
                         ..
                     } => {
                         if let Some(window) = app_handle.get_webview_window("main") {
-                            // Undo a pending Tahoe defensive hide (zeroed frame) before
-                            // showing so the window reappears at its real position and
-                            // size. No-op when the window was hidden plainly.
-                            macos::window::restore_main_window_frame(&window);
                             let _ = window.show();
                             let _ = window.set_focus();
                             let _ = window.unminimize();
-                        }
-                    }
-                    // A programmatic exit emits ExitRequested before the window-state
-                    // plugin performs its final save. Restore any zeroed frame while
-                    // the window is still hidden so live geometry remains valid.
-                    tauri::RunEvent::ExitRequested { .. } => {
-                        if let Some(window) = app_handle.get_webview_window("main") {
-                            macos::window::restore_main_window_frame(&window);
                         }
                     }
                     _ => {}

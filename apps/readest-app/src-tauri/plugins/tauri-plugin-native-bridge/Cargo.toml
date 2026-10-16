@@ -17,12 +17,6 @@ serde = "1.0"
 thiserror = "2"
 schemars = "0.8"
 
-[features]
-# The Linux CEF runtime (`pnpm tauri`): screenshots go through the CEF
-# browser's DevTools protocol. Outside that build the root Cargo.toml
-# resolves `tauri-runtime-cef` to an empty stub that is never compiled.
-cef = ["dep:tauri-runtime-cef"]
-
 [dev-dependencies]
 serde_json = "1"
 base64 = "0.22"
@@ -72,4 +66,3 @@ windows-core = "0.61"
 # the host distribution's versions, mirroring the previous
 # `sync-secret-service` feature on keyring v3.
 dbus-secret-service-keyring-store = { version = "1", features = ["crypto-rust", "vendored"] }
-tauri-runtime-cef = { version = "0.1", optional = true }
