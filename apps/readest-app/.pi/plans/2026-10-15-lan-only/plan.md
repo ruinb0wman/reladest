@@ -83,11 +83,11 @@
 - [x] **[C-7]** 验：84 个 tts 测试已清；能开书、翻页、加笔记；WebDAV 同步不受影响 — ✅ `c6cc79f69`
 
 ### Phase 2.5-D — 删翻译
-- [ ] **[D-1]** `services/translators/**` + 3 个 API 路由（`azure-translate`/`yandex-translate`/`pages/api/deepl/translate`）
-- [ ] **[D-2]** `useTranslator`/`useTextTranslation`/`TranslatorPopup`/`TranslationToggler`/`translationMarkup`
-- [ ] **[D-3]** `CustomTranslator{Editor,s}.tsx` + `customTranslatorStore` + `types/translation.ts` + `sync/adapters/customTranslator.ts`
-- [ ] **[D-4]** 收尾 `dictionaries/contextDictionary.ts` + `LangPanel` 的 `translationProvider`/`translateTargetLang`
-- [ ] **[D-5]** 验：6 个 translator 测试已清；**`hooks/useTranslation.ts`（i18n）未动**
+- [x] **[D-1]** `services/translators/**` + 3 个 API 路由（`azure-translate`/`yandex-translate`/`pages/api/deepl/translate`） — ✅ `19acfb5dd`
+- [x] **[D-2]** `useTranslator`/`useTextTranslation`/`TranslatorPopup`/`TranslationToggler`/`translationMarkup` — ✅ `19acfb5dd`
+- [x] **[D-3]** `CustomTranslator{Editor,s}.tsx` + `customTranslatorStore` + `types/translation.ts` + `sync/adapters/customTranslator.ts` — ✅ `19acfb5dd`
+- [x] **[D-4]** 收尾 `dictionaries/contextDictionary.ts` + `LangPanel` 的 `translationProvider`/`translateTargetLang` — ✅ `19acfb5dd`
+- [x] **[D-5]** 验：6 个 translator 测试已清；**`hooks/useTranslation.ts`（i18n）未动** — ✅ `19acfb5dd`
 
 ### Phase 3.0b — 判断批（需拍板）
 - [ ] **[3b-1]** 网页剪藏（`web_browser`+`clip_url`+`browser_fetch`+`media_proxy` 2876 行）删 / 留
@@ -653,7 +653,21 @@ node .next/standalone/apps/readest-app/server.js
 
 ---
 
-#### D. 翻译（删 ~18 文件 / 2.2k 行 + 3 个 API 路由）
+#### D. 翻译 —— **✅ 2026-10-15 完成（一个提交）**
+
+`19acfb5dd`：**96 文件 / +19 / −11,520 行**（原估 18 文件 / 2.2k 行，实际 5 倍 —— `services/translators` 只有 2.2k，但 `useTextTranslation` 584 行、`LangPanel` 的翻译设置占了一半（622→252 行）、`utils/style` 的注入 CSS、`CustomTranslators` 两个组件、以及 20 个测试套件）。
+
+**关键判断**：
+- **Word Lens / 段落模式 / 简繁转换 / 证明规则不是翻译**：`LangPanel` 里只有 "Translation" + "Translated Text" 两个 BoxedList 是翻译的，`convertChineseVariant`（简繁）与 `replaceQuotationMarks` 要留；`getTranslationStyles`（`.translation-*` 选择器类）删除后 `applyTranslationStyle` 也成了死函数。
+- **`ttsReadAloudText` 藏在 `TranslatorConfig` 里**（"朗读原文/译文/两者"），它是 TTS 设置，随 [C] 一起没了。
+- **AI 上下文词典依赖自定义翻译器**：`services/dictionaries/{contextDictionary,contextProvider}` + 字典弹层的 `selection` 上下文透传随之删除（`DictionarySelectionContext` 类型一并去掉）。
+- **`utils/usage.ts` 只被 deepl 路由使用** ⇒ 随 [D] 删除（[C] 时它已变成 no-op）。
+- **标注工具条的 `tts` 动作**也是死代码（派发没人监听的 `tts-speak`）⇒ 同批删掉，`AnnotationToolType` 联合类型收窄。
+
+验收：`tsc` 干净、831 文件 / 9,695 用例 0 失败、web 构建与 200/207 通过。
+
+#### D 原计划（历史参考，已执行）
+
 
 | 删什么 | 规模 / 位置 |
 |---|---|
