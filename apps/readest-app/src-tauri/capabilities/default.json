@@ -210,7 +210,6 @@
     "device-info:default",
     "turso:default",
     "native-bridge:default",
-    "sentry:default",
     "allow-start-server",
     "allow-download-file",
     "allow-upload-file",
