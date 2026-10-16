@@ -74,13 +74,13 @@
 - [x] **[B-5]** 验：集成列表只剩 WebDAV；指向不存在的地址时只有 WebDAV 报错，无云回落 — ✅（da7c75017）
 
 ### Phase 2.5-C — 删 TTS + 有声书
-- [ ] **[C-1]** `src/services/tts/**`（47 文件）+ `libs/readestVoice` + `libs/edgeTTS.ts` + `app/api/tts/**`
-- [ ] **[C-2]** 有声书：`services/audiobook/**` + `services/audiobookshelf/**` + `app/player/**` + `absServerStore` + `ABSForm`
-- [ ] **[C-3]** `utils/audiobook.ts` + 32 个 import 点的分支消除
-- [ ] **[C-4]** Reader TTS UI + `TTSPanel.tsx` + `tts` settings slice + `ttsDownloadStore` + `sync/file/ttsPackSync` + engine 阶段
-- [ ] **[C-5]** 交叉 5 处：`statistics/ttsStatsRecorder`、`dictionaries/providers/mdictProvider`(SILENCE_DATA)、`opds/openOpdsAudiobook`、`bookorbit/{openBookOrbitAudiobook,narration}`
-- [ ] **[C-6]** 随 C 走：`plugins/tauri-plugin-native-tts/**`（5934 行）+ tauri CSP 里的 edge/微软域名
-- [ ] **[C-7]** 验：84 个 tts 测试已清；能开书、翻页、加笔记；WebDAV 同步不受影响
+- [x] **[C-1]** `src/services/tts/**`（47 文件）+ `libs/readestVoice` + `libs/edgeTTS.ts` + `app/api/tts/**` — ✅ `c6cc79f69`
+- [x] **[C-2]** 有声书：`services/audiobook/**` + `services/audiobookshelf/**` + `app/player/**` + `absServerStore` + `ABSForm` — ✅ `c6cc79f69`
+- [x] **[C-3]** `utils/audiobook.ts` + 32 个 import 点的分支消除 — ✅ `c6cc79f69`
+- [x] **[C-4]** Reader TTS UI + `TTSPanel.tsx` + `tts` settings slice + `ttsDownloadStore` + `sync/file/ttsPackSync` + engine 阶段 — ✅ `c6cc79f69`
+- [x] **[C-5]** 交叉 5 处：`statistics/ttsStatsRecorder`、`dictionaries/providers/mdictProvider`(SILENCE_DATA)、`opds/openOpdsAudiobook`、`bookorbit/{openBookOrbitAudiobook,narration}` — ✅ `c6cc79f69`
+- [x] **[C-6]** 随 C 走：`plugins/tauri-plugin-native-tts/**`（5934 行）+ tauri CSP 里的 edge/微软域名 — ✅ `c6cc79f69`
+- [x] **[C-7]** 验：84 个 tts 测试已清；能开书、翻页、加笔记；WebDAV 同步不受影响 — ✅ `c6cc79f69`
 
 ### Phase 2.5-D — 删翻译
 - [ ] **[D-1]** `services/translators/**` + 3 个 API 路由（`azure-translate`/`yandex-translate`/`pages/api/deepl/translate`）
@@ -596,7 +596,22 @@ node .next/standalone/apps/readest-app/server.js
 
 ---
 
-#### C. 语音读书 / TTS **+ 有声书**（删 ~65 文件 / ~15.6k 行，最大的一刀）
+#### C. 语音读书 / TTS + 有声书 —— **✅ 2026-10-15 完成（一个提交）**
+
+`c6cc79f69`：**654 文件 / +7,946 / −75,839 行**。实际规模是原估的 4 倍（`services/tts` 47 文件 13.6k 行 + `native-tts` 插件 285 文件 5.9k 行 + 16 个 TTS 组件 + 有声书/ABS 三棵树 + 135 个测试套件）。
+
+**关键判断（写下来免得重踩）**：
+- **TTS 与有声书共用 `TTSSessionManager`**，必须一刀切；两者方向上的依赖是 TTS→有声书 4 处、有声书→TTS 2 处，所以**先删 TTS 更干净**（我试过反向，会让 `TTSController` 需要外科手术式保留，白做）。
+- **`services/opds/audiobook.ts`、`bookorbit/{openBookOrbitAudiobook,narration,mediaProxy,pairing,manifest,audiobookId,autoPair}` 是有声书的一半**；BookOrbit 的**电子书/进度/笔记同步**（`BookOrbitClient`/`notesPass`/`statsPush`/`bookmarkExchange`/`annotationExchange`）必须留 —— [B-4] 留下的 KOSync 协议就是为它。
+- **段落模式与 RSVP 不是 TTS**：它们各自有"跟随朗读"的一半（`ttsSyncStatus`/`ttsActive`/`ttsRate` + 指示器 + 速率选择器）随 TTS 死，但**独立阅读功能要留**。RSVP 的 WPM 控件要从 `ttsDriven ? Audio pace : WPM` 的三元里恢复出来（我第一刀把 else 分支一起切掉了，测试抓出来了）。
+- **`paragraphTts.ts` 里有两个不是 TTS 的东西**：`buildTtsHighlightCssText`（注释高亮也用）和 `wordHighlight` 的 `getTextSubRange`/`rangeTextExcludingInert`（段落克隆的选区映射用）⇒ 分别搬到 `paragraph/highlightCss.ts` 与 `paragraph/rangeText.ts`。
+- **`TTSData.SILENCE_DATA`** 是字典 MDX 音频解锁用的静音 data URL（与 TTS 无关）⇒ 本地化到 `mdictProvider.ts`。
+- **APK 构建注意**：`gen/android` 的生成物仍列着被删的 `tauri-plugin-native-tts`，下次构建前必须 `pnpm tauri android init --ci`（或删掉 `gen/android` 重生成）。
+
+验收：`tsc` 干净、852 文件 / 10,052 用例 0 失败、web 构建与 200/207 通过。
+
+#### C 原计划（历史参考，已执行）
+
 
 用户拍板：**有声书一起删**（两者共用 `TTSSessionManager`，只删合成会留下半个引擎）。
 
