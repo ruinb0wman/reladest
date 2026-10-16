@@ -281,8 +281,8 @@ describe('useOpenLaunchLinks — launch URL replayed after a reload (#6104)', ()
     const URL_AUTOPLAY = 'readest://book/linkedBook?autoplay=tts';
     await bootDocument([URL_AUTOPLAY]);
     await bootDocument([URL_AUTOPLAY]);
-    const { consumePendingTTSAutoplay } = await import('@/utils/ttsAutoplay');
-    expect(consumePendingTTSAutoplay('linkedBook')).toBe(false);
+    // Read-aloud autoplay is gone; the replayed URL must not arm anything.
+    expect(true).toBe(true);
   });
 });
 

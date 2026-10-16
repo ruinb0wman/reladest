@@ -784,21 +784,14 @@ describe('RSVPController', () => {
       expect(controller.currentState.currentIndex).toBe(12);
     });
 
-    test('estimatedWpmFromRate clamps extreme tts rates to FLOOR/CEIL', () => {
-      // 190 * rate, clamped to [60, 600].
-      expect(RSVPController.estimatedWpmFromRate(1)).toBe(190);
-      expect(RSVPController.estimatedWpmFromRate(0.1)).toBe(60); // 19 -> floor 60
-      expect(RSVPController.estimatedWpmFromRate(10)).toBe(600); // 1900 -> ceil 600
-      expect(RSVPController.estimatedWpmFromRate(2)).toBe(380);
-    });
-
     test('drive seeds the rate via estimatedWpmFromRate so an extreme rate is clamped', () => {
       const { controller } = makeEstimatorFixture();
       controller.setExternallyDriven(true);
 
-      // Very slow rate -> clamp to FLOOR (60 wpm -> 1000ms/word). At 190's
-      // rate (316ms) it would have advanced; at 60 it must not yet.
-      const wpm = RSVPController.estimatedWpmFromRate(0.1);
+      // Very slow pace -> 60 wpm (1000ms/word). At 190 wpm (316ms) it would
+      // have advanced; at 60 it must not yet. (The pace used to be derived from
+      // a TTS rate; the estimator now takes the WPM directly.)
+      const wpm = 60;
       controller.driveEstimatedFromCfi(cfiOfWord(5), wpm);
       expect(controller.currentState.currentIndex).toBe(5);
 

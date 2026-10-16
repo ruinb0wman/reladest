@@ -61,7 +61,6 @@ vi.mock('@/store/parallelViewStore', () => ({
 vi.mock('@/utils/nav', () => ({ navigateToReader: vi.fn() }));
 
 import useBooksManager from '@/app/reader/hooks/useBooksManager';
-import { setPendingTTSAutoplay } from '@/utils/ttsAutoplay';
 
 describe('useBooksManager open-failure handling', () => {
   afterEach(() => {
@@ -71,7 +70,6 @@ describe('useBooksManager open-failure handling', () => {
     h.viewStates = {};
     h.hasProgress = true;
     h.progressListeners.clear();
-    setPendingTTSAutoplay(null);
   });
 
   it('toasts instead of leaking an unhandled rejection when the book is missing (READEST-1V)', async () => {
@@ -97,39 +95,4 @@ describe('useBooksManager open-failure handling', () => {
   // open-book-in-reader dispatch then hits the "existing" branch, which only
   // focuses the book — bookKeys never changes, so without consuming there the
   // pending autoplay is dropped and read-aloud never starts.
-  it('starts TTS for an autoplay deep link when the book is already open', async () => {
-    h.bookKeys = ['hash1-abc'];
-    h.viewStates = { 'hash1-abc': { inited: true, view: {} } };
-    const dispatchSpy = vi.spyOn(eventDispatcher, 'dispatch');
-
-    renderHook(() => useBooksManager());
-
-    await act(async () => {
-      // Deep link arrives after mount (library hydration finished late).
-      setPendingTTSAutoplay('hash1');
-      eventDispatcher.dispatch('open-book-in-reader', { bookHash: 'hash1' });
-      await Promise.resolve();
-    });
-
-    expect(dispatchSpy).toHaveBeenCalledWith('tts-speak', { bookKey: 'hash1-abc' });
-    dispatchSpy.mockRestore();
-  });
-
-  it('waits for the initial reading position before starting car autoplay', async () => {
-    h.bookKeys = ['hash1-abc'];
-    h.viewStates = { 'hash1-abc': { inited: true, view: {} } };
-    h.hasProgress = false;
-    setPendingTTSAutoplay('hash1');
-    const dispatchSpy = vi.spyOn(eventDispatcher, 'dispatch');
-    renderHook(() => useBooksManager());
-
-    expect(dispatchSpy).not.toHaveBeenCalledWith('tts-speak', expect.anything());
-    await act(async () => {
-      h.hasProgress = true;
-      for (const listener of h.progressListeners) listener();
-    });
-    expect(dispatchSpy).toHaveBeenCalledExactlyOnceWith('tts-speak', { bookKey: 'hash1-abc' });
-    expect(h.progressListeners.size).toBe(0);
-    dispatchSpy.mockRestore();
-  });
 });

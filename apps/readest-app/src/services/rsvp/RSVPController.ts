@@ -806,10 +806,6 @@ export class RSVPController extends EventTarget {
 
   // Slice 5 (#3235): estimated reading rate for a non-Edge TTS voice rate.
   //   clamp(BASE * ttsRate, FLOOR, CEIL)
-  static estimatedWpmFromRate(ttsRate: number): number {
-    const wpm = ESTIMATED_TTS_WPM_BASE * (ttsRate || 1);
-    return Math.max(ESTIMATED_TTS_WPM_FLOOR, Math.min(ESTIMATED_TTS_WPM_CEIL, wpm));
-  }
 
   // Slice 3a (#3235): suspend/restore the auto-advance timer so an external
   // driver (e.g. TTS) can own word advancement via syncToCfi without the
