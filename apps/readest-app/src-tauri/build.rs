@@ -72,8 +72,6 @@ fn main() {
     .expect("failed to run tauri-build");
 }
 
-}
-
 fn build_windows_thumbnail() {
     let manifest_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let dll_crate_dir = manifest_dir
