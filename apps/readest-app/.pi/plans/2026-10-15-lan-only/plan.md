@@ -994,6 +994,29 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 - 模拟器：书库/进度保留、开书下载回到原位、阅读器工具栏、**设置面板可视核对**（无朗读/翻译/账号/简繁转换选择器/MDX 导入项/墨水屏设置）。
 - 真机：[P0-5] Windows 防火墙（唯一卡"手机连得上 PC"的）、[P5-1] 验证矩阵、[P4-5] `start.sh` 看门狗。
 
+### 执行记录（2026-10-16，逐包提交）
+
+| WP | 提交 | 规模 | 验收 |
+|---|---|---|---|
+| WP1 demo 幽灵行 | `b2b9d28d1` | 8 文件 | 见 WP1 节；三端（PC/镜像/模拟器）稳定 2 行 |
+| WP2 死代码/依赖 | `65aae124b` | 24 文件 / −407 行 + 5 npm 依赖 | 829/9670 |
+| WP3 内置浏览器 | `cbf4dc111` | 34 文件 / −3,051 行 | 823/9637 |
+| WP4 墨水屏 | `fea57a950` | 38 文件 / −1,280 行 | 820/9618 |
+| WP5 Sentry | `f450ec2d2` | 11 文件 + 3 workflow 段 | 820/9618 |
+| WP6 MDX/MDD | `69cfa622e` | 26 文件 / −2,938 行（含 submodule） | 816/9569 |
+| WP7 简繁转换 | `349b252c7` | 24 文件 / −507 行（含 submodule） | 815/9548 |
+| WP9 CI 卫生 | `359493812` | 3 workflow / −489 行 | 全部 workflow 仍可被 YAML 解析 |
+| WP10 APK | （进行中） | — | — |
+| WP8 Rust 减肥 | **待做（调整到 APK 之后）** | — | — |
+
+**为什么把 WP8 挪到最后**：WP3–WP5 已经删了 Rust（web_browser/media_proxy/eink/sentry + Kotlin 命令），必须先用一次 APK 构建验证；否则 WP8 再删 3.5k 行后构建失败就无法归因。构建反馈一次约 20 分钟，先验证再叠加是唯一能保证可定位的顺序。
+
+**执行中发现的额外残留（已随手清）**：
+- `utils/object|s3|r2|storage.ts` + `getRemoteBookFilename` 是一座闭合的 R2/S3 预签名 URL 死岛（object.ts 无引用）→ 连 `@aws-sdk/*`、`aws4fetch` 一起删（WP2）。
+- `types/payment.ts`、`utils/storage.ts` 的 `getStorageType`、`DEFAULT_EINK_VIEW_SETTINGS`、`appService.isEink`、`window.__READEST_IS_EINK`、`getDictStyles`、`XML_ENTITIES`、`DEFAULT_DAILY_*_QUOTA` 等一串"死常量/死字段"（WP2/WP4/WP6）。
+- `sentry_config.rs` 之外：`build.rs` 的 DSN 烘烤 + 版本戳（只为 Sentry 存在）+ Android `--build-id=sha1`；`@sentry/browser` 注入随之消失（WP5）。
+- `native-tts` 插件删除后留下的 **4.9MB 陈旧构建残留**（gitignore 里，`git status` 看不见）。
+
 ### 累计影响（预估）
 
 | WP | 类型 | 规模 |
