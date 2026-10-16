@@ -610,6 +610,11 @@ node .next/standalone/apps/readest-app/server.js
 
 验收：`tsc` 干净、852 文件 / 10,052 用例 0 失败、web 构建与 200/207 通过。
 
+**后续两刀（同日）**：
+- `120379e1d` 音频死代码收尾（`libs/mediaSession`、`services/playback`、`utils/{ttsTime,ttsLyrics,ttsAutoplay}` + Android-Auto autoplay 路径、`RSVPController.estimatedWpmFromRate`、file-sync 的 TTS 包路径助手）：**17 文件 / −1,957 行**，套件降到 849 文件 / 10,009 用例。
+- **APK 重建成功**（`[P4-1]` 第二次）：`~/readest-lan/dist/readest-lan-v0.12.16-no-tts.apk`（59.5MB，sha256 `96c258fc…`，`CN=Readest LAN`）。**踩到两个坑**：① R8 报 `Missing class javax.annotation.concurrent.GuardedBy` —— JSR-305 原本由 `native-tts` 插件带进来的 Google Cloud 库提供，删插件后就缺了；修法是在**被跟踪的** `app/build.gradle.kts` 里加 `compileOnly("com.google.code.findbugs:jsr305:3.0.2")`（`gen/android/app/**/*.pro` 每次 `android init` 都会被重写成模板，放那儿会丢）② `keystore.properties` 的路径是 **`src-tauri/gen/android/keystore.properties`**（`rootProject.file(...)`，不是 `app/` 下），`rm -rf gen/android` 后必须重建，否则产出的是 `-unsigned.apk`、装不上（模拟器上验到：装上了但签名 CN 缺失）。
+- **模拟器实机验证**（api35）：升级安装后书库仍在（3 本镜像书），点开一本 WebDAV 镜像的书能下载并按上次位置打开，**阅读器工具栏不再有朗读按钮**。
+
 #### C 原计划（历史参考，已执行）
 
 
