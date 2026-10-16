@@ -932,8 +932,19 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 
 顺序原则：① 先修用户可见 bug；② 再做零风险收尾；③ 各功能删除**一包一提交**、每包 tsc + 全量测试 + 构建；④ Rust 类改动攒到最后**一次 APK**；⑤ 最后真机验收。
 
-#### WP1 — [P7-1] demo 幽灵行（0.5 天，先做）
-用户可见 bug，手机书库已复现两张《指数基金投资指南》。根因：`isDemoBook()` 只在 `useBooksSync` 的云路径上拦，`runLibrarySync` 把 demo 行原样推进 file sync mirror。修法见 §9 的 P7-a..e。验收：两台设备书库各只有一份 demo 书（或按 §9 选项清空 demo 清单）。
+#### WP1 — [P7-1] demo 幽灵行 —— ✅ 2026-10-16 完成（`b2b9d28d1`）
+
+用户可见 bug，手机书库已复现两张《指数基金投资指南》。**实际修法（三处，和 §9 的预计略有出入）**：
+1. **`Book.isDemo`** —— `useDemoBooks` 导入时盖章，章随行持久化；`isDemoBook()` 只看章，**url 判据整个删掉**（不是收窄）。原因：LAN 档的样书是**同源**地址，没有任何 url 能把样书行和真书行分开 —— 实测 `06e01d70…`（用户自己的《指数基金投资指南》）就带着样书 url 被误判并永久跳过同步，而真正泄漏的 `1914c8c5…` 行在镜像里 `url` 是 **null**，url 判据两头都错。
+2. **`saveLibraryBooks` 过滤 demo 行** —— 库页把样书行并进 store（为了显示卡片），此后**每一次**保存都带着它（进度回写、设置恢复、bookDataStore…）。持久化边界是这些调用点唯一的公共收窄口（12 个调用点，逐个过滤会漏）。
+3. **`runFileLibrarySyncPass` / `runFileBookUpload` 出站过滤**（仅出站！入站照旧合并，否则本机会反复重拉对端已有的行）。
+
+**验收（已在 LAN 档实测，样本文件在位）**：清掉 `demoBooksFetched` 后刷新 → 屏幕上 **3 张卡片**、`library.json` **2 行**、镜像 **2 行**且无样书目录、`uploadedHashes` 无样书 hash ⇒「展示但不拥有」成立。
+
+**⚠️ 运维教训（下次清幽灵行必读）**：远端那行**不是**只由本机推上去的 —— 模拟器上的 app（拉过那行，本地有 6.8MB 样书文件）也在**反向推回**它。只清本机+远端会在几十秒内被复活。正确顺序：**先静默所有客户端**（`adb shell am force-stop com.bilingify.readest`，浏览器改用非 app 页面 `localhost:17321/<任意路径>` 以阻止 app 重新落盘）→ 清本机 IDB 的 `Readest/Books/library.json`(+`.bak`)+`Books/<hash>/` → 清远端 `library.json` 的 `books[]`+`uploadedHashes`+`books/<hash>/` → 再启动各客户端。模拟器上 app 数据在 `/data/data/com.bilingify.readest/`，`adb root` 后可直接改（改完 `chown u0_a209:u0_a209` + `chmod 600`）。
+
+**残留（可选）**：样书卡片会和用户已有的同名书并排显示（本机的样书恰好是《指数基金投资指南》的副本）。样书只在**每个 profile 首次**出现（`demoBooksFetched` 门），刷新即消失。想彻底不显示就把 `src/data/demo/library.{en,zh}.json` 的 `library` 改成 `[]`（= §9 的 [P7-b] 选项 1）。
+
 
 #### WP2 — 死代码 / 依赖收尾（0.5 天，零风险）
 - **`media_proxy.rs`(637 行) 全删** —— 已删的 Audiobookshelf 残留（把 ABS 曲目流给 `<audio>`），前端 0 引用；连 `lib.rs` 的 `mod`/注册/命令表 + 相关测试一起删。
