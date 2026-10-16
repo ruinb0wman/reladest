@@ -6,9 +6,6 @@ import Dialog from '@/components/Dialog';
 import { useTranslation } from '@/hooks/useTranslation';
 import { eventDispatcher } from '@/utils/event';
 import { downloadNovel, fetchNovelToc, isNovelImportCancelled } from '@/services/novel/novelImport';
-import { openWebBrowser } from '@/services/webBrowser/webBrowser';
-import { getWebBrowserOptions } from '@/services/webBrowser/webBrowserOptions';
-import type { WebBrowserPage } from '@/services/webBrowser/webBrowser';
 import type { NovelToc } from '@/services/novel/chapterList';
 
 interface ImportNovelDialogProps {
@@ -33,7 +30,6 @@ const ImportNovelDialog: React.FC<ImportNovelDialogProps> = ({ isOpen, onClose, 
   const [phase, setPhase] = useState<Phase>('url');
   const [toc, setToc] = useState<NovelToc | null>(null);
   const [sourceUrl, setSourceUrl] = useState('');
-  const [renderChapters, setRenderChapters] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
@@ -54,7 +50,6 @@ const ImportNovelDialog: React.FC<ImportNovelDialogProps> = ({ isOpen, onClose, 
     setPhase('url');
     setToc(null);
     setSourceUrl('');
-    setRenderChapters(false);
     setBusy(false);
     setError(null);
     setProgress({ done: 0, total: 0 });
@@ -110,8 +105,8 @@ const ImportNovelDialog: React.FC<ImportNovelDialogProps> = ({ isOpen, onClose, 
     if (toc && !titleEdited) setBookTitle(suggestedBookTitle(toc, selected));
   };
 
-  const fetchToc = async (page?: WebBrowserPage) => {
-    const target = page?.url ?? url.trim();
+  const fetchToc = async () => {
+    const target = url.trim();
     if (!/^https?:\/\//i.test(target)) {
       setError(_('Enter a URL starting with http:// or https://'));
       return;
@@ -122,15 +117,11 @@ const ImportNovelDialog: React.FC<ImportNovelDialogProps> = ({ isOpen, onClose, 
     setBusy(true);
     setError(null);
     try {
-      const parsed = await fetchNovelToc(target, {
-        signal: controller.signal,
-        ...(page ? { page: { html: page.html, finalUrl: page.url } } : {}),
-      });
+      const parsed = await fetchNovelToc(target, { signal: controller.signal });
       if (request !== requestRef.current || controller.signal.aborted) return;
       const selected = new Set(parsed.chapters.map((_, index) => index));
       setToc(parsed);
       setSourceUrl(target);
-      setRenderChapters(!!page);
       setSelectedChapterIndexes(selected);
       setBookTitle(suggestedBookTitle(parsed, selected));
       setTitleEdited(false);
@@ -142,31 +133,6 @@ const ImportNovelDialog: React.FC<ImportNovelDialogProps> = ({ isOpen, onClose, 
         setBusy(false);
         abortRef.current = null;
       }
-    }
-  };
-
-  const signIn = async () => {
-    const target = url.trim();
-    if (busy || !/^https?:\/\//i.test(target)) {
-      if (!busy) setError(_('Enter a URL starting with http:// or https://'));
-      return;
-    }
-    setBusy(true);
-    setError(null);
-    const request = ++requestRef.current;
-    try {
-      const options = getWebBrowserOptions(_, document.documentElement.dataset['eink'] === 'true');
-      options.labels.clipPage = _('Use Chapter List');
-      const result = await openWebBrowser(target, options);
-      if (request !== requestRef.current) return;
-      if (result.page) {
-        setUrl(result.page.url);
-        await fetchToc(result.page);
-      }
-    } catch (e) {
-      if (request === requestRef.current) surfaceError(e);
-    } finally {
-      if (request === requestRef.current) setBusy(false);
     }
   };
 
@@ -189,7 +155,6 @@ const ImportNovelDialog: React.FC<ImportNovelDialogProps> = ({ isOpen, onClose, 
       const book = await downloadNovel(selectedToc, sourceUrl, {
         signal: controller.signal,
         identityKey,
-        renderChapters,
         translate: _,
         onProgress: (done, total) => setProgress({ done, total }),
       });
@@ -266,14 +231,6 @@ const ImportNovelDialog: React.FC<ImportNovelDialogProps> = ({ isOpen, onClose, 
                 disabled={busy}
               >
                 {_('Cancel')}
-              </button>
-              <button
-                type='button'
-                className='btn btn-ghost btn-sm eink-bordered'
-                onClick={() => void signIn()}
-                disabled={busy || !url.trim()}
-              >
-                {_('Sign in with Browser')}
               </button>
               <button
                 type='button'

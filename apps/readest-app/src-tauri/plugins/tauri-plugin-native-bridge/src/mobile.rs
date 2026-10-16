@@ -466,32 +466,12 @@ impl<R: Runtime> NativeBridge<R> {
             .map_err(Into::into)
     }
 
-    /// Present the native in-app browser (`WebBrowserController.swift/.kt`).
-    /// Blocks until the user closes it; downloads arrive meanwhile as
-    /// `web-browser-download` plugin events.
-    pub fn open_web_browser(
-        &self,
-        payload: WebBrowserRequest,
-    ) -> crate::Result<WebBrowserResponse> {
-        self.0
-            .run_mobile_plugin("open_web_browser", payload)
-            .map_err(Into::into)
-    }
-
     pub fn web_browser_cookies(
         &self,
         payload: WebBrowserCookiesRequest,
     ) -> crate::Result<WebBrowserCookiesResponse> {
         self.0
             .run_mobile_plugin("web_browser_cookies", payload)
-            .map_err(Into::into)
-    }
-
-    /// Push an import status into the open browser's banner.
-    pub fn set_web_browser_status(&self, payload: WebBrowserStatusRequest) -> crate::Result<()> {
-        self.0
-            .run_mobile_plugin::<serde::de::IgnoredAny>("set_web_browser_status", payload)
-            .map(|_| ())
             .map_err(Into::into)
     }
 

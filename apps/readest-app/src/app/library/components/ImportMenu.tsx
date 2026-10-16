@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { MdLanguage, MdMenuBook, MdRssFeed } from 'react-icons/md';
+import { MdMenuBook, MdRssFeed } from 'react-icons/md';
 import { LuLibrary } from 'react-icons/lu';
 import { IoFileTray } from 'react-icons/io5';
 import { useEnv } from '@/context/EnvContext';
@@ -12,7 +12,6 @@ export interface ImportMenuProps {
   setIsDropdownOpen?: (open: boolean) => void;
   onImportBooksFromFiles: () => void;
   onImportBooksFromDirectory?: () => void;
-  onImportFromWebBrowser?: () => void;
   onImportBookFromNovelUrl?: () => void;
   onOpenCatalogManager: () => void;
   onOpenFeeds: () => void;
@@ -23,7 +22,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
   setIsDropdownOpen,
   onImportBooksFromFiles,
   onImportBooksFromDirectory,
-  onImportFromWebBrowser,
   onImportBookFromNovelUrl,
   onOpenCatalogManager,
   onOpenFeeds,
@@ -38,11 +36,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
 
   const handleImportFromDirectory = () => {
     onImportBooksFromDirectory?.();
-    setIsDropdownOpen?.(false);
-  };
-
-  const handleImportFromWebBrowser = () => {
-    onImportFromWebBrowser?.();
     setIsDropdownOpen?.(false);
   };
 
@@ -82,13 +75,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
         />
       )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
-      {onImportFromWebBrowser && (
-        <MenuItem
-          label={_('From Web Browser')}
-          Icon={<MdLanguage className='h-5 w-5' />}
-          onClick={handleImportFromWebBrowser}
-        />
-      )}
       {onImportBookFromNovelUrl && (
         <MenuItem
           label={_('From Web Novel')}

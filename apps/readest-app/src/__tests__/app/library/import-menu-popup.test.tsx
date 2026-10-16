@@ -47,21 +47,17 @@ describe('ImportMenuPopup', () => {
     expect(screen.getByRole('menuitem', { name: 'From Feed URL' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Online Library' })).toBeTruthy();
     expect(screen.queryByRole('menuitem', { name: 'From Directory' })).toBeNull();
-    expect(screen.queryByRole('menuitem', { name: 'From Web Browser' })).toBeNull();
   });
 
   it('adds the platform-dependent options when their callbacks are available', () => {
     const onImportBooksFromDirectory = vi.fn();
-    const onImportFromWebBrowser = vi.fn();
-    const { onClose } = renderPopup({ onImportBooksFromDirectory, onImportFromWebBrowser });
+    const { onClose } = renderPopup({ onImportBooksFromDirectory });
 
     fireEvent.click(screen.getByRole('menuitem', { name: 'From Directory' }));
     expect(onImportBooksFromDirectory).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole('menuitem', { name: 'From Web Browser' }));
-    expect(onImportFromWebBrowser).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('menuitem', { name: 'From Web URL' })).toBeNull();
-    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('uses the OPDS label when curated online catalogs are unavailable', () => {
