@@ -6,8 +6,7 @@ import type { Book } from '@/types/book';
 // The demo shelf is deployment-specific (upstream points at cdn.readest.com; a
 // self-hosted build serves a local sample instead), so take the URL from the
 // same source of truth the app imports demo rows from rather than pinning a
-// CDN address that no longer exists in this build. `isDemoBook()` matches on the
-// resolved list, so this keeps the guard honest for any list.
+// CDN address that no longer exists in this build.
 import { demoLibraries } from '@/services/demoBooks';
 
 const DEMO_URL = demoLibraries.en.library[0]!;
@@ -29,6 +28,10 @@ const DEMO_URL = demoLibraries.en.library[0]!;
  *
  * Demo books are never the user's content: they must stay out of the push, and
  * a cloud row must never write back over one.
+ *
+ * The rows are identified by the `isDemo` stamp `useDemoBooks` sets, NOT by
+ * url: this fork serves the sample from its own origin, so the sample address
+ * is also the address a real book can carry (`real-from-demo-url` below).
  */
 
 const appService = vi.hoisted(() => ({
@@ -93,12 +96,13 @@ beforeEach(() => {
 
 describe('demo books and the cloud book channel (issue #5049)', () => {
   it('never pushes a demo book to the cloud', async () => {
-    useLibraryStore
-      .getState()
-      .setLibrary([
-        makeBook({ hash: 'demo-1', url: DEMO_URL, title: 'The Great Gatsby' }),
-        makeBook({ hash: 'mine-1', title: 'My Own Book' }),
-      ]);
+    useLibraryStore.getState().setLibrary([
+      makeBook({ hash: 'demo-1', isDemo: true, title: 'The Great Gatsby' }),
+      makeBook({ hash: 'mine-1', title: 'My Own Book' }),
+      // A real book that was imported from the sample address (or left with
+      // it by an older build). Its url must NOT cost it its place in the push.
+      makeBook({ hash: 'real-from-demo-url', url: DEMO_URL, title: 'Not A Sample' }),
+    ]);
 
     const { result } = renderHook(() => useBooksSync());
     await result.current.pushLibrary();
@@ -111,7 +115,7 @@ describe('demo books and the cloud book channel (issue #5049)', () => {
         .map((book) => book.hash),
     );
 
-    expect([...pushed]).toEqual(['mine-1']);
+    expect([...pushed].sort()).toEqual(['mine-1', 'real-from-demo-url']);
   });
 
   it('keeps a deleted demo book deleted when a stale cloud row is pulled back', async () => {
@@ -121,7 +125,7 @@ describe('demo books and the cloud book channel (issue #5049)', () => {
     useLibraryStore.getState().setLibrary([
       makeBook({
         hash: 'demo-1',
-        url: DEMO_URL,
+        isDemo: true,
         title: 'The Great Gatsby',
         deletedAt: 2000,
         downloadedAt: null,

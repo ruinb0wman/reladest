@@ -9,7 +9,7 @@ import libraryZh from '@/data/demo/library.zh.json';
  * entries are resolved against the app's own origin so a LAN build never
  * reaches Readest's CDN.
  *
- * Both the exported libraries and the isDemoBook() set below MUST use the same
+ * Both the exported libraries and the demo row stamp MUST use the same
  * rewritten list — if they diverge, a demo row stops being recognised as one
  * and would be pushed to the cloud as user content.
  */
@@ -26,13 +26,18 @@ export const demoLibraries = {
   zh: resolveLibrary(libraryZh),
 };
 
-const demoBookUrls = new Set([...demoLibraries.en.library, ...demoLibraries.zh.library]);
-
 /**
- * Demo books are the sample shelf an anonymous web visitor gets (issue #5049).
- * They are imported as ordinary url-backed rows so the library isn't empty, but
- * they are not the user's content: they must never be pushed to the cloud, and
- * a cloud row must never be merged back over one. Identifying them by url also
- * covers rows imported before this rule existed.
+ * `useDemoBooks` stamps every row it imports, and the stamp travels with the row
+ * (it is persisted and mirrored like any other field).
+ *
+ * The previous rule matched on url, which stopped working the moment this fork
+ * pointed the demo list at a same-origin `/demo/testbook.epub`: that address is
+ * served by our own server, so a *real* book imported from it — or any ordinary
+ * row that happened to carry it — was read as a demo row and silently skipped by
+ * sync. The url set is gone rather than narrowed, because with a same-origin
+ * sample there is no url that separates a demo row from a real one.
+ *
+ * A row imported by an older build carries no stamp; such rows are ordinary
+ * books now, which is what they are after the sample file has been replaced.
  */
-export const isDemoBook = (book: Book): boolean => !!book.url && demoBookUrls.has(book.url);
+export const isDemoBook = (book: Book): boolean => book.isDemo === true;

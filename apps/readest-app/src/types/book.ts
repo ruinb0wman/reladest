@@ -95,6 +95,11 @@ export interface ImportBookOptions {
 export interface Book {
   // if Book is a remote book we just lazy load the book content via url
   url?: string;
+  // Set on the sample shelf the library seeds an empty install with. Those rows
+  // are shown, not owned: they are never persisted, never mirrored to another
+  // device, and never uploaded. Unlike `url` this survives the sample file being
+  // swapped, so a real book can never be mistaken for one (see demoBooks.ts).
+  isDemo?: boolean;
   // if Book is a transient local book we can load the book content via filePath
   filePath?: string;
   // Other on-disk paths that resolved to this same book — a watched folder

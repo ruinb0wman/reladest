@@ -10,6 +10,7 @@ import type { UserPlan } from '@/types/quota';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useFileSyncStore } from '@/store/fileSyncStore';
+import { isDemoBook } from '@/services/demoBooks';
 import {
   getActiveFileSyncBackends,
   settingsKeyForBackend,
@@ -90,7 +91,13 @@ const syncOneBackend = async (
   }
 
   const strategy = ps?.strategy ?? 'silent';
-  const result = await engine.syncLibrary(useLibraryStore.getState().library, {
+  // The sample shelf is not the user's content: push it to a mirror and every
+  // other device pulls a book nobody imported (and keeps it, since the index is
+  // a union merge). Filtered on the way out only — rows already in the mirror
+  // still merge on the way in, or this device would try to re-pull what the
+  // other devices hold.
+  const pushable = useLibraryStore.getState().library.filter((book) => !isDemoBook(book));
+  const result = await engine.syncLibrary(pushable, {
     strategy: strategy === 'prompt' ? 'silent' : strategy,
     syncBooks: ps?.syncBooks ?? false,
     fullSync: false,
@@ -194,6 +201,8 @@ export const runFileLibrarySyncPass = async (
  * caller's job.
  */
 export const runFileBookUpload = async (envConfig: EnvConfigType, book: Book): Promise<boolean> => {
+  // Same rule as the library pass, for the explicit per-book upload button.
+  if (isDemoBook(book)) return false;
   const backends = getActiveFileSyncBackends(useSettingsStore.getState().settings);
   let anyUploaded = false;
   for (const kind of backends) {

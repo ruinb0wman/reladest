@@ -27,7 +27,15 @@ export const useDemoBooks = () => {
         const books = await Promise.all(
           demoBooks.library.map((url) => appService.importBook(url, [], { saveBook: false })),
         );
-        setBooks(books.filter((book) => book !== null) as Book[]);
+        // Stamp the rows as the sample shelf they are: `isDemoBook()` and every
+        // guard built on it read this flag, and it must be set before the page
+        // merges them into the library (see demoBooks.ts).
+        setBooks(
+          (books.filter((book) => book !== null) as Book[]).map((book) => ({
+            ...book,
+            isDemo: true,
+          })),
+        );
       } catch (error) {
         console.error('Failed to import demo books:', error);
       }
