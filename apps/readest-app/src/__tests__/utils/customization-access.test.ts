@@ -1,28 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { jwtDecode } from 'jwt-decode';
-import {
-  getCustomizationPurchased,
-  isCustomizationAllowed,
-  isCustomTranslatorAllowed,
-  isSelfHosted,
-} from '@/utils/access';
-
-vi.mock('jwt-decode', () => ({ jwtDecode: vi.fn() }));
-
-const mockToken = (claims: Record<string, unknown>) => {
-  (jwtDecode as unknown as ReturnType<typeof vi.fn>).mockReturnValue(claims);
-  return 'token';
-};
-
-describe('getCustomizationPurchased', () => {
-  it('reads the claim minted by custom_access_token_hook', () => {
-    expect(getCustomizationPurchased(mockToken({ customization_purchased: true }))).toBe(true);
-  });
-
-  it('is false when the claim is absent, so old tokens do not unlock it', () => {
-    expect(getCustomizationPurchased(mockToken({ plan: 'free' }))).toBe(false);
-  });
-});
+import { isCustomizationAllowed, isSelfHosted } from '@/utils/access';
 
 describe('isCustomizationAllowed', () => {
   it('allows an explicit purchase on any plan', () => {
@@ -79,32 +56,3 @@ describe('self-hosted deployments', () => {
 // Custom translators (the user's own LLM endpoint or DeepL key) are premium.
 // The reader decides from the session token alone, so a signed-out reader is
 // locked unless the deployment is self-hosted.
-describe('isCustomTranslatorAllowed', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('allows a subscriber', () => {
-    expect(isCustomTranslatorAllowed(mockToken({ plan: 'plus' }))).toBe(true);
-  });
-
-  it('allows a free user who bought Full Customization', () => {
-    expect(isCustomTranslatorAllowed(mockToken({ customization_purchased: true }))).toBe(true);
-  });
-
-  it('denies a free user and a storage-only buyer', () => {
-    expect(isCustomTranslatorAllowed(mockToken({ plan: 'free' }))).toBe(false);
-    expect(
-      isCustomTranslatorAllowed(mockToken({ plan: 'free', storage_purchased_bytes: 1e9 })),
-    ).toBe(false);
-  });
-
-  it('denies a signed-out reader', () => {
-    expect(isCustomTranslatorAllowed(null)).toBe(false);
-  });
-
-  it('allows a signed-out reader on a self-hosted deployment', () => {
-    vi.stubEnv('NEXT_PUBLIC_SELF_HOSTED', 'true');
-    expect(isCustomTranslatorAllowed(null)).toBe(true);
-  });
-});

@@ -1,8 +1,6 @@
 export interface ReadestRuntimeConfig {
   apiBaseUrl?: string;
   objectStorageType?: string;
-  storageFixedQuota?: number;
-  translationFixedQuota?: number;
   fontBaseUrl?: string;
   selfHosted?: boolean;
 }
@@ -30,16 +28,6 @@ export const getServerRuntimeConfig = (): ReadestRuntimeConfig => ({
   // funds.
   selfHosted:
     (process.env['SELF_HOSTED'] || process.env['NEXT_PUBLIC_SELF_HOSTED']) === 'true' || undefined,
-  storageFixedQuota: (() => {
-    const raw =
-      process.env['STORAGE_FIXED_QUOTA'] ?? process.env['NEXT_PUBLIC_STORAGE_FIXED_QUOTA'];
-    return raw ? parseInt(raw, 10) : undefined;
-  })(),
-  translationFixedQuota: (() => {
-    const raw =
-      process.env['TRANSLATION_FIXED_QUOTA'] ?? process.env['NEXT_PUBLIC_TRANSLATION_FIXED_QUOTA'];
-    return raw ? parseInt(raw, 10) : undefined;
-  })(),
   // Base URL of the directory holding the self-hosted CJK webfont bundles.
   // Readest's own CDN only answers CORS for readest.com origins, so a
   // self-hosted deployment on a custom domain has to serve them itself (#5550).

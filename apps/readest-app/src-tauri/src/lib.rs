@@ -44,7 +44,6 @@ mod linux_single_instance;
 mod localsend;
 #[cfg(target_os = "macos")]
 mod macos;
-mod media_proxy;
 mod mobi_parser;
 mod nightly_update;
 mod parser_common;
@@ -700,7 +699,6 @@ pub fn run() {
             clip_url::clip_url,
             web_browser::open_web_browser,
             browser_fetch::fetch_web_browser_resource,
-            media_proxy::get_media_proxy_base,
             web_browser::set_web_browser_status,
             web_browser::extract_web_browser_archive,
             localsend::commands::localsend_start,

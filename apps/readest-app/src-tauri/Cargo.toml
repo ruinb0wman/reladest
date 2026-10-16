@@ -110,11 +110,6 @@ uuid = { version = "1", features = ["v4"] }
 pem = "4"
 anyhow = "1"
 bytes = "1"
-# Loopback media proxy (media_proxy.rs). All three already ship inside reqwest;
-# `server` just turns on hyper's serving half.
-hyper = { version = "1", features = ["http1", "server"] }
-hyper-util = { version = "0.1", features = ["tokio"] }
-http-body-util = "0.1"
 tokio-stream = "0.1"
 if-addrs = "0.15"
 
