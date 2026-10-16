@@ -93,7 +93,7 @@
 - [ ] **[3b-1]** 网页剪藏（`web_browser`+`clip_url`+`browser_fetch`+`media_proxy` 2876 行）删 / 留
 - [ ] **[3b-2]** LocalSend（Rust + `services/localsend` + `LocalSendForm`）删 / 留
 - [ ] **[3b-3]** 遥测：`sentry_config.rs` + `tauri-plugin-sentry` + `@sentry/*`（不删就要把 DSN 置空）
-- [ ] **[3b-4]** 墨水屏：`eink_identity.rs` + `android/eink.rs` + `EinkRefreshController.kt`
+- [x] **[3b-4]** 墨水屏：删（**用户 2026-10-16 拍板**）—— `eink_identity.rs` + `android/eink.rs` + `EinkRefreshController.kt`
 - [ ] **[3b-5]** 三个 submodule：`qcms` / `js-mdict` / `simplecc-wasm`（删哪个就要删对应功能）
 
 ### 可选 / 收尾
@@ -878,11 +878,18 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 - CI [P3a-8]：5 个 workflow 仍提到已删的东西（`koplugin`/`calibre`/`macOS`/`apple`/`lua`）。
 
 ### C. 待拍板的五件（需要用户 yes/no；它们决定 B 的范围）
-1. 网页剪藏：`web_browser.rs`(887) + `clip_url.rs`(810) + `browser_fetch.rs` + `media_proxy.rs`(637) ≈ 2.8k 行 Rust。**注意与本地剪藏区分**：`services/send/{clipOptions,conversion}` + RSS 是本地管线，[C] 时已确认保留。
+1. 网页剪藏 —— **要拆成两半，砍法不同**（2026-10-16 查证）：
+   - **内置浏览器**（可砍）：`web_browser.rs`(887) + `browser_fetch.rs`(542) + `services/webBrowser`(240) + `useWebBrowserDownloads.ts`(110) + `WebSourcesDialog.tsx` ≈ **1.8k 行**。唯一入口是书库 Import → "Web Sources"（Tauri-only），用来浏览/登录付费站点后导入书或下载文件；砍掉只失去"应用内浏览取书"。
+   - **`clip_url.rs`(810) 必须留**：它是"任意 URL → 可读正文"的引擎，调用方是 **RSS 抓文章**（`services/rss/articleIngest.ts`）、**系统分享「Send to Readest」**（`app/send/page.tsx` + `useClipUrlIngress.ts`）、**网文导入**（`ImportNovelDialog`）、以及 `services/send/conversion/**`（本地 EPUB 转换管线）。**这些都不是剪藏，是保留功能。**
+   - ⚠️ **`media_proxy.rs`(637) 不是剪藏** —— 它是**已删的 Audiobookshelf 残留**（把 ABS 曲目流给 `<audio>`，唯一消费者是随 [C] 删掉的 ABS 播放器；前端 0 引用）⇒ 归入 A，直接删。
 2. LocalSend：Rust `localsend/`(2221) + `services/localsend` + `LocalSendForm`。**与 LAN 主题高度契合，建议留**。
 3. 遥测：`sentry_config.rs` + `tauri-plugin-sentry` + `@sentry/cli` ⇒ 要么删，要么保持"DSN 未配置即 no-op"（现在就是后者：DSN 走 manifestPlaceholder→env）。
-4. 墨水屏：`eink_identity.rs`(144) + `android/eink.rs` + `EinkRefreshController.kt`。
-5. 三个 submodule：`qcms`、`js-mdict`、`simplecc-wasm`（删哪个就得删对应功能：词典/简繁转换）。
+4. 墨水屏：`eink_identity.rs`(144) + `android/eink.rs` + `EinkRefreshController.kt` —— **✅ 用户 2026-10-16 拍板：删**。
+5. 三个 submodule（**查证后建议全留**）：
+   - `packages/qcms` = **PDF 渲染的 ICC 色彩管理**（`qcms` 的 wasm 封装 `qcms_pdf_js`，产物 `public/vendor/pdfjs/qcms_bg.wasm`，由 vendored 的 `pdf.worker.min.mjs` 加载）⇒ 删它等于放弃 PDF 色彩正确性，还要改 vendored pdf.js。
+   - `packages/js-mdict` = **MDX/MDD 词典解析**（`services/dictionaries/dictionaryService.ts` → `mdictProvider`）⇒ 删它等于放弃 MDX 词典格式。
+   - `packages/simplecc-wasm` = **简繁转换（OpenCC）**（`utils/simplecc.ts`）⇒ [D] 时已确认"简繁转换不是翻译，要留"，它就是那个功能的实现。
+   （仓库共 8 个 submodule，`foliate-js`/`tauri`/两个 tauri-plugin/`gstack` 不在候选内。）
 
 ### D. 验证缺口（需要真机或用户）
 - [P0-5] Windows 防火墙 —— 真机走 WiFi 才作数。
