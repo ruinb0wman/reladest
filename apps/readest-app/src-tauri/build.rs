@@ -28,7 +28,6 @@ fn main() {
             "get_environment_variable",
             "get_executable_dir",
             "reveal_item_in_dir",
-            "set_webview_info",
             "get_webview_version",
             "is_updater_disabled",
             "allow_paths_in_scopes",

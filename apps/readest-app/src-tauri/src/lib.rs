@@ -570,7 +570,6 @@ pub fn run() {
             get_executable_dir,
             #[cfg(desktop)]
             file_reveal::reveal_item_in_dir,
-            set_webview_info,
             get_webview_version,
             #[cfg(desktop)]
             is_updater_disabled,
