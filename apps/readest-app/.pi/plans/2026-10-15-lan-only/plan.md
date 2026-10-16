@@ -90,11 +90,11 @@
 - [x] **[D-5]** 验：6 个 translator 测试已清；**`hooks/useTranslation.ts`（i18n）未动** — ✅ `19acfb5dd`
 
 ### Phase 3.0b — 判断批（需拍板）
-- [ ] **[3b-1]** 网页剪藏（`web_browser`+`clip_url`+`browser_fetch`+`media_proxy` 2876 行）删 / 留
-- [ ] **[3b-2]** LocalSend（Rust + `services/localsend` + `LocalSendForm`）删 / 留
-- [ ] **[3b-3]** 遥测：`sentry_config.rs` + `tauri-plugin-sentry` + `@sentry/*`（不删就要把 DSN 置空）
+- [x] **[3b-1]** **2026-10-16 定案：只删「内置浏览器」**（`web_browser.rs`/`browser_fetch.rs`/`services/webBrowser`/`WebSourcesDialog` ≈1.8k 行）；**`clip_url.rs` 必须留**（RSS 抓文章、系统分享 Send to Readest、网文导入、本地 EPUB 转换都在用它）。详见 §4.10 WP3。原条目：网页剪藏（`web_browser`+`clip_url`+`browser_fetch`+`media_proxy` 2876 行）删 / 留
+- [x] **[3b-2]** **2026-10-16 定案：留**。用途=局域网设备间直传书（LocalSend 协议），**与 WebDAV 同步完全无关**（`services/sync/**` 0 引用），且与 LAN 主题契合。原条目：LocalSend（Rust + `services/localsend` + `LocalSendForm`）删 / 留
+- [x] **[3b-3]** **2026-10-16 定案：删**（Rust `sentry`/`tauri-plugin-sentry` + `sentry_config.rs` + `@sentry/cli` + CI 的 `SENTRY_*`）。现状本是惰性的（DSN 构建期 `option_env!` 未设即不 init），删掉是为了彻底不可能误配。详见 §4.10 WP5。原条目：遥测：`sentry_config.rs` + `tauri-plugin-sentry` + `@sentry/*`（不删就要把 DSN 置空）
 - [x] **[3b-4]** 墨水屏：删（**用户 2026-10-16 拍板**）—— `eink_identity.rs` + `android/eink.rs` + `EinkRefreshController.kt`
-- [ ] **[3b-5]** 三个 submodule：`qcms` / `js-mdict` / `simplecc-wasm`（删哪个就要删对应功能）
+- [x] **[3b-5]** **2026-10-16 定案：`qcms` 留**（PDF 的 ICC 色彩管理，vendored `pdf.worker.min.mjs` 要加载 `qcms_bg.wasm`）；**`js-mdict` 删**（MDX/MDD 词典解析 → WP6）；**`simplecc-wasm` 删**（简繁转换 OpenCC → WP7）。原条目：三个 submodule：`qcms` / `js-mdict` / `simplecc-wasm`（删哪个就要删对应功能）
 
 ### 可选 / 收尾
 - [ ] **[P3-1]** Phase 3 其余裁剪（支付/云/其他第三方集成，可选）
@@ -861,7 +861,7 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 
 ---
 
-## 4.9 剩余工作清单（2026-10-16 盘点，含建议执行顺序）
+## 4.9 剩余工作清单（2026-10-16 盘点 → **已被 §4.10 执行计划 v2 取代，保留作资料**）
 
 ### A. 死代码 / 依赖收尾 —— 零风险，半天
 - `utils/access.ts` 里 **9 个已无消费者的导出**（TTS/翻译的配额与门控）：`isTTSInPlan`/`isVoiceTierInPlan`/`getTTSQuota`/`isCustomTranslatorAllowed`/`isCustomTTSAllowed`/`getTranslationQuota`/`getDailyTranslationPlanData`/`TTS_CACHE_PLANS`/`TTS_PLANS`（`getAccessToken`/`getUserID`/`validateUserAndToken` 仍有消费者，留）。
@@ -912,6 +912,90 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 4. **B Rust 减肥 + CI + 一次 APK** —— 攒一次构建把语言栈收干净。
 5. **D 真机验证** —— 防火墙/矩阵/看门狗/可视核对。
 6. **E 可选扩展** —— P3.5、bun、P2-4/P2-5。
+
+## 4.10 执行计划 v2（2026-10-16 定案，含五项判断结果）
+
+### 0. 决策记录（取代 §4.9 的"待拍板"）
+
+| # | 项目 | 结论 | 依据 |
+|---|---|---|---|
+| 1 | 内置浏览器（网页剪藏的"浏览取书"那半） | **删** | 唯一入口是书库 Import → Web Sources（Tauri-only）；PC web 端用不到 |
+| 2 | `clip_url` 抽取引擎 | **留** | RSS 抓文章 / 系统分享 Send to Readest / 网文导入 / 本地 EPUB 转换全靠它 |
+| 3 | LocalSend | **留** | 局域网设备间直传书，与 WebDAV 同步 0 耦合，符合 LAN 定位 |
+| 4 | Sentry 遥测 | **删** | 本站已是惰性（DSN 未设），删掉=彻底不可能误配 |
+| 5 | 墨水屏 | **删** | 用户拍板 |
+| 6 | `packages/qcms` | **留** | PDF 的 ICC 色彩管理，vendored pdf.js 运行时加载 |
+| 7 | `packages/js-mdict` | **删** | 用户拍板：移除 MDX/MDD 词典解析（→ WP6） |
+| 8 | `packages/simplecc-wasm` | **删** | 用户拍板：移除简繁转换 OpenCC（→ WP7） |
+
+### 工作包（WP）与顺序
+
+顺序原则：① 先修用户可见 bug；② 再做零风险收尾；③ 各功能删除**一包一提交**、每包 tsc + 全量测试 + 构建；④ Rust 类改动攒到最后**一次 APK**；⑤ 最后真机验收。
+
+#### WP1 — [P7-1] demo 幽灵行（0.5 天，先做）
+用户可见 bug，手机书库已复现两张《指数基金投资指南》。根因：`isDemoBook()` 只在 `useBooksSync` 的云路径上拦，`runLibrarySync` 把 demo 行原样推进 file sync mirror。修法见 §9 的 P7-a..e。验收：两台设备书库各只有一份 demo 书（或按 §9 选项清空 demo 清单）。
+
+#### WP2 — 死代码 / 依赖收尾（0.5 天，零风险）
+- **`media_proxy.rs`(637 行) 全删** —— 已删的 Audiobookshelf 残留（把 ABS 曲目流给 `<audio>`），前端 0 引用；连 `lib.rs` 的 `mod`/注册/命令表 + 相关测试一起删。
+- `utils/access.ts`：删 9 个无消费者的导出（`isTTSInPlan`/`isVoiceTierInPlan`/`getTTSQuota`/`isCustomTranslatorAllowed`/`isCustomTTSAllowed`/`getTranslationQuota`/`getDailyTranslationPlanData`/`TTS_CACHE_PLANS`/`TTS_PLANS`）；`getAccessToken`/`getUserID`/`validateUserAndToken` 仍有消费者，留。
+- `types/quota.ts` 的 `UserDailyTTSQuota`/`UserDailyTranslationQuota`、`services/constants.ts` 的 `DEFAULT_DAILY_{TTS,TRANSLATION}_QUOTA`/`DEFAULT_STORAGE_QUOTA`、`runtimeConfig` 的 `storageFixedQuota`/`translationFixedQuota`。
+- `types/payment.ts`（0 消费者）+ `package.json` 死依赖 `@stripe/react-stripe-js`/`@stripe/stripe-js`/`stripe`/`@googleapis/androidpublisher`。
+- 验收：`tsc` 干净、全量测试 0 失败、web 构建 200/207。
+
+#### WP3 — 删「内置浏览器」（0.5 天）
+- Rust：`web_browser.rs`(887) + `browser_fetch.rs`(542) + `lib.rs` 的 `mod`/命令注册 + capability 条目 + Android 侧宿主（native-bridge 的 WebBrowser 相关 Kotlin/命令）。
+- 前端：`services/webBrowser/**`(240)、`hooks/useWebBrowserDownloads.ts`(110)、`components/.../WebSourcesDialog.tsx`、`library/page.tsx` 的 `showWebSources` 状态与 `onImportFromWebBrowser` 入口、`ImportMenu` 的对应项、`handleClipWebPage`。
+- **保留**：`clip_url.rs`(810)、`services/send/{clipOptions,clipSignIn,conversion}`、RSS、`useClipUrlIngress`、`renderNovelPage`、`ImportNovelDialog`。
+- ⚠️ 实施时核对：`useClipUrlIngress`/`articleIngest`/`renderNovelPage` 是否间接引用了 `services/webBrowser`（已确认 `clip_url` 是独立 Tauri 命令，但 ingress 里可能有 webview 相关的东西）。
+- 可选：顺手清 i18n 里的 Web Sources 键。
+
+#### WP4 — 删墨水屏（0.5 天）
+`eink_identity.rs`(144)、`android/eink.rs`、native-bridge 的 eink 命令/事件与 `EinkRefreshController.kt`、前端调用点与设置项。已拍板。
+
+#### WP5 — 删 Sentry 遥测（0.5 天）
+- Rust：`sentry_config.rs`（连同只为它服务的 `parse_webview_info`/`set_webview_info`/`webview_info`）、`sentry`/`tauri-plugin-sentry` 依赖、`lib.rs` 的 init/guard/event-tags 段、`Cargo.lock`。
+- JS/CI：`@sentry/cli`、`nightly.yml` 里写 `SENTRY_*` 的四行 + `SENTRY_AUTH_TOKEN` 步骤、`tauri.conf.json` 的 sentry 相关配置/DSN placeholder。
+- 验收：`grep -ri sentry` 只剩无关命中（如注释历史）。
+
+#### WP6 — 删 MDX/MDD 词典解析（js-mdict）（0.5–1 天）
+- 删：`services/dictionaries/providers/mdictProvider.ts`(833)、`registry.ts` 的 `createMdictProvider` 注册、provider id/kind `'mdict'`、`dictionaryService.ts` 里的 `MDictGroup`/`.mdd` 伴生逻辑/`.mdx` 导入分组、`CustomDictionaries.tsx` 的 MDX/MDD 导入项与格式列表、`customDictionaryStore`/类型里的 `'mdict'` kind、tsconfig 的 `js-mdict` path、`next.config.mjs` 关于 js-mdict 的配置、`packages/js-mdict` submodule + `.gitmodules` 条目。
+- 测试：`mdictProvider.test.ts`、`mdict-init-diagnostic.test.ts`、`_mdictFixtures.ts`、`jsmdict-resolve.test.ts`、fixtures `mdict-en-en.{mdx,mdd}`、`groupBundlesByStem` 的 mdict 用例、`CustomDictionaries.test.tsx`、`custom-dictionary-store.test.ts`。
+- **保留**（词典功能本身还在）：StarDict / DICT / SLOB / BGL / 插件词典 / web-search / Wiktionary / Wikipedia / 系统词典。
+- ⚠️ 已导入的 MDX 条目：建议在列表里直接不再显示（`kind==='mdict'` 过滤），不做迁移提示。
+
+#### WP7 — 删简繁转换（simplecc / OpenCC）（0.5–1 天）
+- 删：`utils/simplecc.ts`(32)、`services/transformers/simplecc.ts`(46) + `transformers/index.ts` 注册、`types/book.ts` 的 `ConvertChineseVariant` 与 `BookLanguage.convertChineseVariant`、`LangPanel` 的 "Convert Chinese Variant" 选择器、`nav/index.ts` 的 `convertTocLabels` 与 `updateToc` 签名/调用方、`wordlensSection.ts` 的 `glossChineseVariant` + `runSimpleCC`、`punctuation.ts` 里**以变体为条件**的引号转换块（`quotationsMapHans2Hant`，注意 `replaceQuotationMarks` 与竖排标点**保留**）、`services/constants.ts` 默认值、`readerStore.ts`/`FoliateViewer.tsx`/`Annotator.tsx` 的设置读写、tsconfig 的 `@simplecc/*` path、`packages/simplecc-wasm` submodule + `.gitmodules`。
+- 测试：`utils/simplecc.test.ts`、`transformers.test.ts`、`wordlens-section.test.ts`、`wasm-init-url.test.ts`。
+- ⚠️ 语义变化（要写进提交信息）：读繁体书不再自动转简；Word Lens 释义不再跟随书本字形；TOC 标签不再转字形。持久化配置里的旧键忽略即可（不迁移）。
+
+#### WP8 — Rust 减肥剩余（1–1.5 天）
+- CEF：`cef` feature、`.cargo/cef.toml`、`packages/tauri-runtime-cef-stub`、`try-appimage.yml`。
+- 桌面专属：`nightly_update.rs`(226)、`discord_rpc.rs`(182)、`browser_cookies_macos.rs`(116)、`file_reveal.rs`(36)、`linux_display.rs`(39)、`linux_single_instance.rs`、`window_state`、`src/macos/**`(1811)、native-bridge 的 `platform/{windows,macos,linux_cef,cdp}.rs`。
+- Android [A-4]：`start_server`(oauth 回环)、`BillingManager.kt`×2、`OAuthCallbackTarget.kt`。
+- ⚠️ `src/macos/**` 被 `#[cfg(desktop)]` 入口引用 ⇒ 必须连入口一起删，否则编译断。
+- LocalSend 保留 ⇒ native-bridge 的 localsend 命令面不动。
+
+#### WP9 — CI 卫生（0.5 天，[P3a-8]）
+`android-e2e.yml`/`codeql.yml`/`nightly.yml`/`pull-request.yml`/`release.yml` 里对已删生态的引用（koplugin / calibre / macOS / apple / lua / Sentry）。
+
+#### WP10 — 一次 APK 重建 + 验收（0.5 天 + 构建 ~20 分钟）
+- 构建（顺序不能少）：`pnpm lan:stop` → `rm -rf src-tauri/gen/android` → `JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk pnpm tauri android init --ci` → `pnpm tauri icon ../../data/icons/readest-book.png` → `git checkout -- .` → 重建 `src-tauri/gen/android/keystore.properties`(chmod 600) → `pnpm tauri android build -t aarch64`。
+- 模拟器：书库/进度保留、开书下载回到原位、阅读器工具栏、**设置面板可视核对**（无朗读/翻译/账号/简繁转换选择器/MDX 导入项/墨水屏设置）。
+- 真机：[P0-5] Windows 防火墙（唯一卡"手机连得上 PC"的）、[P5-1] 验证矩阵、[P4-5] `start.sh` 看门狗。
+
+### 累计影响（预估）
+
+| WP | 类型 | 规模 |
+|---|---|---|
+| WP1 | 修 bug | 小 |
+| WP2 | 死代码 | ~1k 行杂项 + 4 个 npm 依赖 |
+| WP3 | 功能删 | ~1.8k（Rust 1.4k + 前端 0.35k） |
+| WP4 | 功能删 | ~0.3k + Kotlin |
+| WP5 | 功能删 | ~0.3k Rust + 1 插件 + 1 devDep |
+| WP6 | 功能删 | ~1.5k（含 submodule） |
+| WP7 | 功能删 | ~0.5k（含 submodule） |
+| WP8 | 减肥 | ~3.5k Rust |
+| **合计** | | **≈9–10k 行 + 2 个 submodule + 2 个 Rust 插件** |
 
 ## 5. 风险表
 
