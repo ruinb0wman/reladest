@@ -9,7 +9,6 @@ import { computeDictionaryReplicaId } from '@/services/sync/replicaKinds';
  * (Codex flagged 9/10 confidence; eng review accepted the mitigation).
  *
  * Stardict primary = .ifo (small text; partialMD5 is effectively full-hash).
- * MDict primary    = .mdx (body).
  * DICT primary     = .dict.dz (compressed body).
  * Slob primary     = .slob (single-file bundle).
  *

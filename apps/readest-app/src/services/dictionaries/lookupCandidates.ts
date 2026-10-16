@@ -6,9 +6,9 @@ import { getLemmaCandidates } from './lemmatize';
  * A double-click selection in the reader can carry leading/trailing
  * whitespace, and most imported dictionaries store headwords lowercased, so
  * an exact match on the raw selection often misses — e.g. `Hello` or
- * `world ` fail to resolve `hello`/`world`. The DICT/StarDict/slob readers
- * already compare case-insensitively, but case-sensitive formats (mdict) do
- * not. Callers try each candidate in order and keep the first hit.
+ * `world ` fail to resolve `hello`/`world`. Some readers already compare
+ * case-insensitively; the ones that do not get the case variants below.
+ * Callers try each candidate in order and keep the first hit.
  *
  * Try the original spelling and its NFC/NFD equivalents with case variants
  * before language-aware lemmas, then repeat with Latin diacritics removed.

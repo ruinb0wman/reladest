@@ -2,7 +2,7 @@
  * Pluggable dictionary provider model.
  *
  * Built-in providers (Wiktionary, Wikipedia) and importable providers
- * (StarDict, MDict) all implement {@link DictionaryProvider}. The
+ * (StarDict, DICT, SLOB, BGL) all implement {@link DictionaryProvider}. The
  * {@link DictionaryPopup} renders one tab per enabled provider in user-defined
  * order; each provider writes lookup output into a per-tab container.
  */
@@ -10,7 +10,6 @@
 export type DictionaryProviderKind =
   | 'builtin'
   | 'stardict'
-  | 'mdict'
   | 'dict'
   | 'slob'
   | 'bgl'
@@ -32,8 +31,8 @@ export interface DictionaryLookupContext {
   onNavigate?(word: string): void;
   /**
    * Theme hint forwarded by the shell. Providers that inject styles into a
-   * shadow root (MDict) use this to pick blend modes / overrides that match
-   * the current app theme. Optional — defaults to light treatment.
+   * shadow root use this to pick blend modes / overrides that match the
+   * current app theme. Optional — defaults to light treatment.
    */
   isDarkMode?: boolean;
   /** Theme background color (e.g. `#ffffff`). Forwarded into shadow-scoped CSS. */
@@ -43,7 +42,7 @@ export interface DictionaryLookupContext {
   /**
    * Play the entry's own pronunciation audio as soon as it renders, instead of
    * waiting for a tap on the speaker (#6265). Only providers that ship audio
-   * inside the bundle (MDict + its companion `.mdd`) act on this.
+   * inside the bundle act on this.
    */
   autoPlayPronunciation?: boolean;
   /**
@@ -69,7 +68,7 @@ export type DictionaryLookupOutcome =
   | { ok: false; reason: 'empty' | 'unsupported' | 'error'; message?: string };
 
 export interface DictionaryProvider {
-  /** Stable id, e.g. `builtin:wiktionary`, `stardict:abc123`, `mdict:xyz`. */
+  /** Stable id, e.g. `builtin:wiktionary`, `stardict:abc123`. */
   id: string;
   kind: DictionaryProviderKind;
   /** Localized label shown in the tab strip. */
@@ -88,8 +87,8 @@ export interface DictionaryProvider {
  */
 export interface ImportedDictionary {
   id: string;
-  kind: 'stardict' | 'mdict' | 'dict' | 'slob' | 'bgl' | 'plugin';
-  /** Display name, derived from `.ifo` `bookname`, `.mdx` `Title`, slob `label`, BGL title, or DICT `00databaseshort`. */
+  kind: 'stardict' | 'dict' | 'slob' | 'bgl' | 'plugin';
+  /** Display name, derived from `.ifo` `bookname`, slob `label`, BGL title, or DICT `00databaseshort`. */
   name: string;
   /**
    * Stable cross-device content-hash id derived from
@@ -128,16 +127,6 @@ export interface ImportedDictionary {
     idxOffsets?: string;
     /** Same idea for `.syn`. */
     synOffsets?: string;
-    // MDict bundle.
-    mdx?: string;
-    mdd?: string[];
-    /**
-     * Loose `.css` files imported alongside the `.mdx`/`.mdd` (matched by
-     * stem at import time). Applied as scoped stylesheets inside the card's
-     * shadow root at lookup time, in addition to any `<link
-     * rel="stylesheet">` references resolved from the MDD bundle.
-     */
-    css?: string[];
     // DICT (dictd) bundle. `dict` above doubles as the body filename
     // (`name.dict` or `name.dict.dz`); `index` is the dictd `.index` file.
     index?: string;
@@ -223,14 +212,14 @@ export interface DictionarySettings {
    * main reading view, #4443). `1` = the default sizes; larger values scale
    * every provider's rendered definition up. Drives the `--dict-font-scale`
    * CSS variable on the popup content root, which feeds the light-DOM
-   * `font-size` rules and the MDict shadow `::part(dict-content)` rule alike.
+   * `font-size` rules and each provider's own shadow rules alike.
    */
   fontScale?: number;
   /**
    * Play a looked-up word's pronunciation automatically instead of waiting for
    * a tap on the speaker icon (#6265). Off by default. Only dictionaries that
-   * carry their own audio (MDict bundles with a companion `.mdd`) can honour
-   * it; nothing is spoken when the entry has no recording.
+   * carry their own audio can honour it; nothing is spoken when the entry has
+   * no recording.
    */
   autoPlayPronunciation?: boolean;
 }

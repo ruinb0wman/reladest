@@ -4,7 +4,7 @@
  * Returns the ordered list of {@link DictionaryProvider} instances visible
  * in the lookup popup, given the user's current `dictionarySettings` (order,
  * enable flags), the imported-dictionary metadata, and the filesystem
- * accessor used by import-backed providers (StarDict / MDict) to lazily open
+ * accessor used by import-backed providers (StarDict / DICT / SLOB / BGL) to lazily open
  * their bundle files.
  *
  * Provider instances are cached at module scope (keyed by id) so subsequent
@@ -24,7 +24,6 @@ import { isSystemDictionarySupported } from './systemDictionary';
 import { wiktionaryProvider } from './providers/wiktionaryProvider';
 import { wikipediaProvider } from './providers/wikipediaProvider';
 import { createStarDictProvider, type DictionaryFileOpener } from './providers/starDictProvider';
-import { createMdictProvider } from './providers/mdictProvider';
 import { createDictProvider } from './providers/dictProvider';
 import { createSlobProvider } from './providers/slobProvider';
 import { createBglProvider } from './providers/bglProvider';
@@ -39,7 +38,7 @@ interface RegistryArgs {
   settings: DictionarySettings;
   dictionaries: ImportedDictionary[];
   /**
-   * Required when the provider order contains imported (stardict / mdict)
+   * Required when the provider order contains imported (stardict / dict / slob / bgl)
    * dictionaries — their providers open files via this accessor on first
    * lookup. Builtin-only callers (e.g. tests) may omit it.
    */
@@ -91,11 +90,6 @@ const getOrCreate = (
   if (!fs) return undefined;
   if (dict.kind === 'stardict') {
     const provider = createStarDictProvider({ dict, fs });
-    instanceCache.set(id, provider);
-    return provider;
-  }
-  if (dict.kind === 'mdict') {
-    const provider = createMdictProvider({ dict, fs });
     instanceCache.set(id, provider);
     return provider;
   }

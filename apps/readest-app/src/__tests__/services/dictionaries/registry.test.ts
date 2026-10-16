@@ -116,19 +116,19 @@ describe('dictionary registry', () => {
     const fs = { openFile: async () => new File([], '') };
     const dicts: ImportedDictionary[] = [
       {
-        id: 'mdict:available',
-        kind: 'mdict',
+        id: 'dict:available',
+        kind: 'dict',
         name: 'Available',
         bundleDir: 'a',
-        files: { mdx: 'a.mdx' },
+        files: { index: 'a.index', dict: 'a.dict.dz' },
         addedAt: 1,
       },
       {
-        id: 'mdict:gone',
-        kind: 'mdict',
+        id: 'dict:gone',
+        kind: 'dict',
         name: 'Gone',
         bundleDir: 'g',
-        files: { mdx: 'g.mdx' },
+        files: { index: 'g.index', dict: 'g.dict.dz' },
         addedAt: 2,
         unavailable: true,
       },
@@ -145,21 +145,18 @@ describe('dictionary registry', () => {
     const settings: DictionarySettings = {
       providerOrder: [
         BUILTIN_PROVIDER_IDS.wiktionary,
-        'mdict:available',
+        'dict:available',
         'mdict:gone',
         'stardict:nope',
       ],
       providerEnabled: {
         [BUILTIN_PROVIDER_IDS.wiktionary]: true,
-        'mdict:available': true,
+        'dict:available': true,
         'mdict:gone': true,
         'stardict:nope': true,
       },
     };
     const providers = getEnabledProviders({ settings, dictionaries: dicts, fs });
-    expect(providers.map((p) => p.id)).toEqual([
-      BUILTIN_PROVIDER_IDS.wiktionary,
-      'mdict:available',
-    ]);
+    expect(providers.map((p) => p.id)).toEqual([BUILTIN_PROVIDER_IDS.wiktionary, 'dict:available']);
   });
 });

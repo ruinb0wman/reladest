@@ -880,35 +880,6 @@ export const getFootnoteStyles = () => `
   }
 `;
 
-/**
- * Baseline stylesheet injected into every dictionary card's shadow root
- * (alongside any loose `.css` files imported with the bundle and any
- * `<link rel="stylesheet">` references resolved from the MDD).
- *
- * The seam exists so app-wide rules can be added in one place without
- * touching the provider code. Currently it ships:
- */
-export const getDictStyles = (bg: string, fg: string, isDarkMode: boolean) => {
-  void fg;
-  return `
-    a:empty {
-      background-color: transparent;
-      mix-blend-mode: multiply;
-    }
-    a img {
-      mix-blend-mode: multiply;
-    }
-    div[data-dict-kind="mdict"] .entry_name {
-      font-size: 1.2em;
-      margin-block-start: 0.5em;
-      margin-block-end: 0.5em;
-    }
-    div[data-dict-kind="mdict"] .juan_drop {
-      ${isDarkMode ? `background-color: color-mix(in srgb, ${bg} 80%, #000);` : ''}
-    }
-  `;
-};
-
 const parseComputedRgb = (value: string) => {
   const m = value.match(/^rgba?\(([\d.]+), ([\d.]+), ([\d.]+)(?:, ([\d.]+))?\)$/);
   if (!m) return null;

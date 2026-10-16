@@ -11,10 +11,10 @@ import type { ImportedDictionary } from '@/services/dictionaries/types';
 const baseDict = (overrides: Partial<ImportedDictionary> = {}): ImportedDictionary => ({
   id: 'bundle-1',
   contentId: 'content-hash-A',
-  kind: 'mdict',
+  kind: 'dict',
   name: 'Webster Original',
   bundleDir: 'bundle-1',
-  files: { mdx: 'webster.mdx' },
+  files: { index: 'webster.index', dict: 'webster.dict.dz' },
   addedAt: 0,
   ...overrides,
 });
@@ -201,7 +201,7 @@ describe('preserveLiveDictionaryState', () => {
       id: 'old',
       contentId: 'old-content',
       bundleDir: 'old-dir',
-      files: { mdx: 'old.mdx' },
+      files: { index: 'old.index', dict: 'old.dict.dz' },
       lang: 'en',
       unsupported: true,
       unsupportedReason: 'old parser failure',
@@ -211,7 +211,7 @@ describe('preserveLiveDictionaryState', () => {
       id: 'new',
       contentId: 'new-content',
       bundleDir: 'new-dir',
-      files: { mdx: 'new.mdx' },
+      files: { index: 'new.index', dict: 'new.dict.dz' },
       lang: 'gbk',
       unsupported: undefined,
       unsupportedReason: undefined,
@@ -221,7 +221,7 @@ describe('preserveLiveDictionaryState', () => {
     expect(result.id).toBe('new');
     expect(result.contentId).toBe('new-content');
     expect(result.bundleDir).toBe('new-dir');
-    expect(result.files).toEqual({ mdx: 'new.mdx' });
+    expect(result.files).toEqual({ index: 'new.index', dict: 'new.dict.dz' });
     expect(result.lang).toBe('gbk');
     expect(result.unsupported).toBeUndefined();
     expect(result.unsupportedReason).toBeUndefined();

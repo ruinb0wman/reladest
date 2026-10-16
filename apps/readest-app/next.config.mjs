@@ -78,11 +78,6 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       nunjucks: 'nunjucks/browser/nunjucks.js',
-      // `js-mdict` is consumed as TS source via tsconfig paths from
-      // `packages/js-mdict/src/`; its sources `import 'fflate'` directly.
-      // Without an alias, webpack walks up from that source location and
-      // can't find fflate (only installed in this app's node_modules).
-      fflate: path.resolve(__dirname, 'node_modules/fflate'),
       ...(appPlatform !== 'web' ? { '@readest/turso-database-wasm/webpack': false } : {}),
       // music-metadata only parses user-picked files in the browser; its
       // file-type dependency leaves a webpackIgnore'd `import('strtok3')` in
@@ -100,9 +95,6 @@ const nextConfig = {
   turbopack: {
     resolveAlias: {
       nunjucks: 'nunjucks/browser/nunjucks.js',
-      // Turbopack rejects absolute paths in resolveAlias ("server relative
-      // imports not implemented") — use a project-relative path.
-      fflate: './node_modules/fflate',
       // Only the web build stores its database in turso's WASM build; Tauri
       // embeds every file in `out/`, so emitting the unused WASM there would
       // ship it inside the app.

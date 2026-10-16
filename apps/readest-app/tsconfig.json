@@ -26,7 +26,6 @@
       "@/components/ui/*": ["./src/components/primitives/*"],
       "@pdfjs/*": ["../../packages/foliate-js/node_modules/pdfjs-dist/legacy/build/*"],
       "@simplecc/*": ["../../packages/simplecc-wasm/dist/web/*"],
-      "js-mdict": ["../../packages/js-mdict/src/index.ts"],
       "fflate": ["./node_modules/fflate"],
       "tauri-plugin-turso": ["./src-tauri/plugins/tauri-plugin-turso/guest-js"]
     }

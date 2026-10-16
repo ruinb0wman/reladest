@@ -127,10 +127,10 @@ describe('customDictionaryStore — web search CRUD', () => {
     addDictionary({
       id: 'imp-new',
       contentId: 'content-imp-new',
-      kind: 'mdict',
+      kind: 'dict',
       name: 'New Import',
       bundleDir: 'imp-new',
-      files: { mdx: 'imp-new.mdx' },
+      files: { index: 'imp-new.index', dict: 'imp-new.dict.dz' },
       addedAt: Date.now(),
     });
 
@@ -150,10 +150,10 @@ describe('customDictionaryStore — web search CRUD', () => {
         {
           id: 'imp-existing',
           contentId: 'content-existing',
-          kind: 'mdict',
+          kind: 'dict',
           name: 'Existing',
           bundleDir: 'imp-existing',
-          files: { mdx: 'x.mdx' },
+          files: { index: 'x.index', dict: 'x.dict.dz' },
           addedAt: 1,
           deletedAt: 999,
         },
@@ -169,10 +169,10 @@ describe('customDictionaryStore — web search CRUD', () => {
     addDictionary({
       id: 'imp-existing',
       contentId: 'content-existing',
-      kind: 'mdict',
+      kind: 'dict',
       name: 'Existing Reborn',
       bundleDir: 'imp-existing',
-      files: { mdx: 'x.mdx' },
+      files: { index: 'x.index', dict: 'x.dict.dz' },
       addedAt: 2,
     });
 
@@ -186,10 +186,10 @@ describe('customDictionaryStore — web search CRUD', () => {
     const { addDictionary, updateDictionary } = useCustomDictionaryStore.getState();
     addDictionary({
       id: 'mdict:abc',
-      kind: 'mdict',
+      kind: 'dict',
       name: 'Title (No HTML code allowed)',
       bundleDir: 'abc',
-      files: { mdx: 'abc.mdx' },
+      files: { index: 'abc.index', dict: 'abc.dict.dz' },
       addedAt: 1,
     });
 
@@ -215,10 +215,10 @@ describe('customDictionaryStore — web search CRUD', () => {
     const baseDict = (overrides: Partial<ImportedDictionary> = {}): ImportedDictionary => ({
       id: 'remote-bundle-1',
       contentId: 'content-hash-1',
-      kind: 'mdict',
+      kind: 'dict',
       name: 'Remote Webster',
       bundleDir: 'remote-bundle-1',
-      files: { mdx: 'webster.mdx' },
+      files: { index: 'webster.index', dict: 'webster.dict.dz' },
       addedAt: 1,
       unavailable: true,
       ...overrides,
@@ -275,10 +275,10 @@ describe('customDictionaryStore — web search CRUD', () => {
           {
             id: 'imp1',
             contentId: 'content-imp1',
-            kind: 'mdict',
+            kind: 'dict',
             name: 'Stale',
             bundleDir: 'imp1',
-            files: { mdx: 'imp1.mdx' },
+            files: { index: 'imp1.index', dict: 'imp1.dict.dz' },
             addedAt: 1,
             deletedAt: 12345,
           },
@@ -354,10 +354,10 @@ describe('customDictionaryStore — web search CRUD', () => {
       useCustomDictionaryStore.getState().applyRemoteDictionary({
         id: 'in-mem-1',
         contentId: 'hash-1',
-        kind: 'mdict',
+        kind: 'dict',
         name: 'In Memory',
         bundleDir: 'in-mem-1',
-        files: { mdx: 'm.mdx' },
+        files: { index: 'm.index', dict: 'm.dict.dz' },
         addedAt: 1,
       });
       const found = findDictionaryByContentId('hash-1');
@@ -373,10 +373,10 @@ describe('customDictionaryStore — web search CRUD', () => {
             {
               id: 'persisted-1',
               contentId: 'hash-2',
-              kind: 'mdict',
+              kind: 'dict',
               name: 'Persisted',
               bundleDir: 'persisted-1',
-              files: { mdx: 'p.mdx' },
+              files: { index: 'p.index', dict: 'p.dict.dz' },
               addedAt: 1,
             },
           ],
@@ -398,10 +398,10 @@ describe('customDictionaryStore — web search CRUD', () => {
             {
               id: 'tombstoned-1',
               contentId: 'hash-3',
-              kind: 'mdict',
+              kind: 'dict',
               name: 'Tombstoned',
               bundleDir: 'tombstoned-1',
-              files: { mdx: 'p.mdx' },
+              files: { index: 'p.index', dict: 'p.dict.dz' },
               addedAt: 1,
               deletedAt: 100,
             },
@@ -417,10 +417,10 @@ describe('customDictionaryStore — web search CRUD', () => {
     addDictionary({
       id: 'mdict:abc',
       contentId: 'content-abc',
-      kind: 'mdict',
+      kind: 'dict',
       name: 'Old title',
       bundleDir: 'abc',
-      files: { mdx: 'abc.mdx' },
+      files: { index: 'abc.index', dict: 'abc.dict.dz' },
       addedAt: 1,
       reincarnation: 'epoch-1',
     });
@@ -597,10 +597,10 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
           {
             id: 'imp1',
             contentId: 'content-imp1',
-            kind: 'mdict',
+            kind: 'dict',
             name: 'Stale',
             bundleDir: 'imp1',
-            files: { mdx: 'imp1.mdx' },
+            files: { index: 'imp1.index', dict: 'imp1.dict.dz' },
             addedAt: 1,
             deletedAt: 999,
           },
@@ -723,10 +723,10 @@ describe('customDictionaryStore — loadCustomDictionaries reconciliation', () =
           {
             id: 'imp-tombstoned',
             contentId: 'content-tombstoned',
-            kind: 'mdict',
+            kind: 'dict',
             name: 'Deleted',
             bundleDir: 'imp-tombstoned',
-            files: { mdx: 'x.mdx' },
+            files: { index: 'x.index', dict: 'x.dict.dz' },
             addedAt: 1,
             deletedAt: 99,
           },

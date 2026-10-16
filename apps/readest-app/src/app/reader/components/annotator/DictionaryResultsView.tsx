@@ -116,10 +116,11 @@ export function useDictionaryResults({
   const webSearchProviders = useMemo(() => providers.filter((p) => p.kind === 'web'), [providers]);
   // Every provider looks the word up concurrently, but they all speak through
   // one shared <audio> element — arming more than one lets whichever resolves
-  // its bytes last cut off the others, in an order nobody chose. Arm only the
-  // highest-ranked dictionary that can carry recordings (#6265).
+  // its bytes last cut off the others, in an order nobody chose. Only imported
+  // bundles can carry a recording, so arm the highest-ranked imported one; the
+  // online providers never return audio (#6265).
   const autoPlayProviderId = useMemo(
-    () => definitionProviders.find((p) => p.kind === 'mdict')?.id,
+    () => definitionProviders.find((p) => p.kind !== 'builtin' && p.kind !== 'web')?.id,
     [definitionProviders],
   );
   // Web entries live in their own section, so `providerOrder` alone can't lift
@@ -218,8 +219,8 @@ export function useDictionaryResults({
     setZoomedImageSrc(null);
   }, []);
 
-  // Click delegation inside provider-rendered DOM. MDict entries render in a
-  // shadow root, where `e.target` is retargeted to the host — only the composed
+  // Click delegation inside provider-rendered DOM. An entry that renders in a
+  // shadow root reports `e.target` retargeted to the host — only the composed
   // path names the element that was actually clicked.
   const handleContainerClick = useCallback((e: React.MouseEvent) => {
     if (e.defaultPrevented) return;
@@ -536,7 +537,7 @@ export const DictionaryResultsBody: React.FC<DictionaryResultsBodyProps> = ({
                   onClick={handleContainerClick}
                   // `data-dict-content` + `--dict-font-scale` drive the
                   // popup font-size rules in globals.css (#4443): the
-                  // light-DOM `font-size` cascade and the MDict shadow
+                  // light-DOM `font-size` cascade and a provider's own shadow
                   // `::part(dict-content)` rule both read this scope.
                   data-dict-content=''
                   style={{ '--dict-font-scale': fontScale } as React.CSSProperties}

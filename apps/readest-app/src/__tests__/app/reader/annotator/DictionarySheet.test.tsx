@@ -217,12 +217,12 @@ const buildSlowProvider = (abortObserver: { aborted: boolean }): DictionaryProvi
   },
 });
 
-// Mimics the MDict provider's rendering: the entry body lives in a shadow
-// root, so a click's `target` is retargeted to the host and only the composed
-// path names the image that was actually tapped.
+// A provider whose entry body lives in a shadow root, so a click's `target` is
+// retargeted to the host and only the composed path names the image that was
+// actually tapped (a Yomitan-style plugin bundle renders this way).
 const buildShadowImageProvider = (): DictionaryProvider => ({
   id: 'shadow-img',
-  kind: 'mdict',
+  kind: 'plugin',
   label: 'Shadow Image Dict',
   async lookup(word, ctx) {
     const host = document.createElement('div');
@@ -274,12 +274,12 @@ const buildEmptyProvider = (id: string, label: string): DictionaryProvider => ({
 });
 
 // A case-sensitive, whitespace-sensitive provider that only resolves the
-// exact stored headword — mimics mdict's lookup path. Used to assert the
-// query-normalization fallback (trim + case folding).
+// exact stored headword — a dictd `.index` binary-search reader behaves this
+// way. Used to assert the query-normalization fallback (trim + case folding).
 const buildExactProvider = (storedHeadword: string): DictionaryProvider => {
   const provider: DictionaryProvider = {
     id: 'exact',
-    kind: 'mdict',
+    kind: 'dict',
     label: 'Exact Match',
     async lookup(word, ctx) {
       if (word !== storedHeadword) return { ok: false, reason: 'empty' };
@@ -785,7 +785,7 @@ describe('DictionarySheet — auto-play pronunciation fan-out (#6265)', () => {
     seen: { id: string; autoPlay: boolean | undefined }[],
   ): DictionaryProvider => ({
     id,
-    kind: 'mdict',
+    kind: 'dict',
     label: id,
     async lookup(word, ctx): Promise<DictionaryLookupOutcome> {
       seen.push({ id, autoPlay: ctx.autoPlayPronunciation });
@@ -799,15 +799,15 @@ describe('DictionarySheet — auto-play pronunciation fan-out (#6265)', () => {
     useCustomDictionaryStore.setState({
       dictionaries: [],
       settings: {
-        providerOrder: ['mdict:first', 'mdict:second'],
-        providerEnabled: { 'mdict:first': true, 'mdict:second': true },
+        providerOrder: ['dict:first', 'dict:second'],
+        providerEnabled: { 'dict:first': true, 'dict:second': true },
         webSearches: [],
         autoPlayPronunciation: true,
       },
     });
     providersForNextRender.push(
-      buildRecordingProvider('mdict:first', seen),
-      buildRecordingProvider('mdict:second', seen),
+      buildRecordingProvider('dict:first', seen),
+      buildRecordingProvider('dict:second', seen),
     );
 
     renderSheet({ word: 'hello' });
@@ -815,8 +815,8 @@ describe('DictionarySheet — auto-play pronunciation fan-out (#6265)', () => {
 
     // They share one module-scoped <audio>, so arming both lets whichever
     // resolves its bytes last cut off the other.
-    expect(seen.find((s) => s.id === 'mdict:first')?.autoPlay).toBe(true);
-    expect(seen.find((s) => s.id === 'mdict:second')?.autoPlay).toBe(false);
+    expect(seen.find((s) => s.id === 'dict:first')?.autoPlay).toBe(true);
+    expect(seen.find((s) => s.id === 'dict:second')?.autoPlay).toBe(false);
   });
 
   it('arms nothing while the setting is off', async () => {
@@ -824,12 +824,12 @@ describe('DictionarySheet — auto-play pronunciation fan-out (#6265)', () => {
     useCustomDictionaryStore.setState({
       dictionaries: [],
       settings: {
-        providerOrder: ['mdict:first'],
-        providerEnabled: { 'mdict:first': true },
+        providerOrder: ['dict:first'],
+        providerEnabled: { 'dict:first': true },
         webSearches: [],
       },
     });
-    providersForNextRender.push(buildRecordingProvider('mdict:first', seen));
+    providersForNextRender.push(buildRecordingProvider('dict:first', seen));
 
     renderSheet({ word: 'hello' });
     await waitFor(() => expect(seen).toHaveLength(1));

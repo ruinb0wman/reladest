@@ -2,7 +2,7 @@
  * Dictionary import / delete service.
  *
  * Takes a flat list of files chosen via `useFileSelector('dictionaries')`,
- * groups them into StarDict / MDict bundles by filename stem, writes each
+ * groups them into StarDict / DICT / SLOB / BGL bundles by filename stem, writes each
  * bundle's files into `'Dictionaries'/<id>/`, and returns metadata records
  * for the {@link customDictionaryStore}.
  *
@@ -47,19 +47,6 @@ interface StarDictGroup {
   syn?: SourceFile;
 }
 
-interface MDictGroup {
-  kind: 'mdict';
-  stem: string;
-  mdx: SourceFile;
-  mdd: SourceFile[];
-  /**
-   * Loose `.css` files sharing the bundle stem (e.g. `mydict.mdx` +
-   * `mydict.css`). Optional. Applied at lookup time as scoped stylesheets
-   * inside the card's shadow root.
-   */
-  css: SourceFile[];
-}
-
 interface DictGroup {
   kind: 'dict';
   stem: string;
@@ -79,7 +66,7 @@ interface BglGroup {
   bgl: SourceFile;
 }
 
-type Bundle = StarDictGroup | MDictGroup | DictGroup | SlobGroup | BglGroup;
+type Bundle = StarDictGroup | DictGroup | SlobGroup | BglGroup;
 
 interface GroupResult {
   bundles: Bundle[];
@@ -125,30 +112,12 @@ function classify(source: SelectedFile): SourceFile {
 }
 
 /**
- * True when `mddStem` is a numbered companion of the MDict bundle keyed by
- * `bundleStem` — i.e. `bundleStem` followed by a separator (`Name-01`,
- * `Name.1`, `Name 2`, …). A non-alphanumeric boundary is required so a
- * different word can't match (`dict` must not claim `dictionary-words`). The
- * exact-stem `Name.mdd` is already attached by the stem pass, so an exact
- * match returns false here.
- */
-function isCompanionMddStem(bundleStem: string, mddStem: string): boolean {
-  if (mddStem === bundleStem) return false;
-  if (!mddStem.startsWith(bundleStem)) return false;
-  const boundary = mddStem.charAt(bundleStem.length);
-  return boundary !== '' && !/[a-z0-9]/i.test(boundary);
-}
-
-/**
- * Group a flat list of selected files into StarDict and MDict bundles by
+ * Group a flat list of selected files into StarDict / DICT / SLOB / BGL bundles by
  * stem. Files that don't belong to any complete bundle land in `orphans`.
  *
  * Rules:
  *  - StarDict bundle = exactly one `.ifo` + one `.idx` + one `.dict` or
  *    `.dict.dz` (sharing a stem). `.syn` is optional.
- *  - MDict bundle = one `.mdx` + zero or more `.mdd` whose stem starts with the
- *    `.mdx` stem at a separator boundary (`Name.mdd`, `Name-01.mdd`,
- *    `Name.1.mdd`); each `.mdd` attaches to the longest matching `.mdx`.
  *  - DICT (dictd) bundle = one `.index` + one `.dict` or `.dict.dz`
  *    (sharing a stem). Note: `.idx` (StarDict) and `.index` (DICT) differ
  *    only by spelling — the StarDict branch wins when both are present.
@@ -157,13 +126,8 @@ function isCompanionMddStem(bundleStem: string, mddStem: string): boolean {
  */
 export function groupBundlesByStem(files: SelectedFile[]): GroupResult {
   const classified = files.map(classify);
-  // `.css` files don't have to share a stem with the `.mdx` (e.g. an MDX
-  // entry may reference `mwa.css` while the dictionary is `MW11sound.mdx`).
-  // Pool them globally and attach to every MDict bundle in this import.
-  const cssFiles = classified.filter((f) => f.ext === 'css');
   const byStem = new Map<string, SourceFile[]>();
   for (const f of classified) {
-    if (f.ext === 'css') continue;
     if (!byStem.has(f.stem)) byStem.set(f.stem, []);
     byStem.get(f.stem)!.push(f);
   }
@@ -176,8 +140,6 @@ export function groupBundlesByStem(files: SelectedFile[]): GroupResult {
     const indexFile = group.find((f) => f.ext === 'index');
     const dict = group.find((f) => f.ext === 'dict' || f.isDictZip);
     const syn = group.find((f) => f.ext === 'syn');
-    const mdx = group.find((f) => f.ext === 'mdx');
-    const mdd = group.filter((f) => f.ext === 'mdd');
     const slob = group.find((f) => f.ext === 'slob');
     const bgl = group.find((f) => f.ext === 'bgl');
 
@@ -185,9 +147,6 @@ export function groupBundlesByStem(files: SelectedFile[]): GroupResult {
       bundles.push({ kind: 'stardict', stem, ifo, idx, dict, syn });
     } else if (indexFile && dict) {
       bundles.push({ kind: 'dict', stem, index: indexFile, dict });
-    } else if (mdx) {
-      // `css` is filled in below once we know which MDict bundles exist.
-      bundles.push({ kind: 'mdict', stem, mdx, mdd, css: [] });
     } else if (slob) {
       bundles.push({ kind: 'slob', stem, slob });
     } else if (bgl) {
@@ -195,37 +154,6 @@ export function groupBundlesByStem(files: SelectedFile[]): GroupResult {
     } else {
       orphans.push(...group);
     }
-  }
-
-  // Attach numbered companion MDDs. A single MDX often splits its resources
-  // across several MDD files sharing its filename prefix (e.g. images in one,
-  // scripts in another, audio in a third); the stem pass above only catches the
-  // exact-stem `Name.mdd`. Rescue the rest from `orphans`, attaching each to the
-  // MDict bundle whose stem is the longest matching prefix.
-  const mdictForMdd = bundles
-    .filter((b): b is MDictGroup => b.kind === 'mdict')
-    .sort((a, b) => b.stem.length - a.stem.length);
-  if (mdictForMdd.length > 0) {
-    const stillOrphaned: SourceFile[] = [];
-    for (const f of orphans) {
-      const target =
-        f.ext === 'mdd' ? mdictForMdd.find((b) => isCompanionMddStem(b.stem, f.stem)) : undefined;
-      if (target) target.mdd.push(f);
-      else stillOrphaned.push(f);
-    }
-    orphans.length = 0;
-    orphans.push(...stillOrphaned);
-  }
-
-  // Distribute all loose `.css` files across the MDict bundles in this
-  // import. With one dictionary at a time (the common case) every selected
-  // `.css` ends up applied; with multiple, each gets the full set — benign
-  // because the per-card shadow root scopes the styles anyway.
-  const mdictBundles = bundles.filter((b): b is MDictGroup => b.kind === 'mdict');
-  if (mdictBundles.length > 0) {
-    for (const b of mdictBundles) b.css = cssFiles;
-  } else {
-    orphans.push(...cssFiles);
   }
 
   return { bundles, orphans };
@@ -344,152 +272,6 @@ async function importStarDictBundle(
       syn: group.syn?.name,
       idxOffsets: idxOffsetsName,
       synOffsets: synOffsetsName,
-    },
-    lang,
-    addedAt: Date.now(),
-    unsupported: unsupported || undefined,
-    unsupportedReason,
-  };
-}
-
-const XML_ENTITIES: Record<string, string> = {
-  amp: '&',
-  apos: "'",
-  gt: '>',
-  lt: '<',
-  quot: '"',
-};
-
-/**
- * Unescape an MDX header attribute value. The header is XML, so a dictionary
- * whose title contains an apostrophe ships it as
- * `Title="Oxford Advanced Learner&apos;s Dictionary 9th edition"`, and the raw
- * attribute text would be shown verbatim as the dictionary's name (#6018).
- */
-const decodeXmlEntities = (value: string) =>
-  value.replace(
-    /&(?:#([0-9]+)|#[xX]([0-9a-fA-F]+)|([a-z]+));/g,
-    (entity: string, dec?: string, hex?: string, named?: string) => {
-      if (named) return XML_ENTITIES[named] ?? entity;
-      const code = dec ? Number(dec) : parseInt(hex!, 16);
-      return code <= 0x10ffff ? String.fromCodePoint(code) : entity;
-    },
-  );
-
-/**
- * Read just the XML header from an MDX/MDD file and pull out the fields we
- * need at import time (Title, Encoding, Encrypted bitmap). Avoids triggering
- * the multi-second full-init path inside `js-mdict`.
- *
- * MDX layout (V2):
- *   bytes [0..4)         — big-endian uint32 N: byte length of the UTF-16 LE
- *                          encoded XML header
- *   bytes [4..4+N)       — UTF-16 LE XML string (ends with \x00\x00)
- *   bytes [4+N..8+N)     — adler32 checksum (ignored here)
- */
-async function readMdxHeader(file: File): Promise<{
-  Title?: string;
-  Encoding?: string;
-  encrypt: number;
-}> {
-  const sizeBuf = new Uint8Array(await file.slice(0, 4).arrayBuffer());
-  if (sizeBuf.length < 4) {
-    throw new Error('MDX header truncated');
-  }
-  const dv = new DataView(sizeBuf.buffer);
-  const headerByteSize = dv.getUint32(0, false); // big-endian
-  // Sanity-check: real MDX headers are typically a few hundred bytes to a few
-  // kilobytes. 1 MB is already absurd — likely a corrupt or non-MDX file.
-  if (headerByteSize === 0 || headerByteSize > 1024 * 1024) {
-    throw new Error(`MDX header size out of range: ${headerByteSize}`);
-  }
-  const xmlBuf = await file.slice(4, 4 + headerByteSize).arrayBuffer();
-  const xml = new TextDecoder('utf-16le').decode(xmlBuf).replace(/ +$/, '');
-  const attrs: Record<string, string> = {};
-  for (const m of xml.matchAll(/(\w+)="((?:.|\r|\n)*?)"/g)) {
-    attrs[m[1]!] = decodeXmlEntities(m[2]!);
-  }
-  let encrypt = 0;
-  const encVal = attrs['Encrypted'];
-  if (!encVal || encVal === '' || encVal === 'No') encrypt = 0;
-  else if (encVal === 'Yes') encrypt = 1;
-  else {
-    const n = parseInt(encVal, 10);
-    encrypt = Number.isFinite(n) ? n : 0;
-  }
-  return {
-    Title: attrs['Title'],
-    Encoding: attrs['Encoding'],
-    encrypt,
-  };
-}
-
-async function importMdictBundle(fs: FileSystem, group: MDictGroup): Promise<ImportedDictionary> {
-  const bundleDir = await createBundleDir(fs);
-  const mdxFile = await readSource(fs, group.mdx.source);
-  const mddFiles = await Promise.all(group.mdd.map((m) => readSource(fs, m.source)));
-  const cssFiles = await Promise.all(group.css.map((c) => readSource(fs, c.source)));
-
-  await writeBundleFile(fs, bundleDir, group.mdx.name, mdxFile);
-  for (let i = 0; i < group.mdd.length; i++) {
-    await writeBundleFile(fs, bundleDir, group.mdd[i]!.name, mddFiles[i]!);
-  }
-  for (let i = 0; i < group.css.length; i++) {
-    await writeBundleFile(fs, bundleDir, group.css[i]!.name, cssFiles[i]!);
-  }
-
-  // Read only the small XML header at the start of the file. We need
-  // Title / Encoding / Encrypted — all live in the header. The full
-  // `MDX.create()` factory would additionally decompress every key block
-  // and sort millions of keys (~17s on a 250 MB MDX), which we don't need
-  // here. The runtime provider still uses MDX.create() lazily on first
-  // lookup, so init cost is paid once at usage time, not at import time.
-  let name = group.stem;
-  let lang: string | undefined;
-  let unsupported = false;
-  let unsupportedReason: string | undefined;
-  try {
-    const header = await readMdxHeader(mdxFile);
-    if (header.Title && header.Title.trim()) {
-      name = header.Title.trim();
-    }
-    if (header.Encoding) {
-      lang = header.Encoding.toLowerCase();
-    }
-    // `encrypt` is a bitmap: 0x01 = record block encrypted (needs a
-    // user-supplied passcode/regcode — not supported), 0x02 = key info
-    // block encrypted (handled transparently by the runtime provider via
-    // ripemd128, no passcode needed). Only bit 0 is genuinely unsupported.
-    if ((header.encrypt & 1) !== 0) {
-      unsupported = true;
-      unsupportedReason =
-        'This MDX is registered to a specific user (record-block encryption); passcode-protected dictionaries are not supported.';
-    }
-  } catch (err) {
-    const message = (err as Error).message ?? String(err);
-    unsupported = true;
-    unsupportedReason = `Failed to parse MDX header: ${message}`;
-    console.warn(`MDX import: failed to parse "${group.mdx.name}": ${message}`, err);
-  }
-
-  // MDict primary = .mdx (the body file).
-  const mdictFilenames = [
-    group.mdx.name,
-    ...group.mdd.map((m) => m.name),
-    ...group.css.map((c) => c.name),
-  ];
-  const contentId = await computeDictionaryContentId(mdxFile, mdictFilenames);
-
-  return {
-    id: contentId,
-    contentId,
-    kind: 'mdict',
-    name,
-    bundleDir,
-    files: {
-      mdx: group.mdx.name,
-      mdd: group.mdd.map((m) => m.name),
-      css: group.css.length ? group.css.map((c) => c.name) : undefined,
     },
     lang,
     addedAt: Date.now(),
@@ -690,8 +472,6 @@ export async function importDictionaries(
     let dict: ImportedDictionary;
     if (bundle.kind === 'stardict') {
       dict = await importStarDictBundle(fs, bundle);
-    } else if (bundle.kind === 'mdict') {
-      dict = await importMdictBundle(fs, bundle);
     } else if (bundle.kind === 'dict') {
       dict = await importDictBundle(fs, bundle);
     } else if (bundle.kind === 'slob') {
