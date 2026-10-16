@@ -1033,6 +1033,28 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 
 **可视核对 [A-7]（PC 端）**：库菜单只有 "Library Sync（通过 WebDAV 同步书库）" + "设置/高级设置/关于"，**无登录/账号/云 provider**；设置面板的 tab 只有 字体/布局/主题/行为/语言/集成/自定义（**无账号 tab**）。⚠️ 未逐屏走查语言面板的简繁选项与行为面板的 Auto Full Refresh —— 由单元测试覆盖（LangPanel/ControlPanel/ImportMenu 的测试已随功能删改并通过）。
 
+## 4.11 待验证清单（2026-10-16：模拟器上没能执行的项）
+
+**背景**：本轮 WP3–WP10 的验收里，模拟器上有一项输入问题 —— `adb shell input tap` 点书卡无反应（长按有效）。用**今天所有删除之前的 APK** 做 A/B：行为完全一致 ⇒ 不是本轮回归，是模拟器/输入层问题。PC 端（bow）同样的 bundle 用真实指针事件点卡片可正常打开（`/reader/06e01d70…`，目录正常渲染）。
+
+**因此以下项**本轮没能在 Android 上执行**，列出待补（用户会自行手动测试，或修好模拟器后再跑）：
+
+| # | 待验证 | 怎么验 | 关联 |
+|---|---|---|---|
+| V1 | 手机点卡片开书（真实触摸） | 真机或修好的模拟器上点书卡 → 应下载并回到上次位置 | [P4-4] |
+| V2 | 阅读器工具栏（无朗读/翻译按钮） | 开一本书 → 底部工具栏只有 目录/进度/主题/设置/字体/… | [C]/[D] 已删功能的目视确认 |
+| V3 | 语言面板 | 设置 → 语言：应**无** "Convert Simplified and Traditional Chinese" 那一块；标点（Replace Quotation Marks）应在；Word Lens 应在 | WP7 |
+| V4 | 行为/控制面板 | 设置 → 行为：应**无** "Auto Full Refresh" 行；E-Ink Mode 与 Color E-Ink Mode 应仍在 | WP4 |
+| V5 | 字典面板 | 设置 → 自定义 → 字典：应**无** MDict/MDX 导入项与提示行；StarDict/DICT/Slob/Babylon/Yomitan 应在 | WP6 |
+| V6 | 集成面板 | 设置 → 集成：WebDAV 与 LocalSend 应在；Google Drive/OneDrive/iCloud/S3/KOReader Sync/Readest Cloud 应无 | [B]/云残留 |
+| V7 | 库菜单与书库 | 菜单只有 "Library Sync（通过 WebDAV 同步书库）"，无登录；书库 2 本、无幽灵行 | [A-7] ✔ 本轮已验：菜单与书库 |
+| V8 | 长按多选动作条 | 长按书卡 → Open/Group/Tag/Status/Details/Download/Send/Nearby/Delete/Cancel | ✔ 本轮已验 |
+| V9 | 服务看门狗 | `start.sh` 加健康检查（未实现） | [P4-5] |
+| V10 | 防火墙（真机 WiFi） | 手机过 WiFi 连 PC 的 192.168.1.5:17321/17322 | [P0-5] |
+| V11 | WP8 之后的 APK | WP8 完成后再构建一次并复验 V1–V7 | 本轮按用户要求**未做 APK 构建**，等全部改完手动测 |
+
+**已验项（模拟器 2026-10-16）**：升级安装保留书库与进度（2 本）、无幽灵行、菜单/长按动作条正常、APK 签名与旧版同证书。
+
 ### 累计影响（预估）
 
 | WP | 类型 | 规模 |
