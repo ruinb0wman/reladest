@@ -1008,7 +1008,8 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 | WP9 CI 卫生 | `359493812` | 3 workflow / −489 行 | 全部 workflow 仍可被 YAML 解析 |
 | WP10 APK | `64efd8b8a`/`71…`（3 个修 build 的提交） | 1 个 APK | 见下 |
 | WP8-A Rust 减肥（CEF/桌面/macOS/platform） | `042518246` | 39 文件 / **−4,234 行** | **Android target `cargo check` 0 error**（1m19s / 27s） |
-| WP8-B 剩余（nightly_update+updater、IAP 链、Kotlin [A-4]、惰性 `cfg(desktop)` 体、桌面配置） | **待做**（需一次构建验证 Kotlin/gradle） | — | — |
+| WP8-B IAP 链 + Kotlin OAuth + 桌面配置 | `f4512c655` | 20 文件 / **−1,343 行** | Rust 半侧 `cargo check` 12.6s / 0 error；**Kotlin/gradle 需一次真实构建** |
+| WP8-C 剩余（updater 链 = 功能决策、惰性 `cfg(desktop)` 体 = 纯整洁） | **待定** | — | — |
 
 **为什么把 WP8 挪到最后**：WP3–WP5 已经删了 Rust（web_browser/media_proxy/eink/sentry + Kotlin 命令），必须先用一次 APK 构建验证；否则 WP8 再删 3.5k 行后构建失败就无法归因。构建反馈一次约 20 分钟，先验证再叠加是唯一能保证可定位的顺序。
 
@@ -1073,6 +1074,22 @@ env -u ANDROID_SDK_ROOT ANDROID_HOME=$HOME/android-sdk NDK_HOME=$NDK PATH="$TC:$
 
 **WP8-B（待做，需要一次真实构建）**：① `nightly_update.rs` + `is_updater_disabled`/`verify_update_signature`/`install_nightly_update` 三个命令 + `tauri-plugin-updater` + TS 侧 UpdaterWindow/`is_updater_disabled` 调用链；② IAP 链（`utils/iap.ts` 死包装 → Rust `iap_*` 命令 → 插件 `mobile.rs` 方法 → Kotlin 的 5 个 `iap_*` handler + `BillingManager.kt`（foss/googleplay 两个 flavor）→ gradle flavor 与 billing 依赖）；③ Kotlin 的 [A-4]（`auth_with_custom_tab` handler + `OAuthCallbackTarget.kt` + 它的单测 + `handleIntent` 的 auth 分支）；④ 残留的惰性 `#[cfg(desktop)]` 体（updater/CLI/single-instance/窗口状态/`restore_main_window_state`）；⑤ 桌面配置文件（`tauri.windows.conf.json`、`tauri.conf.json` 的 linux/windows bundle 段、`capabilities-extra/webdriver.json` 的 webdriver 特性）。
 **为什么这批要等构建**：Kotlin 与 gradle 改动在本地无法编译验证（`cargo check` 看不到 Kotlin），必须在一次 `pnpm tauri android build` 里一起验；而 WP8-A 只删 `cfg(desktop)`/非 Android `target_os` 的东西，所以那条检查就够了。
+
+#### WP8-B（`f4512c655`，已完成，20 文件 / −1,343 行）
+
+删的是**整条已不可达的链**（付款那一刀之后 UI 里没有任何入口能买到东西；`utils/iap.ts` 这个唯一调用方自己也没有消费者）：
+
+- **IAP**：TS `utils/iap.ts` + `hasIAP` 能力标志；Rust 插件 5 个 `iap_*` 命令 + 5 个 mobile 方法 + 8 个模型 + ACL 清单 + 插件 `permissions/default.toml` 的 5 条 `allow-iap-*`；Kotlin 5 个 handler + `billingManager` lazy 字段 + `BillingManager.kt`（foss/googleplay 两个 flavor）+ `testGoogleplay` 三个计费测试 + gradle 的 `billingclient`/`play-services-base` 依赖；顺带删掉只有自定义标签页在用的 `androidx.browser` 依赖。
+  ⚠️ **`store` flavor 维度保留**：app 模块的 flavor 有别的用途，而 library 模块（插件）如果 flavor 不匹配会构建失败 —— 只把它的计费源集留空。
+- **OAuth 自定义标签页（移动端 OAuth 流的最后一块）**：Kotlin `auth_with_custom_tab` handler + `AuthRequestArgs` + `OAuthCallbackTarget.kt` 与其单测 + `handleIntent` 的 auth 分支（含 `pendingAuthCallbackTarget`/`pendingInvoke`）+ 无用的 `CustomTabsIntent` import。Rust 侧在 WP8-A。
+- **`tauri.windows.conf.json`**（Windows 打包配置）。
+
+**验证**：Rust 半侧仍是 Android target `cargo check`（12.6s / 0 error）；**Kotlin 与 gradle 本地无法编译验证** ⇒ 下一次 `pnpm tauri android build` 才是这批的真正测试。若报错，会指向已删的 IAP/OAuth 引用。
+
+#### WP8-C（未做，两件事性质不同，等你决定）
+
+1. **updater 链 —— 这是「功能决策」不是死代码**：`nightly_update.rs`（`verify_update_signature` 仍注册在 Android 上；`install_nightly_update`/`is_updater_disabled` 是 desktop-cfg）、`tauri-plugin-updater`（**本来就是 `#[cfg(desktop)]` 注册** ⇒ Android 上根本没有该插件，JS 的 `@tauri-apps/plugin-updater` 检查更新在 Android 上已经是坏的）+ TS 的 `helpers/updater.ts`/`UpdaterWindow`/`/updater` 页/About 窗口的「检查更新」与「更新说明」。删它 = 移除应用内更新与更新说明窗口（后者在 Android 上有实际 UI，且会向 readest.com 拉 changelog，属 [P2-4] 外链收口范畴）。**所以需要你拍板**，我没动。
+2. **惰性 `#[cfg(desktop)]` 体（约 19 处，~400 行）—— 纯整洁，零 APK 影响**：`lib.rs` 里 desktop-only 的辅助函数（`get_files_from_argv`/`set_window_open_with_files`/`default_window_size`/`compute_updater_disabled`）+ single-instance/CLI 插件注册块。删除它们只影响「以后某人试图编译桌面版」这件事，而不影响 Android 产物；且这些块与 Android 的窗口创建路径交织，动它有把 Android 路径改坏的风险（收益=整洁，风险=真实）。我**故意没做**，留作可选项。
 
 ### 累计影响（预估）
 
