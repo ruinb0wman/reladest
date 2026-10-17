@@ -169,59 +169,6 @@ pub struct Purchase {
     pub purchase_date: String,
     pub purchase_state: String, // "purchased", "pending", "cancelled", "restored"
 }
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPIsAvailableResponse {
-    pub available: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPInitializeRequest {
-    pub public_key: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPInitializeResponse {
-    pub success: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPFetchProductsRequest {
-    pub product_ids: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPFetchProductsResponse {
-    pub products: Vec<Product>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPPurchaseProductRequest {
-    pub product_id: String,
-    /// Supabase user id, surfaced by StoreKit as the transaction's
-    /// `appAccountToken` so a purchase can be attributed server-side.
-    pub app_account_token: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPPurchaseProductResponse {
-    pub purchase: Option<Purchase>,
-    pub cancelled_purchase: Option<Purchase>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IAPRestorePurchasesResponse {
-    pub purchases: Vec<Purchase>,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetSystemColorSchemeResponse {

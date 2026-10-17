@@ -68,12 +68,9 @@ dependencies {
         // support library, which clashes with androidx.core.
         exclude(group = "com.android.support")
     }
-    "googleplayImplementation"("com.android.billingclient:billing:9.1.0")
-    "googleplayImplementation"("com.google.android.gms:play-services-base:18.5.0")
     "googleplayImplementation"("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.browser:browser:1.8.0")
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("com.google.android.material:material:1.7.0")
     // EncryptedSharedPreferences (sync passphrase keychain backing).

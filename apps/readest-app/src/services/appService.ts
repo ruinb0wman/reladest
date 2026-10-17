@@ -69,7 +69,6 @@ export abstract class BaseAppService implements AppService {
   hasOrientationLock = false;
   hasScreenBrightness = false;
   hasAmbientLightSensor = false;
-  hasIAP = false;
   canCustomizeRootDir = false;
   canReadExternalDir = false;
   supportsCoverThumbnailOptimization = false;

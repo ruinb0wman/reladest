@@ -50,7 +50,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.browser.customtabs.CustomTabsIntent
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.Permission
@@ -64,12 +63,6 @@ import java.io.*
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.*
-
-@InvokeArg
-class AuthRequestArgs {
-    var authUrl: String? = null
-    var callbackUrl: String? = null
-}
 
 @InvokeArg
 class CopyURIRequestArgs {
@@ -247,9 +240,6 @@ interface KeyDownInterceptor {
 class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
     private val implementation = NativeBridge()
     private var webViewRef: WebView? = null
-    private val billingManager by lazy {
-        BillingManager(activity)
-    }
     // Scope for offloading blocking @Command I/O (file copy, package
     // install, font scan, dictionary lookup) off the plugin command thread.
     // Cancelled in onDestroy so in-flight work can't resolve into — or leak —
@@ -332,8 +322,6 @@ class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
         private const val REQUEST_MANAGE_STORAGE = 1001
         private const val FOLDER_PICKER_REQUEST_CODE = 1002
         private const val FILE_PICKER_REQUEST_CODE = 1003
-        var pendingInvoke: Invoke? = null
-        private var pendingAuthCallbackTarget: OAuthCallbackTarget? = null
         var pendingFolderPickerInvoke: Invoke? = null
         // A file-picker result can be delivered to a MainActivity that was
         // recreated after the process died behind the system picker (#1217).
@@ -403,20 +391,6 @@ class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
     private fun handleIntent(intent: Intent?) {
         if (intent == null) return
         Log.d("NativeBridgePlugin", "Received intent: action=${intent.action} data=${intent.data}")
-
-        // OAuth callback uses a custom scheme on intent.data and is handled
-        // separately from any user-shared content.
-        intent.data?.let { uri ->
-            if (pendingAuthCallbackTarget?.matches(uri.toString()) == true) {
-                val result = JSObject().apply {
-                    put("redirectUrl", uri.toString())
-                }
-                pendingInvoke?.resolve(result)
-                pendingInvoke = null
-                pendingAuthCallbackTarget = null
-                return
-            }
-        }
 
         when (intent.action) {
             Intent.ACTION_VIEW -> {
@@ -556,25 +530,6 @@ class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
             // already-connected controller is always reported immediately.
             emitGamepadConnection(force = true)
         }
-    }
-
-    @Command
-    fun auth_with_custom_tab(invoke: Invoke) {
-        val args = invoke.parseArgs(AuthRequestArgs::class.java)
-        val callbackTarget = args.callbackUrl?.let(OAuthCallbackTarget::parse)
-        if (callbackTarget == null) {
-            invoke.reject("Invalid OAuth callback URL")
-            return
-        }
-        val uri = Uri.parse(args.authUrl)
-
-        val customTabsIntent = CustomTabsIntent.Builder().build()
-        customTabsIntent.intent.flags = Intent.FLAG_ACTIVITY_NO_HISTORY
-
-        Log.d("NativeBridgePlugin", "Launching OAuth URL: ${args.authUrl}")
-        pendingInvoke = invoke
-        pendingAuthCallbackTarget = callbackTarget
-        customTabsIntent.launchUrl(activity, uri)
     }
 
     @Command
@@ -1176,112 +1131,6 @@ class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
         sensorManager = null
         lastEmittedLux = Float.NaN
     }
-
-    @Command
-    fun iap_is_available(invoke: Invoke) {
-        val isAvailable = billingManager.isBillingAvailable()
-        val result = JSObject()
-        result.put("available", isAvailable)
-        invoke.resolve(result)
-    }
-
-    @Command
-    fun iap_initialize(invoke: Invoke) {
-        billingManager.initialize { success ->
-            val result = JSObject()
-            result.put("success", success)
-            invoke.resolve(result)
-        }
-    }
-
-    @Command
-    fun iap_fetch_products(invoke: Invoke) {
-        try {
-            val args = invoke.parseArgs(FetchProductsRequestArgs::class.java)
-            val productIds = args.productIds ?: emptyList()
-            if (productIds.isEmpty()) {
-                invoke.reject("Product IDs list is empty")
-                return
-            }
-
-            billingManager.fetchProducts(productIds) { products ->
-                val result = JSObject()
-                val productsArray = JSArray()
-                for (product in products) {
-                    val productObject = JSObject().apply {
-                        put("id", product.id)
-                        put("title", product.title)
-                        put("description", product.description)
-                        put("price", product.price)
-                        put("priceCurrencyCode", product.priceCurrencyCode)
-                        put("priceAmountMicros", product.priceAmountMicros)
-                        put("productType", product.productType)
-                    }
-                    productsArray.put(productObject)
-                }
-                result.put("products", productsArray)
-                invoke.resolve(result)
-            }
-        } catch (e: Exception) {
-            invoke.reject("Failed to parse fetch products arguments: ${e.message}")
-        }
-    }
-
-    @Command
-    fun iap_purchase_product(invoke: Invoke) {
-        try {
-            val args = invoke.parseArgs(PurchaseProductRequestArgs::class.java)
-            val productId = args.productId ?: ""
-            if (productId.isEmpty()) {
-                invoke.reject("Product ID is empty")
-                return
-            }
-
-            billingManager.purchaseProduct(productId) { purchase ->
-                if (purchase != null) {
-                    val result = JSObject()
-                    val purchaseData = JSObject().apply {
-                        put("platform", purchase.platform)
-                        put("packageName", activity.packageName)
-                        put("productId", purchase.productId)
-                        put("orderId", purchase.orderId)
-                        put("purchaseToken", purchase.purchaseToken)
-                        put("purchaseDate", purchase.purchaseDate)
-                        put("purchaseState", purchase.purchaseState)
-                    }
-                    result.put("purchase", purchaseData)
-                    invoke.resolve(result)
-                } else {
-                    invoke.reject("Purchase failed or was cancelled")
-                }
-            }
-        } catch (e: Exception) {
-            invoke.reject("Failed to parse purchase arguments: ${e.message}")
-        }
-    }
-
-    @Command
-    fun iap_restore_purchases(invoke: Invoke) {
-        billingManager.restorePurchases { purchases ->
-            val result = JSObject()
-            val purchasesArray = JSArray()
-            for (purchase in purchases) {
-                val purchaseObject = JSObject().apply {
-                    put("platform", purchase.platform)
-                    put("packageName", activity.packageName)
-                    put("productId", purchase.productId)
-                    put("orderId", purchase.orderId)
-                    put("purchaseToken", purchase.purchaseToken)
-                    put("purchaseDate", purchase.purchaseDate)
-                    put("purchaseState", purchase.purchaseState)
-                }
-                purchasesArray.put(purchaseObject)
-            }
-            result.put("purchases", purchasesArray)
-            invoke.resolve(result)
-        }
-    }
-
     @Command
     fun get_external_sdcard_path(invoke: Invoke) {
         val result = JSObject()
@@ -1471,7 +1320,6 @@ class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
         }
 
         invoke.resolve(result)
-        pendingInvoke = null
     }
 
     private fun extractPathFromUri(uri: Uri): String? {
