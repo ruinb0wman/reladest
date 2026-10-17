@@ -1053,7 +1053,7 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk \
 | V8 | 长按多选动作条 | 长按书卡 → Open/Group/Tag/Status/Details/Download/Send/Nearby/Delete/Cancel | ✔ 本轮已验 |
 | V9 | 服务看门狗 | `start.sh` 加健康检查（未实现） | [P4-5] |
 | V10 | 防火墙（真机 WiFi） | 手机过 WiFi 连 PC 的 192.168.1.5:17321/17322 | [P0-5] |
-| V11 | WP8 之后的 APK | WP8 完成后再构建一次并复验 V1–V7 | 本轮按用户要求**未做 APK 构建**，等全部改完手动测 |
+| V11 | **WP8 之后的 APK**（含 WP8-B 的 Kotlin 改动） | `pnpm lan:stop` → `rm -rf src-tauri/gen/android` → `env -u ANDROID_SDK_ROOT JAVA_HOME=/usr/lib/jvm/java-17-openjdk ANDROID_HOME=$HOME/android-sdk pnpm tauri android init --ci` → `pnpm tauri icon ../../data/icons/readest-book.png` → `git checkout -- .` → 重建 `src-tauri/gen/android/keystore.properties`(600) → `env -u ANDROID_SDK_ROOT … pnpm tauri android build -t aarch64` → 之后**必须重跑 `pnpm lan:build`**（构建会覆盖 `.next/standalone`） | 本轮按用户要求**未做 APK 构建**。⚠️ WP8-B 删了 Kotlin（IAP/OAuth 链）与 gradle 依赖，**这批只能在这次构建里验证**；报错会指向已删的 `BillingManager`/`OAuthCallbackTarget`/`iap_` 引用 |
 
 **已验项（模拟器 2026-10-16）**：升级安装保留书库与进度（2 本）、无幽灵行、菜单/长按动作条正常、APK 签名与旧版同证书。
 
