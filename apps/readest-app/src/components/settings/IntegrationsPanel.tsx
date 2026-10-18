@@ -178,6 +178,16 @@ const IntegrationsPanel: React.FC = () => {
     setRequestedSubPage(null);
   }, [requestedSubPage, setRequestedSubPage, isCloudSyncPremium, userProfilePlan]);
 
+  // Both subscriptions must be unconditional. The sub-page branches below
+  // return early, so a hook that only runs in the list view changes the hook
+  // count between renders — React error #300, which meant opening ANY
+  // integration sub-page (WebDAV, Readwise, …) crashed the settings dialog.
+  // These two landed after the early returns when the cloud providers were
+  // reduced to the file backends; the rest of the component is careful to keep
+  // every hook above them.
+  const isWebDAVSyncing = useFileSyncStore((s) => s.byKind.webdav?.isSyncing ?? false);
+  const webdavLastError = useFileSyncStore((s) => s.lastErrorByKind.webdav);
+
   // Sub-page wrapper matches the list-view's `my-4 w-full` so the
   // SubPageHeader's "Integrations" label lands at the exact same Y position
   // as the list-view's h2 — clicking a row reads as a navigation morph
@@ -310,10 +320,6 @@ const IntegrationsPanel: React.FC = () => {
       (k) => k !== kind && (settings[settingsKeyForBackend(k)]?.syncBooks ?? false),
     );
 
-  // Surface a library-wide WebDAV sync that's mid-flight in the row's status
-  // line, so backing out of the sub-page doesn't read as a lost run.
-  const isWebDAVSyncing = useFileSyncStore((s) => s.byKind.webdav?.isSyncing ?? false);
-  const webdavLastError = useFileSyncStore((s) => s.lastErrorByKind.webdav);
   const webdavConfigured = !!(settings.webdav?.serverUrl && settings.webdav?.username);
   const webdavStatus = getThirdPartyRowStatus(_, {
     enabled: !!settings.webdav?.enabled,
