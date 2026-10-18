@@ -1333,3 +1333,24 @@ adb.exe forward tcp:9222 localabstract:webview_devtools_remote_$PID
 curl -s --noproxy '*' http://127.0.0.1:9222/json    # 页面 = http://tauri.localhost/
 ```
 Node ≥22 自带 `WebSocket` 即可发 CDP：`Runtime.evaluate`（DOM/路径 + `Log.enable` 抓 console）+ `Input.dispatchTouchEvent`（**CDP 用 CSS px**；本机 DPR 2.625，视口 412×915 ⇒ 设备坐标 = CSS × 2.625）。`Input.dispatchMouseEvent` 不可靠。
+
+#### 2026-10-18 第二轮：模拟器端到端验收（新 APK v3）
+
+**产物**：`~/readest-lan/dist/readest-lan-v0.12.16-slim-v3.apk`（57,459,850 B；sha256 `8de341ee…`；签名 `21e30a9b…55e5e4`，可覆盖安装）。这批构建同时验证了 **WP8-B 的 Kotlin 改动能编译**（IAP 链 + OAuth 自定义标签页的删除）。
+
+**这轮抓到并修掉的 4 个真 bug（前 3 个是「删登录」的漏网，第 4 个是删 provider 时的回归）**：
+
+1. **`BookItem` 卡片上的上传/下载按钮静默无效**（`51a7419c4`）：`if (!user) { navigateToLogin(); return; }`，而 `navigateToLogin` 只剩「跳回书库」的壳 ⇒ **LAN 版无法把书上传到 WebDAV 镜像**（长按动作条的 Download 不受影响，所以只有上传看起来是坏的）。
+2. **书库下拉刷新静默无效**（同一提交）：两个回调都在 `pullLibrary()` 之前 `return`，而 `pullLibrary` 正是 LAN 唯一的同步入口（它的注释明写「pull to refresh / SettingsMenu / BackupWindow 都路由到这里」）。
+3. **`/send` 整页变成「请先登录」墙**（同一提交）：系统分享/剪藏的落点页在 LAN 版无路可走；该页本来就走本地导入管线。
+4. **打开任何集成子页都崩**（`a00a9713e`，**阻断级**）：React error #300。`IntegrationsPanel` 用「列表 + 早返回子页」的单组件结构，而 `37870bd4a`（删四 provider 那次）把两个 `useFileSyncStore` 订阅加在了**早返回之后** ⇒ 列表视比子页视多跑两个 hook。**WebDAV 配置页因此在 LAN 版完全进不去**。已把两个订阅提到早返回之前。
+
+**审计后确认没问题的**：`isCustomizationAllowed` 含 `isSelfHosted()` ⇒ LocalSend 配对**不是**付费门（`NEARBY_PAIRING_REQUIRES_PREMIUM=true` 不影响自托管）；`useCloudSyncStatus` 的 `needsSignIn` 已硬编码 `false`；`useBooksSync` 的门控只挡已死的云同步；其余 `navigateToLogin` 调用点都在自托管下不可达的条件里。
+
+**端到端验收（模拟器 api35，全新安装）**：
+- 卸载重装 ⇒ 书库**空**（「Start your library」）⇒ **样书修复在真机路径上成立**（不再有那张打不开的样书卡）。
+- 设置 → 集成 → **WebDAV 子页正常打开**（崩溃已修），填 `http://10.0.2.2:17322` + 账号 + `/` → Connect ⇒ **拉到书库：两本真书 + 4% 进度**。
+- 点**没有本地文件**的《毛泽东选集》⇒ 从镜像下载到 `/data/user/0/…/Readest/Books/e957fd27…/`，经 `rangefile.localhost` 读取 ⇒ **阅读器打开并稳定停留**（3216 页）。WebDAV 的 GET 走 Rust 侧 fetch，所以在 WebView 网络面板里只看到 `ipc.localhost …|fetch` 桥调用，看不到 17322 的请求。
+- PC 侧（bow，真实指针）：库内两本在、卡片上传按钮修复后 WebDAV 子页正常、显示「几秒前已同步」。
+
+**⚠️ 本轮的一次误操作与恢复（记录在案）**：清理「样书行」时，网格顺序与截图不同，长按命中的是第一张卡 = **用户自己的《毛泽东选集》**（不是样书），在模拟器上被删除（本机文件清除 + 镜像 tombstone + manifest）。恢复：① 从镜像 `library.json` 撤掉 tombstone（留了 `.bak-before-revive` 备份）；② PC 副本始终完好（未受影响）；③ 按 `layout.ts` 的布局把源文件（identifier 与行内 `urn:uuid:6ebcf06e…` **完全一致**）放回 `books/e957fd27…/50799_毛泽东选集（全四卷）_-.epub`；④ 手机重装后重新拉取 + 下载，阅读器正常打开。**教训**：那张「指数基金投资指南」卡不是样书，是用户自己的真书（中信出版社、355 页、2.79MB），它的 `url` 字段才是样书路径 —— WP1 文档里「同源样书地址使真书 `06e01d70…` 被误判」说的就是这件事。清理任何行之前先读它的元数据。
