@@ -1311,3 +1311,25 @@ env -u ANDROID_SDK_ROOT ANDROID_HOME=$HOME/android-sdk NDK_HOME=$NDK PATH="$TC:$
 
 - 与 Phase 2.5-B（删第三方同步/replica）**有重叠但不等同**：云路径被删掉后，`useBooksSync.ts` 那两处 `isDemoBook` 过滤会一起消失，**D1 的修法就只剩 file sync 一处**——所以如果你先做 2.5-B，[P7-c] 的改动面会变小。
 - [P7-b]（JSON 改 `[]`）是一行改动，**随时可做**，不依赖任何阶段；做完幽灵行就不会再生（[P7-d] 的清理仍要补）。
+
+#### 2026-10-18 模拟器实测（slim APK，api35）
+
+装了 slim APK（同证书升级，数据保留：书库 2 本、进度 4%）。**V7 复验通过**：书库 2 本、无幽灵行；主菜单只有 Library Sync / Auto Import on File Open / Open Last Book on Start / Always Show Status Bar / Auto Mode / Settings / Advanced Settings / About（**无登录**）；导入菜单 = Local File / Directory / Web Novel / Feed URL / Online Library；长按书卡进多选（Open/Group/Tag/Status/Details/Download/Send/Nearby/Delete）。
+
+**V1 通过（真书）**：点 `e957fd27…`（毛泽东选集，3216 页）→ 阅读器打开并正常渲染。CDP 观测：`Opening book e957fd27…` → `doc index loaded: 0..4`，8 秒后仍在 `/reader`。
+
+**⚠️ 新发现（真 bug，非裁剪引入）：样书在 Android 上打不开。**
+- 点样书卡（`06e01d70…` = 指数基金投资指南）确实进 `/reader`，但取文件失败 → **约 2 秒后弹回 `/library`**：
+  `error: error sending request for url (http://localhost:17321/demo/testbook.epub)` → `Error initializing book 06e01d70…`。
+- 根因：样书 epub **内置在 app 里**（`.next/standalone/.../public/demo/testbook.epub`，6.8MB），但 `demoBooks.ts` 的 `resolveDemoUrl` 在 SSR 时 `window` 未定义 ⇒ 书行里存的是**根相对** `/demo/testbook.epub`，取文件时按 `apiBaseUrl`（`environment.ts` → `http://localhost:17321`）解析 ⇒ 指到 PC 去了。
+- 修法：①（推荐，与「样书卡片清理」待办同一条）把 `src/data/demo/{library.en,library.zh}.json` 的 `library` 改成 `[]`；② 让取书路径把根相对 URL 解析到**页面 origin**（Android = `tauri.localhost`，能取到内置 epub）。
+
+**⚠️ 重要更正：历史上「模拟器点卡片不开书 = 输入/环境问题」是误诊。** `adb shell input tap` 一直有效（CDP 实测：tap 后 400ms 进 `/reader`，2000ms 弹回 = 上面那条样书 bug）；之前的截图都拍在弹回之后。长按有效也只是因为长按走 500ms 定时器。
+
+**新增验证手段：Android release WebView 可开 CDP**（本轮才发现，以后验安卓便宜得多）：
+```
+PID=$(adb.exe shell pidof com.bilingify.readest | tr -d '\r')
+adb.exe forward tcp:9222 localabstract:webview_devtools_remote_$PID
+curl -s --noproxy '*' http://127.0.0.1:9222/json    # 页面 = http://tauri.localhost/
+```
+Node ≥22 自带 `WebSocket` 即可发 CDP：`Runtime.evaluate`（DOM/路径 + `Log.enable` 抓 console）+ `Input.dispatchTouchEvent`（**CDP 用 CSS px**；本机 DPR 2.625，视口 412×915 ⇒ 设备坐标 = CSS × 2.625）。`Input.dispatchMouseEvent` 不可靠。
