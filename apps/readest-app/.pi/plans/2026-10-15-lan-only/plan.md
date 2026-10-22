@@ -1398,3 +1398,21 @@ Node ≥22 自带 `WebSocket` 即可发 CDP：`Runtime.evaluate`（DOM/路径 + 
 - 全仓（排除迁移与测试）对五个集成名字的残留提及：**4 处**，全是「历史格式来源」类注释（`export markdown 仿 Readwise 格式`、`legacy Readwise deeplink` 等）
 
 **验证口径**：每个包 tsc + 全量测试全绿（9,549 → 9,497 → 9,481 → 9,436 → 9,299 → 9,158），P2/P4/P5 各跑过一次 `pnpm lan:build`，最后一次 APK 构建通过。
+
+#### 2026-10-22 M1 收尾（`eb16e8b38`，24 文件 / −610）
+
+| 项 | 内容 |
+|---|---|
+| B1 | 删样书机制：`services/demoBooks.ts`、`useDemoBooks`、两个空 `data/demo/*.json`、`Book.isDemo`、三处过滤（持久化 / 出站同步 / 逐书上传）、3 个测试套件 |
+| B3 | 删死命令 `install_package`（TS 无壳 + Rust command/model/mobile + build.rs ACL + default.toml + Kotlin `@Command`）与其唯一的 `FileProvider` import；同族 `use_background_audio`（TTS/有声书遗物，TS 壳无调用者） |
+| B4 | `novel-import` 的「图片失败」用例改 stub `globalThis.fetch`——原来真去解析 `cdn.example.org`，快网过、并行负载下超时 |
+| B5 | 新增 `pnpm lan:rebuild`（stop → build → start → status）；`lan:build` 提示「APK 构建会饿死模拟器」 |
+
+验收：tsc 干净；**776 文件 / 9,150 用例**；`lan:rebuild` 200/200/207；**APK v6**（57,164,726 B，同签名）装机后书库仅 2 本真书、3216 页书打开稳定。
+
+#### 剩余 backlog（M2–M4 + 新发现）
+
+- **B2（M2）** replica no-op 壳：8 文件 / 322 行 + ~20 个 store 调用点
+- **B6（M4）** LAN 运维文档
+- **B7（新，随 M2 或独立）** `src-tauri/src/clip_url.rs` 里 **15 处 `#[cfg(desktop)]`** 残渣（`capture_one`/`decode_b64`/`loading_overlay_script`/`fingerprint_mask_script`/桌面版 `clip_url`）在 Android 构建里完全不编译，却让 `escape_html` 报「never used」——和 WP8-C 同类，删掉是纯阅读收益
+- M3 真机三项 + 同步覆盖面；M4 WebDAV 进 Next（去 rclone）+ 可选 LAN 更新通道
