@@ -1367,3 +1367,34 @@ Node ≥22 自带 `WebSocket` 即可发 CDP：`Runtime.evaluate`（DOM/路径 + 
 - 点《毛泽东选集》→ `/reader|reader` 连续 6 秒稳定 ✓
 
 **运维注意**：`pnpm lan:build` 结束只打印「构建完成 → pnpm lan:start」，**不会自动启动服务**；构建 APK 也要先 `lan:stop`。顺序：`lan:stop` → `tauri android build` → `lan:build` → `lan:start`。
+
+#### 2026-10-22 第三方集成全清（P1–P6）+ APK v5 验收
+
+按 `.pi/plans/2026-10-18-drop-third-party-integrations/plan.md` 执行完毕。**五个第三方集成 + updater 全部移除**：
+
+| 包 | 提交 | 规模 |
+|---|---|---|
+| updater 链 | `111cb2322` | 32 文件 / −2,387 |
+| P1 Readwise | `5531560e2` | 13 文件 / −808 |
+| P2 Notion | `36e9ec44e` | 29 文件 / −3,506 |
+| P3+P4 Pagebound + Hardcover | `068285955` | 53 文件 / −7,217 |
+| P5+P6 BookOrbit + 收尾 | `dda1ff7ec` | 76 文件 / −6,958 |
+| **合计** | | **约 −20,900 行** |
+
+**顺带清掉的三块死代码**（都是删集成时暴露出来的）：
+- **KOSync 协议层**：`useKOSync` / `KOSyncClient` / `kosyncProgress` / `KOSyncResolver` —— 注释里写着「现在只有 BookOrbit 在用」，BookOrbit 一走就整层空了；
+- **有声书类型岛**：`PairedAudiobook*` / `BookConfig.audiobook` / `BOOKORBIT` 格式 —— 音频那一刀之后就没有运行时消费者了，BookOrbit 是最后提到它的名字；
+- `NOTION_API_VERSION`、`KoSyncProxyPayload`、`bookorbit-push` 游标键。
+
+**保留**（有意）：三条 `*-sync` 数据库迁移（老库已跑过，删步骤会让新老 schema 分叉；迁移处都加了「已无消费者」注释），`ProgressSyncStrategy`（原 `KOSyncStrategy`，现在只有文件同步用）。
+
+**APK v5**：`~/readest-lan/dist/readest-lan-v0.12.16-slim-v5.apk`（57,197,494 B；sha256 `b2d17ac1…`；签名同前）。比 v4 又小 82 KB，比 v3 小 1.28 MB。
+
+**模拟器实测（升级安装，PC 端同版本）**：
+- 书库 2 本、无幽灵行 ✓
+- **集成面板 = Local Network → Nearby BookDrop / Cloud Sync → WebDAV / Content Sources → OPDS**，`Reading Sync` 整段消失 ✓
+- WebDAV 子页正常打开；点「Sync now」→ `Synced a few seconds ago`（构建期间 hub 停过，`lan:start` 后恢复）✓
+- 点《毛泽东选集》→ `/reader` 持续 4.8s+ 稳定，目录/正文渲染正常 ✓
+- 全仓（排除迁移与测试）对五个集成名字的残留提及：**4 处**，全是「历史格式来源」类注释（`export markdown 仿 Readwise 格式`、`legacy Readwise deeplink` 等）
+
+**验证口径**：每个包 tsc + 全量测试全绿（9,549 → 9,497 → 9,481 → 9,436 → 9,299 → 9,158），P2/P4/P5 各跑过一次 `pnpm lan:build`，最后一次 APK 构建通过。
