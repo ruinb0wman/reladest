@@ -1416,3 +1416,16 @@ Node ≥22 自带 `WebSocket` 即可发 CDP：`Runtime.evaluate`（DOM/路径 + 
 - **B6（M4）** LAN 运维文档
 - **B7（新，随 M2 或独立）** `src-tauri/src/clip_url.rs` 里 **15 处 `#[cfg(desktop)]`** 残渣（`capture_one`/`decode_b64`/`loading_overlay_script`/`fingerprint_mask_script`/桌面版 `clip_url`）在 Android 构建里完全不编译，却让 `escape_html` 报「never used」——和 WP8-C 同类，删掉是纯阅读收益
 - M3 真机三项 + 同步覆盖面；M4 WebDAV 进 Next（去 rclone）+ 可选 LAN 更新通道
+
+#### 2026-10-22 M2 完成（`8184803e0`，21 文件 / −1,085）
+
+原计划「删 replica no-op 壳」，实际挖出两层：
+
+1. **六个壳模块**：`replicaPublish` / `replicaSync` / `replicaSettingsSync` / `passphraseGate` / `replicaBinaryUpload` / `replicaPersist`
+2. **四个 store 的 replica 侧面相**（`tsc` 证实零外部调用者）：`applyRemote*` / `softDeleteByContentId` / `markAvailableByContentId` / `applyRemoteDictionarySettings`，以及它们内部 `getReplicaPersistEnv()` 的 fire-and-forget 保存轮；本地 add/update/remove 路径上的 `publishReplica*` 调用；`saveCustomDictionaries` 的 `publishOrderChange` 选项（只用来打开一个已不存在的 publish 闸门，4 个调用点改回单参数）
+
+**顺带发现**：`CustomFonts` 的「点族名从云端补下缺失字重」路径已不可达（没有任何代码再写 `unavailable: true`），改为直接选用；`CatalogManager` 保存前的口令提示、`EnvContext` 的 auto-persist 注册一并删。
+
+**有意保留**：`replicaKinds.ts`（本地仍在用的 kind 词汇 + contentId 算法）、`migrateLegacy.ts`（真实的磁盘重排迁移，只是不再发布）。
+
+验收：tsc 干净；**776 文件 / 9,132 用例**；`lan:rebuild` 200/200/207；web 端字体面板、管理字体子页、OPDS 目录页全部正常、零 console 错误。
