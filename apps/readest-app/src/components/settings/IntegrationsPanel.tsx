@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { MdChevronRight } from 'react-icons/md';
-import { RiPlanetLine, RiRssLine, RiDiscordLine, RiWifiLine, RiCloudLine } from 'react-icons/ri';
+import { RiRssLine, RiDiscordLine, RiWifiLine, RiCloudLine } from 'react-icons/ri';
 import { useAppRouter } from '@/hooks/useAppRouter';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
@@ -23,7 +23,6 @@ import {
 } from '@/services/localsend/devicePrefs';
 import { navigateToLogin, navigateToProfile } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
-import BookOrbitForm from './integrations/BookOrbitForm';
 import LocalSendForm from './integrations/LocalSendForm';
 import WebDAVForm from './integrations/WebDAVForm';
 import { persistCloudProviderEnabled } from './integrations/cloudSync';
@@ -42,11 +41,12 @@ import type { FileSyncBackendKind } from '@/services/sync/file/providerRegistry'
 import SubPageHeader from './SubPageHeader';
 import { BoxedList, NavigationRow, SectionTitle, SettingLabel, Tips } from './primitives';
 
-type SubPage = 'bookorbit' | 'webdav' | 'readest-cloud' | 'opds' | 'localsend' | null;
+type SubPage = 'webdav' | 'readest-cloud' | 'opds' | 'localsend' | null;
 
 /**
- * Integrations panel — single point of discovery for external service config:
- * KOReader Sync, Readwise, Hardcover, and OPDS Catalogs.
+ * Integrations panel — single point of discovery for the network services a
+ * LAN build uses: Nearby BookDrop (LocalSend), the WebDAV file mirror, and
+ * OPDS catalogs.
  *
  * Pattern: boxed list of NavigationRows. Each row pushes the panel into an
  * inline sub-page (with breadcrumb back-navigation matching the Dictionaries
@@ -100,8 +100,8 @@ const IntegrationsPanel: React.FC = () => {
     void useCustomOPDSStore.getState().loadCustomOPDSCatalogs(envConfig);
   }, [envConfig]);
 
-  // Android Back / Esc: when any integrations sub-page (KOSync, WebDAV,
-  // Readwise, Hardcover, OPDS, Send-to-Readest) is open, intercept and
+  // Android Back / Esc: when an integrations sub-page (WebDAV, LocalSend,
+  // OPDS) is open, intercept and
   // step back to the integrations list instead of letting <Dialog>'s
   // listener close the whole Settings dialog. The hook registers its
   // sync `native-key-down` listener *after* <Dialog>'s, and
@@ -137,7 +137,6 @@ const IntegrationsPanel: React.FC = () => {
       return;
     }
     if (
-      requestedSubPage === 'bookorbit' ||
       requestedSubPage === 'webdav' ||
       requestedSubPage === 'opds' ||
       requestedSubPage === 'localsend'
@@ -153,7 +152,7 @@ const IntegrationsPanel: React.FC = () => {
   // Both subscriptions must be unconditional. The sub-page branches below
   // return early, so a hook that only runs in the list view changes the hook
   // count between renders — React error #300, which meant opening ANY
-  // integration sub-page (WebDAV, Readwise, …) crashed the settings dialog.
+  // integration sub-page (WebDAV, OPDS, …) crashed the settings dialog.
   // These two landed after the early returns when the cloud providers were
   // reduced to the file backends; the rest of the component is careful to keep
   // every hook above them.
@@ -168,12 +167,6 @@ const IntegrationsPanel: React.FC = () => {
     return (
       <div className='my-4 w-full'>
         <LocalSendForm onBack={() => setSubPage(null)} />
-      </div>
-    );
-  if (subPage === 'bookorbit')
-    return (
-      <div className='my-4 w-full'>
-        <BookOrbitForm onBack={() => setSubPage(null)} />
       </div>
     );
   if (subPage === 'webdav')
@@ -236,12 +229,6 @@ const IntegrationsPanel: React.FC = () => {
         <CatalogManager inSubPage />
       </div>
     );
-  const bookOrbitStatus = settings.bookorbit?.enabled
-    ? settings.bookorbit.username
-      ? _('Connected as {{user}}', { user: settings.bookorbit.username })
-      : _('Connected')
-    : _('Not connected');
-
   // Cloud sync providers are independently selectable (#5062): any subset of
   // {Readest Cloud, WebDAV, Google Drive, S3, OneDrive, iCloud} can sync the
   // library at once. A "configured" third-party provider (WebDAV creds / a Drive
@@ -293,7 +280,7 @@ const IntegrationsPanel: React.FC = () => {
       <div className='w-full px-4'>
         <h2 className='mb-1.5 text-lg font-semibold tracking-tight'>{_('Integrations')}</h2>
         <p className='text-base-content/70 text-sm leading-relaxed'>
-          {_('Connect Readest to external services for sync, highlights, and catalogs.')}
+          {_('Keep books and progress on your own network, and add catalog sources.')}
         </p>
       </div>
 
@@ -316,20 +303,6 @@ const IntegrationsPanel: React.FC = () => {
           </div>
         </div>
       )}
-
-      <div className='w-full' data-setting-id='settings.integrations.sync'>
-        <SectionTitle className='mb-2'>{_('Reading Sync')}</SectionTitle>
-        <div className='card eink-bordered border-base-200 bg-base-100 overflow-hidden border'>
-          <div className='divide-base-200 divide-y'>
-            <IntegrationRow
-              icon={RiPlanetLine}
-              title={_('BookOrbit')}
-              status={bookOrbitStatus}
-              onClick={() => setSubPage('bookorbit')}
-            />
-          </div>
-        </div>
-      </div>
 
       <div className='w-full' data-setting-id='settings.integrations.cloudSync'>
         <SectionTitle className='mb-2'>{_('Cloud Sync')}</SectionTitle>

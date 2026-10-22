@@ -24,7 +24,7 @@ const textList = (value: unknown): string[] => {
 const date = (value: string | undefined) =>
   value && Number.isFinite(Date.parse(value)) ? Date.parse(value) : undefined;
 /** Formats whose books play through the audiobook player rather than the reader. */
-const AUDIO_FORMATS = ['ABS', 'OPDSAUDIO', 'BOOKORBIT'];
+const AUDIO_FORMATS = ['ABS', 'OPDSAUDIO'];
 // Both copies matter: a metadata edit or a synced row can leave only one of them
 // (see src/utils/audiobook.ts), and reading just one misfiles podcasts as audiobooks.
 const absMediaType = (b: Book) => b.absMediaType ?? b.metadata?.absMediaType;

@@ -20,7 +20,7 @@ export interface CreateHighlightResult {
  * highlights mutate the user's annotations and we'd rather over-prompt
  * than land a surprise edit.
  *
- * The annotation service callback owns persistence (Hardcover sync, local
+ * The annotation service callback owns persistence (local
  * IDB, etc.); the tool only translates the model's request into the call.
  */
 export function createCreateHighlightTool(

@@ -8,7 +8,6 @@ import { useReaderStore } from '@/store/readerStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSidebarStore } from '@/store/sidebarStore';
 import { useTranslation } from '@/hooks/useTranslation';
-import { useSettingsStore } from '@/store/settingsStore';
 import { useParallelViewStore } from '@/store/parallelViewStore';
 import { isWebAppPlatform } from '@/services/environment';
 import { eventDispatcher } from '@/utils/event';
@@ -29,7 +28,6 @@ interface BookMenuProps {
 const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen }) => {
   const _ = useTranslation();
   const { envConfig } = useEnv();
-  const { settings } = useSettingsStore();
   const { bookKeys, recreateViewer, getViewSettings } = useReaderStore();
   const { getVisibleLibrary } = useLibraryStore();
   const { openParallelView } = useBooksManager();
@@ -113,17 +111,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     setProofreadRulesVisibility(true);
     setIsDropdownOpen?.(false);
   };
-  // `provider` addresses one sync backend: KOSync and BookOrbit speak the same
-  // protocol through the same hook and would otherwise both answer.
-  const handlePullKOSync = (provider: 'kosync' | 'bookorbit') => () => {
-    eventDispatcher.dispatch('pull-kosync', { bookKey: sideBarBookKey, provider });
-    setIsDropdownOpen?.(false);
-  };
-  const handlePushKOSync = (provider: 'kosync' | 'bookorbit') => () => {
-    eventDispatcher.dispatch('push-kosync', { bookKey: sideBarBookKey, provider });
-    setIsDropdownOpen?.(false);
-  };
-  const bookOrbitProgressSync = settings.bookorbit.enabled && settings.bookorbit.syncProgress;
   // Routed through Annotator (per-book, long-lived) so that the
   // confirmation dialog isn't unmounted with the dropdown menu.
   const handleClearAnnotations = () => {
@@ -174,15 +161,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
         ) : (
           <MenuItem label={_('Enter Parallel Read')} onClick={handleSetParallel} />
         ))}
-      {bookOrbitProgressSync && <hr aria-hidden='true' className='border-base-200 my-1' />}
-      {bookOrbitProgressSync && (
-        <MenuItem label={_('BookOrbit Sync')} detailsOpen={false} buttonClass='py-2'>
-          <ul className='flex flex-col ps-1'>
-            <MenuItem label={_('Push Progress')} noIcon onClick={handlePushKOSync('bookorbit')} />
-            <MenuItem label={_('Pull Progress')} noIcon onClick={handlePullKOSync('bookorbit')} />
-          </ul>
-        </MenuItem>
-      )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
       <MenuItem label={_('Proofread')} onClick={showProofreadRulesWindow} />
       <hr aria-hidden='true' className='border-base-200 my-1' />

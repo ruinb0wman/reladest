@@ -50,7 +50,7 @@ export const LibraryGroupByType = {
 
 export type LibraryGroupByType = (typeof LibraryGroupByType)[keyof typeof LibraryGroupByType];
 
-export type KOSyncStrategy = 'prompt' | 'silent' | 'send' | 'receive';
+export type ProgressSyncStrategy = 'prompt' | 'silent' | 'send' | 'receive';
 
 export interface ReadSettings {
   sideBarWidth: string;
@@ -82,33 +82,6 @@ export interface ReadSettings {
   handwritingMarkerWidth: number;
 }
 
-export interface BookOrbitSettings {
-  enabled: boolean;
-  /** Base server origin, e.g. https://books.example.com (no /api/v1/koreader suffix). */
-  serverUrl: string;
-  username: string;
-  userkey: string;
-  password?: string;
-  deviceId: string;
-  deviceName: string;
-  strategy: KOSyncStrategy;
-  syncProgress: boolean;
-  /** Annotations and bookmarks. */
-  syncNotes: boolean;
-  syncStats: boolean;
-  syncBookStates: boolean;
-  customHeaders?: Record<string, string>;
-  /**
-   * Manual-sync opt-out (#6029). BookOrbit records a reading log entry per
-   * push, so a few hours of reading buries the real sessions under
-   * debounce-sized updates. With this off nothing is pushed until the user
-   * asks; pulls stay automatic (they add nothing server-side and are what
-   * keeps a second device in step). Default ON — settings written before this
-   * option existed keep the automatic pushes they already had.
-   */
-  autoSync?: boolean;
-}
-
 /**
  * Sort field for the WebDAV browser listing. 'name' reproduces the
  * legacy directories-first/alphabetical default; the date fields drive
@@ -129,7 +102,7 @@ export interface WebDAVSettings {
   browseSortBy?: WebDAVBrowseSortByType;
   browseSortAscending?: boolean;
   // Sync sub-toggles. WebDAV sync runs as a parallel channel alongside the
-  // native cloud sync and KOSync; each sub-toggle
+  // native cloud sync; each sub-toggle
   // gates a category independently so a user can e.g. mirror progress to
   // their own server without uploading book binaries.
   syncProgress?: boolean;
@@ -139,8 +112,8 @@ export interface WebDAVSettings {
   // local copy differs from the shared library.json index (the default
   // incremental walk). An escape hatch for drift or a first full sync.
   fullSync?: boolean;
-  // Conflict policy — same vocabulary as KOSync so users only learn one.
-  strategy?: KOSyncStrategy;
+  // Conflict policy for a position this device and the mirror disagree on.
+  strategy?: ProgressSyncStrategy;
   // Stable per-device id (uuidv4); written into library.json so we can tell
   // which device last touched a given book.
   deviceId?: string;
@@ -159,7 +132,7 @@ export interface WebDAVSettings {
  * (reading progress) sync, 'note' gates annotations, 'book' gates book
  * binaries + metadata, 'dictionary' gates the imported-dictionary replica
  * sync. 'credentials' is a meta-toggle that gates the encrypted-credential
- * fields (OPDS username/password, KOSync credentials) across whichever
+ * fields (OPDS username/password) across whichever
  * replica kinds carry them. Adding a new replica
  * kind extends this union.
  */
@@ -350,15 +323,12 @@ export interface SystemSettings {
    */
   biometricUnlockEnabled?: boolean;
 
-  bookorbit: BookOrbitSettings;
   webdav: WebDAVSettings;
 
   aiSettings: AISettings;
   /**
    * Per-device id used as the deviceId portion of every HLC this device
-   * mints. Lazy-generated on first sync init via uuidv4 (mirrors
-   * kosync.deviceId). Independent from kosync — the two services have
-   * distinct identifier semantics and rotation policies.
+   * mints. Lazy-generated on first sync init via uuidv4.
    */
   replicaDeviceId?: string;
   /**

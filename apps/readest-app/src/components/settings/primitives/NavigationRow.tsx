@@ -24,7 +24,7 @@ interface NavigationRowProps {
  * subtly; gets a focus-visible ring (since it IS a button, not a
  * chromeless control like the boxed-list value cells).
  *
- * Used by `<IntegrationsPanel>` for KOSync/Readwise/Hardcover/OPDS rows;
+ * Used by `<IntegrationsPanel>` for the WebDAV/OPDS rows;
  * any panel that surfaces a "tap to drill into config" affordance should
  * use this rather than rolling a custom button. See DESIGN.md §5.
  */

@@ -225,16 +225,6 @@ describe('useProgressSync', () => {
     expect(h.syncBooksMock).not.toHaveBeenCalled();
   });
 
-  test('does not upload the device-local audiobook association', async () => {
-    renderHook(() => useProgressSync('h1-view1'));
-    await flushAutoSync();
-
-    const push = h.syncConfigsMock.mock.calls.find((call) => (call as unknown[])[3] === 'push') as
-      | unknown[]
-      | undefined;
-    expect((push?.[0] as unknown[])?.[0]).not.toHaveProperty('audiobook');
-  });
-
   test('retries the first pull on failure with backoff, then releases the gate', async () => {
     // Pull failure is simulated by a mock that resolves without ever flipping
     // h.state.syncedConfigs to a non-null array — the same observable state

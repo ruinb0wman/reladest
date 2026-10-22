@@ -48,7 +48,6 @@ export const BACKUP_SETTINGS_BLACKLIST = [
   'savedBookCoverForLockScreenPath',
   // Per-device identity — restoring causes sync identity / HLC collisions.
   'replicaDeviceId',
-  'bookorbit.deviceId',
   // Sync cursors — stale values make sync skip pulls or re-push everything.
   'lastSyncedAtBooks',
   'lastSyncedAtConfigs',
@@ -86,9 +85,6 @@ export const BACKUP_SETTINGS_BLACKLIST = [
  * `sanitizeSettingsForBackup`.
  */
 export const BACKUP_SETTINGS_CREDENTIAL_FIELDS = [
-  'bookorbit.username',
-  'bookorbit.userkey',
-  'bookorbit.password',
   // S3 access keys are strong, long-lived cloud credentials — strip them from
   // unencrypted backup zips unless the user opts into including credentials.
   's3.accessKeyId',

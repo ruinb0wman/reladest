@@ -28,7 +28,6 @@ import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { useDeviceControlStore } from '@/store/deviceStore';
 import { useFoliateEvents } from '../../hooks/useFoliateEvents';
 import { useRendererInputListeners } from '../../hooks/useRendererInputListeners';
-import { useBookOrbitNotesSync } from '../../hooks/useBookOrbitNotesSync';
 import { useNotesSync } from '../../hooks/useNotesSync';
 import { useTextSelector } from '../../hooks/useTextSelector';
 import { useSaveBooknoteNoteText } from '../../hooks/useSaveBooknoteNoteText';
@@ -153,7 +152,6 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets; gridInsets?:
   const saveBooknoteNoteText = useSaveBooknoteNoteText(bookKey);
 
   useNotesSync(bookKey);
-  useBookOrbitNotesSync(bookKey);
 
   useEffect(() => {
     void loadCustomDictionaries(envConfig).catch((error) => {

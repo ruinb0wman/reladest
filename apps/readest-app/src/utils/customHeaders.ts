@@ -3,9 +3,9 @@ export type CustomHeaders = Record<string, string>;
 /**
  * RFC 7230 token characters — the only ones an HTTP header name may
  * contain. `new Headers()` and `fetch` throw a TypeError on anything else
- * (`My Header` with a space is the easy mistake), and KOSyncClient's
- * per-request try/catch swallows that into a console error, so the sync
- * loop would just stop working with no user-visible signal.
+ * (`My Header` with a space is the easy mistake), and a per-request
+ * try/catch would swallow that into a console error, so the sync loop would
+ * just stop working with no user-visible signal.
  *
  * Screened in two places: `parseCustomHeadersInput` rejects it so the
  * form shows an actionable error, and `normalizeCustomHeaders` drops it

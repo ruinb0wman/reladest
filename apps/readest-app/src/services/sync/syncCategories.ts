@@ -14,8 +14,8 @@
  * Defaults to enabled when unset so users who never visit the panel
  * keep the cross-device behaviour they had before this shipped.
  * Exception: `credentials` defaults to OFF — it's a meta-toggle that
- * controls whether sensitive fields (OPDS / KOSync / Readwise / Hardcover
- * usernames, passwords, tokens) ever leave the device. Sync of those
+ * controls whether sensitive fields (OPDS usernames, passwords) ever leave
+ * the device. Sync of those
  * fields is opt-in; users who never touch the panel keep their
  * credentials local-only. See `DEFAULT_OFF_CATEGORIES`.
  *
@@ -53,9 +53,8 @@ const CATEGORY_DEPENDENTS: Partial<Record<SyncCategory, readonly SyncCategory[]>
  * "missing key → on" default.
  *
  * `credentials` is the only such category today: it gates the
- * encrypted-credential fields (OPDS username/password, kosync.username
- * / .userkey / .password, readwise.accessToken, hardcover.accessToken)
- * across the OPDS-catalog and bundled-settings replicas. Sync of those
+ * encrypted-credential fields (OPDS username/password) across the
+ * OPDS-catalog and bundled-settings replicas. Sync of those
  * fields is opt-in by deliberate policy — users who never visit the
  * panel keep their credentials local-only and never see the
  * sync-passphrase dialog.
@@ -121,8 +120,7 @@ export const isSyncCategoryEnabled = (id: string): boolean => {
 
 /**
  * Whether the user has opted into syncing sensitive credential fields
- * (OPDS username/password, KOSync username/userkey/password, Readwise
- * and Hardcover access tokens). Defaults to false: sync of these
+ * (OPDS username/password). Defaults to false: sync of these
  * fields is explicit opt-in.
  *
  * Push pipelines drop the encrypted fields from the wire when this

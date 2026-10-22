@@ -26,6 +26,8 @@ const migrations: Record<SchemaType, MigrationEntry[]> = {
       `,
     },
   ],
+  // The BookOrbit integration is gone; this step stays so every database keeps
+  // the same schema history. Nothing reads these tables any more.
   'bookorbit-sync': [
     {
       name: '2026080401_bookorbit_sync',

@@ -16,7 +16,6 @@ import {
   WordLensConfig,
 } from '@/types/book';
 import {
-  BookOrbitSettings,
   LibraryGroupByType,
   LibrarySortByType,
   ReadSettings,
@@ -66,23 +65,6 @@ export const BOOK_UNGROUPED_ID = '';
 
 export const SUPPORTED_IMAGE_EXTS = ['png', 'jpg', 'jpeg'];
 export const IMAGE_ACCEPT_FORMATS = SUPPORTED_IMAGE_EXTS.map((ext) => `.${ext}`).join(', ');
-
-export const DEFAULT_BOOKORBIT_SETTINGS = {
-  enabled: false,
-  serverUrl: '',
-  username: '',
-  userkey: '',
-  deviceId: '',
-  deviceName: '',
-  strategy: 'prompt',
-  syncProgress: true,
-  syncNotes: true,
-  syncStats: true,
-  syncBookStates: true,
-  autoSync: true,
-} as BookOrbitSettings;
-
-export const NOTION_API_VERSION = '2026-03-11';
 
 export const DEFAULT_WEBDAV_SETTINGS = {
   enabled: false,
@@ -154,7 +136,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
     },
   },
 
-  bookorbit: DEFAULT_BOOKORBIT_SETTINGS,
   webdav: DEFAULT_WEBDAV_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 

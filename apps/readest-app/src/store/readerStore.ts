@@ -59,7 +59,7 @@ interface ViewState {
   gridInsets: Insets | null;
   /* True while the reader is showing a position requested by an external
      deep link (e.g. ?cfi=...) that the user hasn't yet confirmed by reading.
-     Progress writers (auto-save, cloud sync, kosync) skip while this is true
+     Progress writers (auto-save, cloud sync, file sync) skip while this is true
      so the user's actual last-read position isn't overwritten by a preview.
      Cleared on the first user-initiated relocate (page turn / scroll). */
   previewMode: boolean;

@@ -63,7 +63,7 @@ import { useWindowActiveChanged } from './useWindowActiveChanged';
  *   - Open-pull skip: 30 s. Quickly closing/reopening a book shouldn't re-fetch
  *     the same config that's already current in memory.
  *
- * Strategy semantics — same vocabulary as KOSync, evaluated per backend:
+ * Strategy semantics — 'prompt' / 'silent' / 'send' / 'receive', evaluated per backend:
  *   - 'silent' (default): always push and always pull, latest writer wins
  *   - 'send':   push only, never pull (this device feeds others)
  *   - 'receive': pull only, never push (this device follows others)
@@ -76,8 +76,8 @@ import { useWindowActiveChanged } from './useWindowActiveChanged';
  * Trailing-only: every page turn restarts the timer, so the window is the
  * longest a position can sit unpublished during a reading pause. At 15 s a
  * steady reader kept resetting it and their position reached the other device
- * minutes late, or not until the book was closed (#5883). 5 s matches KOSync's
- * push debounce and sits between Readest Cloud's 3 s and the old value.
+ * minutes late, or not until the book was closed (#5883). 5 s matches the
+ * push debounce and sits between the native cloud sync's 3 s and the old value.
  */
 const PUSH_DEBOUNCE_MS = 5_000;
 /** Minimum gap between automatic pulls (e.g. window-focus, open-book). */
@@ -482,7 +482,7 @@ export const useFileSync = (bookKey: string) => {
     }
 
     setConfig(bookKey, working);
-    // Parity with the native cloud sync (and KOSync): a merged remote position
+    // Parity with the native cloud sync: a merged remote position
     // has to move the LIVE view, not just the stored config. Writing the config
     // alone left the reader on the old page until the book was closed and
     // reopened, while the hint below already claimed the progress had been
@@ -529,7 +529,7 @@ export const useFileSync = (bookKey: string) => {
   ]);
 
   // Stash the latest callbacks in a ref so the event-bridge effect doesn't
-  // re-bind on every render (pattern from useKOSync).
+  // re-bind on every render.
   const syncRefs = useRef({ pushNow, pullNow, pushBookFileNow, pushBookCoverNow });
   useEffect(() => {
     syncRefs.current = { pushNow, pullNow, pushBookFileNow, pushBookCoverNow };

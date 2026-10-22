@@ -165,7 +165,6 @@ export const EXTS: Record<BookFormat, string> = {
   ABS: 'abs',
   // Same for OPDS audio: the tracks are fetched from the catalog, never stored.
   OPDSAUDIO: 'opdsaudio',
-  BOOKORBIT: 'bookorbit',
 };
 
 export const MIMETYPES: Record<BookFormat, string[]> = {
@@ -185,7 +184,6 @@ export const MIMETYPES: Record<BookFormat, string[]> = {
   // OPDS audio is identified from the acquisition link (services/opds/formats),
   // never by looking a BookFormat up here.
   OPDSAUDIO: [],
-  BOOKORBIT: [],
 };
 
 export interface DocumentLoaderOptions {

@@ -30,7 +30,7 @@ describe('getTimeRemainingMinutes', () => {
 describe('getDisplayedTimeRemaining', () => {
   it('keeps hiding a time for books that render a status badge instead', () => {
     const base = {
-      format: 'BOOKORBIT' as const,
+      format: 'ABS' as const,
       duration: 37084,
       progress: [0, 37084] as [number, number],
     };

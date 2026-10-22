@@ -180,11 +180,6 @@ export async function loadSettings(ctx: Context): Promise<SystemSettings> {
 
   if (settings.bookshelves) settings.bookshelves = mergeBookshelfStates(settings.bookshelves);
 
-  if (!settings.bookorbit.deviceId) {
-    settings.bookorbit.deviceId = uuidv4();
-    await saveSettings(ctx.fs, settings);
-  }
-
   if (!settings.replicaDeviceId) {
     settings.replicaDeviceId = uuidv4();
     await saveSettings(ctx.fs, settings);

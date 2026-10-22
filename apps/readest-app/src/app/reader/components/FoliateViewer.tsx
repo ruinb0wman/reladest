@@ -31,8 +31,6 @@ import { useBackgroundTexture } from '@/hooks/useBackgroundTexture';
 import { useAutoFocus } from '@/hooks/useAutoFocus';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useEinkMode } from '@/hooks/useEinkMode';
-import { bookOrbitProgressProvider } from '../hooks/bookOrbitProgressProvider';
-import { useKOSync } from '../hooks/useKOSync';
 import { useFileSync } from '../hooks/useFileSync';
 import {
   applyEinkModeAttribute,
@@ -105,7 +103,6 @@ import AutoscrollIndicator from './AutoscrollIndicator';
 import AutoScrollControl from './AutoScrollControl';
 import AutoScrollSpeedOverlay from './AutoScrollSpeedOverlay';
 import Spinner from '@/components/Spinner';
-import KOSyncConflictResolver from './KOSyncResolver';
 import ImageViewer from './ImageViewer';
 import ImageContextMenu from './ImageContextMenu';
 import TableViewer from './TableViewer';
@@ -210,7 +207,6 @@ const FoliateViewer: React.FC<{
   useProgressSync(bookKey);
   useProgressAutoSave(bookKey);
   useBookCoverAutoSave(bookKey);
-  const bookOrbitSync = useKOSync(bookKey, bookOrbitProgressProvider);
   useFileSync(bookKey);
 
   // Coalesce setProgress writes within a single animation frame.
@@ -878,7 +874,7 @@ const FoliateViewer: React.FC<{
       }
       // The reader is showing a deep-link target, not the user's actual reading
       // position. Mark the view as a preview so progress writers (auto-save,
-      // cloud sync, kosync) skip until the user takes a reading action. The
+      // cloud sync, file sync) skip until the user takes a reading action. The
       // flag clears on the first user-initiated relocate (page / scroll) in
       // docRelocateHandler below. Set before `inited` so everything that starts
       // reading on init (e.g. Auto Scroll resume) already sees the preview.
@@ -1224,14 +1220,6 @@ const FoliateViewer: React.FC<{
         <div className='absolute left-0 top-0 z-10 flex h-full w-full items-center justify-center'>
           <Spinner loading={true} />
         </div>
-      )}
-      {bookOrbitSync.syncState === 'conflict' && bookOrbitSync.conflictDetails && (
-        <KOSyncConflictResolver
-          details={bookOrbitSync.conflictDetails}
-          onResolveWithLocal={bookOrbitSync.resolveWithLocal}
-          onResolveWithRemote={bookOrbitSync.resolveWithRemote}
-          onClose={bookOrbitSync.resolveWithLocal}
-        />
       )}
     </>
   );

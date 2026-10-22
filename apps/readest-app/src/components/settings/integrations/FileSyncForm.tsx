@@ -17,7 +17,7 @@ import {
   createFileSyncProvider,
   type FileSyncBackendKind,
 } from '@/services/sync/file/providerRegistry';
-import type { KOSyncStrategy } from '@/types/settings';
+import type { ProgressSyncStrategy } from '@/types/settings';
 import { BoxedList, SettingsRow, SettingsSelect, SettingsSwitchRow } from '../primitives';
 
 /** The settings fields the shared sync controls read/write (WebDAV + Drive share these). */
@@ -25,7 +25,7 @@ export interface FileSyncFormSettings {
   enabled?: boolean;
   syncBooks?: boolean;
   fullSync?: boolean;
-  strategy?: KOSyncStrategy;
+  strategy?: ProgressSyncStrategy;
   deviceId?: string;
   lastSyncedAt?: number;
 }
@@ -96,7 +96,7 @@ const FileSyncForm: React.FC<FileSyncFormProps> = ({
   const handleToggleSyncBooks = () => persist({ syncBooks: !(stored.syncBooks ?? false) });
   const handleToggleFullSync = () => persist({ fullSync: !(stored.fullSync ?? false) });
   const handleStrategyChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    await persist({ strategy: e.target.value as KOSyncStrategy });
+    await persist({ strategy: e.target.value as ProgressSyncStrategy });
   };
 
   /**

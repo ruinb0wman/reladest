@@ -60,9 +60,6 @@ export interface CloudSyncStatus {
  * enabled is this hook's job, since those cursors freeze rather than reset when
  * the user turns the native channels off — a stale value would otherwise report
  * a disabled provider as recently synced.
- *
- * KOSync is deliberately absent: it keeps no `lastSyncedAt`, so it has nothing
- * to contribute to a timestamp. The reader's manual action still pokes it.
  */
 export const useCloudSyncStatus = (nativeLastSyncedAt = 0, bookKey?: string): CloudSyncStatus => {
   const _ = useTranslation();

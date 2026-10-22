@@ -18,9 +18,7 @@ export type BookFormat =
   // Streaming audiobook from an Audiobookshelf server; filePath is abs://<serverId>/<itemId>
   | 'ABS'
   // Streaming audiobook from an OPDS catalog; filePath is opdsaudio://<encoded entry> (#6224)
-  | 'OPDSAUDIO'
-  // Streaming audiobook from BookOrbit's audiobook API; filePath is bookorbit://<bookId> (#6224)
-  | 'BOOKORBIT';
+  | 'OPDSAUDIO';
 export type BookNoteType = 'bookmark' | 'annotation' | 'excerpt' | 'notebook' | 'ink';
 export type ReadingStatus = 'unread' | 'reading' | 'finished' | 'abandoned';
 export type HighlightStyle = 'highlight' | 'underline' | 'squiggly';
@@ -610,14 +608,6 @@ export interface BookConfig {
   searchConfig?: Partial<BookSearchConfig>;
   viewSettings?: Partial<ViewSettings>;
   /**
-   * A device-local recording paired with this ebook. The audio files live
-   * under Books/<hash>/audiobook/, or stream from an Audiobookshelf server
-   * (see PairedAudiobook.source); either way the pairing is deliberately
-   * excluded from cloud sync, and ordinary reading progress remains the
-   * shared cross-device state.
-   */
-  audiobook?: PairedAudiobook;
-  /**
    * The pages of a comic laid out as spreads of their own (wide images), by
    * page path: a device-local cache of measuring them, so a later open skips
    * it and a streamed comic keeps what earlier reading found. Neither sync
@@ -639,74 +629,6 @@ export interface BookConfig {
 
   updatedAt: number;
 }
-
-export interface AudiobookFile {
-  id: string;
-  name: string;
-  path: string;
-  duration: number;
-}
-
-export interface AudiobookChapter {
-  id: string;
-  fileId: string;
-  label: string;
-  start: number;
-  end: number;
-}
-
-export interface AudiobookChapterMapping {
-  ebookChapterId: string;
-  audioChapterId: string;
-}
-
-/**
- * An audiobook streamed from an Audiobookshelf server instead of copied to
- * the device. The pairing then has a single virtual file
- * (`abs://<serverId>/<itemId>`) whose chapters are timed on the item's global
- * timeline, and the track list here maps that timeline onto the server's
- * media files; nothing under Books/<hash>/audiobook/ exists for it.
- */
-export interface PairedAudiobookAbsSource {
-  kind: 'audiobookshelf';
-  serverId: string;
-  itemId: string;
-  tracks: {
-    index: number;
-    startOffset: number; // global seconds
-    duration: number; // seconds
-    contentUrl: string; // server-relative
-  }[];
-}
-
-/**
- * An audiobook streamed from a BookOrbit server. One BookOrbit book owns both
- * the ebook and the audio, so the pairing needs only that book's id; the
- * virtual file is `bookorbit://<bookId>` and the tracks map its global
- * timeline onto the server's assets, exactly as the ABS variant does.
- */
-export interface PairedAudiobookBookOrbitSource {
-  kind: 'bookorbit';
-  bookId: number;
-  tracks: {
-    index: number;
-    startOffset: number; // global seconds
-    duration: number; // seconds
-    contentUrl: string; // server-relative
-  }[];
-}
-
-export interface PairedAudiobook {
-  version: 1;
-  title?: string;
-  narrator?: string;
-  files: AudiobookFile[];
-  chapters: AudiobookChapter[];
-  mappings: AudiobookChapterMapping[];
-  createdAt: number;
-  source?: PairedAudiobookAbsSource | PairedAudiobookBookOrbitSource;
-}
-
 export interface BookDataRecord {
   id: string;
   book_hash: string;
