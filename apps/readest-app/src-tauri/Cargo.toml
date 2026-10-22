@@ -165,23 +165,7 @@ tauri-plugin-dialog = { version = "2", default-features = false, features = ["xd
 tauri-plugin-dialog = "2"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
-tauri-plugin-cli = "2"
-tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
-tauri-plugin-window-state = "2"
-discord-rich-presence = "1.0.0"
-
-[target.'cfg(windows)'.dependencies]
-# Registry reads for the default-browser lookup in the cold-browser
-# OAuth-redirect fallback (see src/spawn_fresh_browser.rs) and the OS build
-# check behind the Windows 10 shadow workaround (see src/lib.rs).
-winreg = "0.52"
-# Forces a nonclient-area recalculation on the hidden main window before its
-# saved geometry is restored (see restore_main_window_state in src/lib.rs).
-windows = { version = "0.61", features = [
-    "Win32_Foundation",
-    "Win32_UI_WindowsAndMessaging",
-] }
 
 [target.'cfg(target_os = "android")'.dependencies]
 libc = "0.2"

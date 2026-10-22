@@ -1,22 +1,9 @@
-#[cfg(target_os = "macos")]
-#[macro_use]
-extern crate cocoa;
-
-#[cfg(target_os = "macos")]
-#[macro_use]
-extern crate objc;
-
-#[cfg(target_os = "windows")]
-mod windows;
-
 use tauri::utils::config::BackgroundThrottlingPolicy;
 
 use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_fs::FsExt;
 
-#[cfg(desktop)]
-use tauri::{Listener, Url};
 mod backup_zip;
 mod browser_fetch;
 mod clip_url;
@@ -32,8 +19,6 @@ mod parser_common;
 mod pdf_parser;
 mod range_file;
 mod transfer_file;
-#[cfg(target_os = "windows")]
-use tauri::webview::ScrollBarStyle;
 use tauri::{command, Emitter, WebviewUrl, WebviewWindowBuilder};
 #[cfg(target_os = "android")]
 use tauri_plugin_native_bridge::register_select_directory_callback;
@@ -175,51 +160,6 @@ fn allow_paths_in_scopes<R: tauri::Runtime>(
     }
 }
 
-#[cfg(desktop)]
-fn get_files_from_argv(argv: Vec<String>) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    // NOTICE: `args` may include URL protocol (`your-app-protocol://`)
-    // or arguments (`--`) if your app supports them.
-    // files may also be passed as `file://path/to/file`
-    for (_, maybe_file) in argv.iter().enumerate().skip(1) {
-        // skip flags like -f or --flag
-        if maybe_file.starts_with("-") {
-            continue;
-        }
-        // handle `file://` path urls and skip other urls
-        if let Ok(url) = Url::parse(maybe_file) {
-            if let Ok(path) = url.to_file_path() {
-                files.push(path);
-            } else {
-                files.push(PathBuf::from(maybe_file))
-            }
-        } else {
-            files.push(PathBuf::from(maybe_file))
-        }
-    }
-    files
-}
-
-#[cfg(desktop)]
-fn set_window_open_with_files<R: tauri::Runtime>(app: &AppHandle<R>, files: Vec<PathBuf>) {
-    let files = files
-        .into_iter()
-        .map(|f| {
-            let file = f
-                .to_string_lossy()
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"");
-            format!("\"{file}\"",)
-        })
-        .collect::<Vec<_>>()
-        .join(",");
-    let window = app.get_webview_window("main").unwrap();
-    let script = format!("window.OPEN_WITH_FILES = [{files}];");
-    if let Err(e) = window.eval(&script) {
-        eprintln!("Failed to set open files variable: {e}");
-    }
-}
-
 #[tauri::command]
 fn get_environment_variable(name: &str) -> String {
     std::env::var(String::from(name)).unwrap_or(String::from(""))
@@ -232,142 +172,6 @@ fn get_executable_dir() -> String {
         .and_then(|path| path.parent().map(|p| p.to_path_buf()))
         .map(|p| p.to_string_lossy().to_string())
         .unwrap_or_default()
-}
-
-/// Logical size of the main window the first time the app runs. Later launches
-/// restore whatever the user left behind (`tauri_plugin_window_state`), so this
-/// is a starting point, not a preference. macOS has always opened at this size;
-/// Windows and Linux used to open at 800x600, which is cramped for the library
-/// grid and a two-page spread. It clears a 1080p work area whole.
-#[cfg(desktop)]
-const DEFAULT_WINDOW_SIZE: (f64, f64) = (1280.0, 800.0);
-
-// The first-launch window size, shrunk to fit `work_area` — the monitor minus
-// its taskbar/panels, in logical pixels — when the default is too big for it.
-// A fixed 1280x800 hangs off the bottom of a 1366x768 laptop screen, and a
-// window that opens partly off-screen can be impossible to resize back.
-// `None` (no monitor reported, or one reporting an empty work area) keeps the
-// default: a window that is too large stays reachable, one sized from a bogus
-// zero-height screen does not.
-#[cfg(desktop)]
-fn default_window_size(work_area: Option<(f64, f64)>) -> (f64, f64) {
-    let Some((width, height)) = work_area.filter(|(w, h)| *w > 0.0 && *h > 0.0) else {
-        return DEFAULT_WINDOW_SIZE;
-    };
-    (
-        DEFAULT_WINDOW_SIZE.0.min(width * 0.9),
-        DEFAULT_WINDOW_SIZE.1.min(height * 0.9),
-    )
-}
-
-/// Windows 10 renders the native shadow of an undecorated window as a 1px
-/// border on the left, right and bottom edges but not the top, which reads
-/// as a broken frame (tauri-apps/tauri#13134). Windows 11 (build >= 22000)
-/// draws a uniform border, so only there is the shadow worth keeping.
-#[cfg(all(desktop, target_os = "windows"))]
-fn undecorated_shadow_is_symmetric() -> bool {
-    use winreg::enums::HKEY_LOCAL_MACHINE;
-    use winreg::RegKey;
-
-    RegKey::predef(HKEY_LOCAL_MACHINE)
-        .open_subkey("SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion")
-        .and_then(|key| key.get_value::<String, _>("CurrentBuild"))
-        // Unknown version: keep the current (shadowed) behavior.
-        .map_or(true, |build| {
-            build.parse::<u32>().map_or(true, |b| b >= 22000)
-        })
-}
-
-#[cfg(all(desktop, not(target_os = "windows"), not(target_os = "macos")))]
-fn undecorated_shadow_is_symmetric() -> bool {
-    true
-}
-
-/// Restores the main window's saved geometry on Windows, after repairing the
-/// window's client area.
-///
-/// The main window is created hidden (`visible(false)`) with undecorated
-/// shadows. While the window stays hidden, tao's `WM_NCCALCSIZE` handler is
-/// never invoked again, so the client area keeps the rect Windows computed at
-/// creation time from the native frame styles — shorter than intended by the
-/// titlebar height. Restoring the saved size on top of that makes tao
-/// compensate with the stale window-to-client offset, and the difference is
-/// baked into the real client area on every launch: the window grows by
-/// roughly one titlebar height per start (#6373).
-///
-/// A single frame re-evaluation (`SWP_FRAMECHANGED`) after creation lets
-/// tao's handler measure the client area correctly; the saved geometry is
-/// then replayed through the plugin's own `restore_state` against the
-/// corrected rect, all while the window is still hidden.
-#[cfg(all(desktop, target_os = "windows"))]
-fn restore_main_window_state(window: &tauri::WebviewWindow) {
-    use tauri_plugin_window_state::{StateFlags, WindowExt};
-
-    if let Ok(hwnd) = window.hwnd() {
-        // Leading `::` because this crate has its own `mod windows`.
-        use ::windows::Win32::Foundation::HWND;
-        use ::windows::Win32::UI::WindowsAndMessaging::{
-            SetWindowPos, SET_WINDOW_POS_FLAGS, SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE,
-            SWP_NOSIZE, SWP_NOZORDER,
-        };
-        // SAFETY: `hwnd` is the live top-level window of this webview. The
-        // flags only force a nonclient-area recalculation — no move, no
-        // resize, no z-order change, no activation.
-        unsafe {
-            if let Err(e) = SetWindowPos(
-                HWND(hwnd.0),
-                None,
-                0,
-                0,
-                0,
-                0,
-                SET_WINDOW_POS_FLAGS(
-                    SWP_FRAMECHANGED.0
-                        | SWP_NOMOVE.0
-                        | SWP_NOSIZE.0
-                        | SWP_NOZORDER.0
-                        | SWP_NOACTIVATE.0,
-                ),
-            ) {
-                // Restoring proceeds either way; the saved geometry just comes
-                // back with the pre-fix growth for this launch.
-                log::error!("Failed to re-evaluate the main window frame: {e}");
-            }
-        }
-    }
-    // VISIBLE is excluded: the plugin would otherwise show the window at the
-    // end of the restore — before the webview has painted its first frame,
-    // which flashes the window background on dark hosts. The window is shown
-    // by the frontend's `window-themed` event instead (see the listener in
-    // `run`), with a timeout fallback for the case where that event never
-    // arrives.
-    let restore_flags = StateFlags::all() & !StateFlags::VISIBLE;
-    if let Err(e) = window.restore_state(restore_flags) {
-        // A failed restore leaves the main window invisible for this launch —
-        // surface it at its creation-time size instead. The state file is
-        // untouched, so the next launch retries the restore.
-        log::error!("Failed to restore the main window state: {e}");
-        let _ = window.show();
-    }
-}
-
-/// Re-applies the main window's saved maximized and fullscreen state on Linux,
-/// now that the window is shown.
-///
-/// The main window is created hidden, and the window-state plugin maximizes
-/// it before showing it. On X11 a window changes those states by asking the
-/// window manager with a `_NET_WM_STATE` client message, which the window
-/// manager ignores while the window is still unmapped — so the window always
-/// came back at its restored size, never maximized (#6657). Asked again after
-/// the plugin's `show()`, the request reaches the window manager after the
-/// map, as it does for a window created visible.
-#[cfg(target_os = "linux")]
-fn restore_main_window_maximized<R: tauri::Runtime>(window: &tauri::WebviewWindow<R>) {
-    use tauri_plugin_window_state::{StateFlags, WindowExt};
-
-    if let Err(e) = window.restore_state(StateFlags::MAXIMIZED | StateFlags::FULLSCREEN) {
-        log::error!("Failed to restore the main window's maximized state: {e}");
-    }
 }
 
 // Pure decision for whether the in-app updater should be hidden. Kept
@@ -410,21 +214,19 @@ fn updater_disabled() -> bool {
 // Read via IPC in `NativeAppService.init()` so the decision does not depend on
 // the injected init-script global, which is not reliably visible to page
 // scripts on every Linux/WebKitGTK setup (see issue #4874).
-#[cfg(desktop)]
-#[tauri::command]
-fn is_updater_disabled() -> bool {
-    updater_disabled()
-}
+/// The webview runtime this build drives. Named explicitly because
+/// `Builder::default()` would be the type-erased `tauri::DynRuntime`.
+type AppRuntime = tauri::Wry;
 
-#[derive(serde::Serialize)]
+// The WebView engine/version for the About window's display. Only Windows
+// needs the runtime query (its User-Agent is a stub); the other platforms keep
+// their User-Agent-derived labels, which is why this returns `None` here.
+#[derive(Clone, serde::Serialize)]
 struct WebViewInfo {
     engine: String,
     version: String,
 }
 
-// The WebView engine/version for the About window's display. The runtime
-// query is only needed on Windows, where the User-Agent is reduced to a
-// stub; the other platforms keep their User-Agent-derived labels.
 #[tauri::command]
 fn get_webview_version() -> Option<WebViewInfo> {
     if std::env::consts::OS != "windows" {
@@ -436,10 +238,6 @@ fn get_webview_version() -> Option<WebViewInfo> {
     })
 }
 
-// `tauri::webview_version()` is wry's query. On Linux the app runs on CEF, where
-// it would report the WebKitGTK version instead, and referencing it keeps the
-// WebKitGTK libraries linked, which the Nix package strips so Chromium's zygote
-// stays single-threaded. CEF's User-Agent carries the full Chromium version.
 #[cfg(not(target_os = "linux"))]
 fn runtime_webview_version() -> Option<String> {
     let version = tauri::webview_version().ok()?;
@@ -450,20 +248,6 @@ fn runtime_webview_version() -> Option<String> {
 fn runtime_webview_version() -> Option<String> {
     None
 }
-
-#[derive(Clone, serde::Serialize)]
-#[allow(dead_code)]
-struct SingleInstancePayload {
-    args: Vec<String>,
-    cwd: String,
-}
-
-/// The webview runtime this build drives. Named explicitly because
-/// `Builder::default()` would be the type-erased `tauri::DynRuntime`.
-type AppRuntime = tauri::Wry;
-
-#[cfg(desktop)]
-const SINGLE_INSTANCE_DBUS_ID: &str = "com.bilingify.readest";
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -535,24 +319,6 @@ pub fn run() {
         // re-apply the offset. Scope-gated by `asset_protocol_scope`.
         .register_asynchronous_uri_scheme_protocol(range_file::SCHEME, range_file::handle);
 
-    #[cfg(desktop)]
-    let builder = builder.plugin(
-        tauri_plugin_single_instance::Builder::new()
-            .callback(move |app, argv, cwd| {
-                if let Some(window) = app.get_webview_window("main") {
-                    let _ = window.set_focus();
-                }
-                let files = get_files_from_argv(argv.clone());
-                if !files.is_empty() {
-                    allow_file_in_scopes(app, files.clone());
-                }
-                app.emit("single-instance", SingleInstancePayload { args: argv, cwd })
-                    .unwrap();
-            })
-            .dbus_id(SINGLE_INSTANCE_DBUS_ID.to_owned())
-            .build(),
-    );
-
     let builder = builder.plugin(tauri_plugin_deep_link::init());
 
     #[cfg(desktop)]
@@ -586,52 +352,10 @@ pub fn run() {
             }
             app.manage(localsend::LocalSendState::default());
 
-            #[cfg(desktop)]
-            {
-                let files = get_files_from_argv(std::env::args().collect());
-                if !files.is_empty() {
-                    let app_handle = app.handle().clone();
-                    allow_file_in_scopes(&app_handle, files.clone());
-                    app.listen("window-ready", move |_| {
-                        println!("Window is ready, proceeding to handle files.");
-                        set_window_open_with_files(&app_handle, files.clone());
-                    });
-                }
-            }
-
-            #[cfg(desktop)]
-            {
-                allow_dir_in_scopes(app.handle(), &PathBuf::from(get_executable_dir()));
-            }
-
             #[cfg(target_os = "android")]
             register_select_directory_callback(app.handle(), move |app, path| {
                 allow_dir_in_scopes(app, path);
             });
-
-            #[cfg(any(target_os = "windows", target_os = "linux"))]
-            {
-                use tauri_plugin_deep_link::DeepLinkExt;
-                let _ = app.deep_link().register_all();
-            }
-
-            #[cfg(desktop)]
-            {
-                app.handle().plugin(tauri_plugin_cli::init())?;
-            }
-
-            #[cfg(desktop)]
-            let cli_access = true;
-            #[cfg(not(desktop))]
-            let cli_access = false;
-
-            #[cfg(target_os = "linux")]
-            let is_appimage = std::env::var("APPIMAGE").is_ok()
-                || std::env::current_exe()
-                    .map(|path| path.to_string_lossy().contains("/tmp/.mount_"))
-                    .unwrap_or(false);
-            #[cfg(not(target_os = "linux"))]
-            let is_appimage = false;
 
             // The in-app updater is hidden for installs it can't actually update
             // (Linux deb/rpm/pacman and Flatpak) and when READEST_DISABLE_UPDATER
@@ -662,8 +386,6 @@ pub fn run() {
             let init_script = format!(
                 r#"
                     window.__READEST_APP_RUN_ID__ = "{app_run_id}";
-                    if ({cli_access}) window.__READEST_CLI_ACCESS = true;
-                    if ({is_appimage}) window.__READEST_IS_APPIMAGE = true;
                     if ({updater_disabled}) window.__READEST_UPDATER_DISABLED = true;
                     window.addEventListener('DOMContentLoaded', function() {{
                         document.documentElement.classList.add('edge-to-edge');
@@ -687,8 +409,6 @@ pub fn run() {
                     }});
                 "#,
                 app_run_id = app_run_id,
-                cli_access = cli_access,
-                is_appimage = is_appimage,
                 updater_disabled = updater_disabled
             );
 
@@ -726,55 +446,9 @@ pub fn run() {
                     true
                 });
 
-            #[cfg(desktop)]
-            let win_builder = {
-                let work_area = app.primary_monitor().ok().flatten().map(|monitor| {
-                    let size = monitor
-                        .work_area()
-                        .size
-                        .to_logical::<f64>(monitor.scale_factor());
-                    (size.width, size.height)
-                });
-                let (width, height) = default_window_size(work_area);
-                win_builder.inner_size(width, height).resizable(true)
-            };
-
-            #[cfg(all(not(target_os = "macos"), desktop))]
-            let win_builder = {
-                let mut builder = win_builder
-                    .decorations(false)
-                    .visible(false)
-                    .shadow(undecorated_shadow_is_symmetric())
-                    .title("Readest");
-
-                #[cfg(target_os = "windows")]
-                {
-                    builder = builder
-                        .transparent(false)
-                        .scroll_bar_style(ScrollBarStyle::FluentOverlay);
-                }
-                #[cfg(target_os = "linux")]
-                {
-                    // Keep the window opaque on Linux. A transparent WebKitGTK
-                    // window (previously used to draw rounded corners, #1982)
-                    // composites as fully transparent whenever its web process is
-                    // too busy to repaint damaged regions (e.g. during a library
-                    // backup), so the app "turns invisible" on any interaction
-                    // (#3682). An opaque window instead retains its last painted
-                    // frame, at the cost of square corners.
-                    builder = builder.transparent(false);
-                }
-
-                builder
-            };
-
             #[cfg(not(target_os = "macos"))]
             {
                 let _main_window = win_builder.build().unwrap();
-                #[cfg(windows)]
-                restore_main_window_state(&_main_window);
-                #[cfg(target_os = "linux")]
-                restore_main_window_maximized(&_main_window);
                 // The window is created hidden and the state-restore show is
                 // suppressed (see restore_main_window_state): the frontend
                 // signals once the theme is applied — WebView2 has painted
@@ -825,75 +499,13 @@ pub fn run() {
         .run(
             #[allow(unused_variables)]
             |app_handle, event| {
-                #[cfg(target_os = "macos")]
-                match event {
-                    tauri::RunEvent::Opened { urls } => {
-                        let files = urls
-                            .into_iter()
-                            .filter_map(|url| url.to_file_path().ok())
-                            .collect::<Vec<_>>();
-
-                        let app_handler_clone = app_handle.clone();
-                        allow_file_in_scopes(app_handle, files.clone());
-                        app_handle.listen("window-ready", move |_| {
-                            println!("Window is ready, proceeding to handle files.");
-                            set_window_open_with_files(&app_handler_clone, files.clone());
-                        });
-                    }
-                    // When the user reopens the app from the dock after closing all
-                    // windows, re-show the main window instead of leaving the dock
-                    // icon inert.
-                    tauri::RunEvent::Reopen {
-                        has_visible_windows: false,
-                        ..
-                    } => {
-                        if let Some(window) = app_handle.get_webview_window("main") {
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            let _ = window.unminimize();
-                        }
-                    }
-                    _ => {}
-                }
             },
         );
 }
 
 #[cfg(all(test, desktop))]
 mod tests {
-    use super::{compute_updater_disabled, default_window_size, DEFAULT_WINDOW_SIZE};
-
-    #[test]
-    fn monitor_with_room_keeps_the_shipped_default() {
-        // 1080p minus a taskbar is the everyday case, and the default is picked
-        // to fit it whole; anything larger fits too.
-        assert_eq!(
-            default_window_size(Some((1920.0, 1040.0))),
-            DEFAULT_WINDOW_SIZE
-        );
-        assert_eq!(
-            default_window_size(Some((2560.0, 1400.0))),
-            DEFAULT_WINDOW_SIZE
-        );
-    }
-
-    #[test]
-    fn small_laptop_screen_shrinks_the_window() {
-        // 1366x768 is the screen the old 800x600 default was sized for, and the
-        // one a fixed 1280x800 would hang off the bottom of.
-        let (width, height) = default_window_size(Some((1366.0, 728.0)));
-        assert!((width - 1229.4).abs() < 0.01, "width {width}");
-        assert!((height - 655.2).abs() < 0.01, "height {height}");
-    }
-
-    #[test]
-    fn unknown_or_empty_work_area_falls_back_to_the_default() {
-        // No monitor reported, or one reporting nothing usable (a display that
-        // is off, or a compositor that has not laid out the screen yet).
-        assert_eq!(default_window_size(None), DEFAULT_WINDOW_SIZE);
-        assert_eq!(default_window_size(Some((0.0, 0.0))), DEFAULT_WINDOW_SIZE);
-    }
-
+    use super::compute_updater_disabled;
     #[test]
     fn env_opt_out_disables_on_any_desktop() {
         // READEST_DISABLE_UPDATER is an explicit opt-out on every desktop OS.
