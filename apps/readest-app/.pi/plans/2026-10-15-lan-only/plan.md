@@ -1505,3 +1505,16 @@ adb -s 192.168.1.35:44741 forward tcp:9223 localabstract:webview_devtools_remote
 **A4 局域网更新通道**：本轮**未做**（可选）。现在的路径是手动 `adb install -r`，已在手册里写清。
 
 验收：tsc 干净；**778 文件 / 9,146 用例**（+7 DAV 协议测试）；`lan:start` 起来后 app 200 / dav 207；模拟器端到端同步与 PUT 回推均通过。
+
+#### 2026-10-22 收尾 APK（v7）与设备侧验证
+
+产物 `~/readest-lan/dist/readest-lan-v0.12.16-slim-v7.apk`（57,164,718 B，sha256 `20342c07…`，签名同前 `21e30a9b…`），包含 M1–M4 全部改动（**不带** `tauri/devtools`，日常包不暴露调试台）。
+
+**设备侧验证（模拟器）**：
+- v6 → v7 的差异直接可见：书库从「无分组平铺」变成**按作者分组**（出现「银行螺丝钉」分组头），这是从镜像 `settings.json` 采纳来的值 ⇒ **设置镜像确实打进了设备包**
+- 菜单 → Library Sync 显示 `Synced a few seconds ago / Library sync via WebDAV`（走的是新 hub）
+- 从设备内 `toybox nc 10.0.2.2 17322` 连通性 OK
+
+**构建期踩到的坑（已在手册里）**：`tauri android build` 会覆盖 `.next/standalone`，之后必须 `pnpm lan:build` 再 `lan:start`，否则 `start.sh` 直接以「没找到 standalone 构建」退出；模拟器冷启动偶尔卡在 `multiinstance.lock` 僵尸进程上，`Stop-Process emulator,qemu-system-x86_64` + 删 `~/.android/avd/api35.avd/*.lock` 后重起即可。
+
+**M1–M4 全部完成**。剩余只到「可选/以后」：A4 局域网更新通道、`[P3.5]` 字体与词典二进制同步、`[P2-4]` 外链收口、`[Phase 6]` pnpm → bun。
