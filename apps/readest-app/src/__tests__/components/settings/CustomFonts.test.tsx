@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { render, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
-
-/**
- * Synced custom fonts download on demand (issue #6654): a font pulled from
- * the cloud is listed as a cloud-only card until the user taps it.
- */
+import { render, cleanup, fireEvent, screen } from '@testing-library/react';
 
 vi.mock('@/hooks/useTranslation', () => ({
   useTranslation: () => (s: string) => s,
@@ -18,16 +13,10 @@ vi.mock('@/hooks/useFileSelector', () => ({
 vi.mock('@/helpers/settings', () => ({
   saveViewSettings: vi.fn(),
 }));
-vi.mock('@/services/sync/replicaBinaryUpload', () => ({
-  queueReplicaBinaryUpload: vi.fn(),
-  queueReplicaBinaryDownload: vi.fn(async () => 'transfer-1'),
-}));
-
 import CustomFonts from '@/components/settings/CustomFonts';
 import { useCustomFontStore } from '@/store/customFontStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { saveViewSettings } from '@/helpers/settings';
-import { queueReplicaBinaryDownload } from '@/services/sync/replicaBinaryUpload';
 import type { CustomFont } from '@/styles/fonts';
 import type { SystemSettings } from '@/types/settings';
 
@@ -55,36 +44,27 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('CustomFonts download on demand', () => {
-  it('marks a family that is not on this device as downloadable', () => {
-    useCustomFontStore.setState({ fonts: [cloudFont()] });
-    render(<CustomFonts bookKey='' onBack={vi.fn()} />);
-
-    expect(screen.getByRole('img', { name: 'Download from Cloud' })).not.toBeNull();
-  });
-
-  it('downloads every missing weight of the tapped family and selects it', async () => {
-    const bold = cloudFont({ id: 'inter-bold', contentId: 'hash-bold', name: 'Inter Bold' });
-    useCustomFontStore.setState({ fonts: [cloudFont(), bold] });
-    render(<CustomFonts bookKey='' onBack={vi.fn()} />);
-
-    fireEvent.click(screen.getByText('Inter'));
-
-    await waitFor(() => expect(saveViewSettings).toHaveBeenCalled());
-    expect(vi.mocked(queueReplicaBinaryDownload).mock.calls.map(([, f]) => f.name)).toEqual([
-      'Inter Regular',
-      'Inter Bold',
-    ]);
-    expect(saveViewSettings).toHaveBeenCalledWith({}, '', 'sansSerifFont', 'Inter');
-  });
-
-  it('does not download a family that is already on this device', () => {
+describe('CustomFonts family selection', () => {
+  it('selects a font family for the book when its row is tapped', () => {
     useCustomFontStore.setState({ fonts: [cloudFont({ unavailable: undefined })] });
     render(<CustomFonts bookKey='' onBack={vi.fn()} />);
 
-    expect(screen.queryByRole('img', { name: 'Download from Cloud' })).toBeNull();
     fireEvent.click(screen.getByText('Inter'));
-    expect(queueReplicaBinaryDownload).not.toHaveBeenCalled();
+
     expect(saveViewSettings).toHaveBeenCalledWith({}, '', 'sansSerifFont', 'Inter');
+  });
+
+  it('writes to the serif slot when the reader is using a serif default', () => {
+    useSettingsStore.setState({
+      settings: {
+        globalViewSettings: { defaultFont: 'Serif', serifFont: '', sansSerifFont: '' },
+      } as unknown as SystemSettings,
+    });
+    useCustomFontStore.setState({ fonts: [cloudFont({ unavailable: undefined })] });
+    render(<CustomFonts bookKey='' onBack={vi.fn()} />);
+
+    fireEvent.click(screen.getByText('Inter'));
+
+    expect(saveViewSettings).toHaveBeenCalledWith({}, '', 'serifFont', 'Inter');
   });
 });

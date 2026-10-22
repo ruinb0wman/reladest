@@ -2,18 +2,7 @@ import { create } from 'zustand';
 import type { EnvConfigType } from '@/services/environment';
 import type { OPDSCatalog } from '@/types/opds';
 import { useSettingsStore } from './settingsStore';
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
-import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import { computeOpdsCatalogContentId, OPDS_CATALOG_KIND } from '@/services/sync/replicaKinds';
-
-const publishOpdsUpsert = (catalog: OPDSCatalog): void => {
-  if (!catalog.contentId) return;
-  void publishReplicaUpsert(OPDS_CATALOG_KIND, catalog, catalog.contentId, catalog.reincarnation);
-};
-
-const publishOpdsDelete = (contentId: string): void => {
-  void publishReplicaDelete(OPDS_CATALOG_KIND, contentId);
-};
+import { computeOpdsCatalogContentId } from '@/services/sync/replicaKinds';
 
 /**
  * Backfill `contentId` (and `addedAt`) on legacy catalogs that predate
@@ -98,14 +87,6 @@ interface OPDSStoreState {
    */
   reorderCatalogs(orderedIds: string[]): void;
 
-  /**
-   * Add a catalog received via replica sync from another device. Same
-   * effect on local state as addCatalog, but does NOT republish.
-   */
-  applyRemoteCatalog(catalog: OPDSCatalog): void;
-  /** Mirror a server-side tombstone locally without re-publishing. */
-  softDeleteByContentId(contentId: string): void;
-
   /** Hydrate from `settings.opdsCatalogs`. Backfills sync fields if needed. */
   loadCustomOPDSCatalogs(envConfig: EnvConfigType): Promise<void>;
   /** Persist current state back into settings. */
@@ -161,7 +142,6 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
           : [...state.catalogs, catalog];
       return { catalogs };
     });
-    publishOpdsUpsert(catalog);
     return catalog;
   },
 
@@ -182,7 +162,6 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
         catalogs: state.catalogs.map((c, i) => (i === idx ? updated! : c)),
       };
     });
-    if (updated) publishOpdsUpsert(updated);
     return updated;
   },
 
@@ -192,7 +171,6 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
     set((state) => ({
       catalogs: state.catalogs.map((c) => (c.id === id ? { ...c, deletedAt: Date.now() } : c)),
     }));
-    if (catalog.contentId) publishOpdsDelete(catalog.contentId);
     return true;
   },
 
@@ -214,51 +192,6 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
     });
     if (!updated.length) return;
     set({ catalogs });
-    updated.forEach(publishOpdsUpsert);
-  },
-
-  applyRemoteCatalog: (catalog) => {
-    set((state) => {
-      const idx = state.catalogs.findIndex((c) => c.contentId === catalog.contentId);
-      if (idx >= 0) {
-        // Preserve local credentials when remote arrives without them
-        // (publishing device hadn't unlocked the CryptoSession, or the
-        // local session couldn't decrypt). When remote DOES include
-        // decrypted creds, accept them — that's the cross-device sync
-        // path enabled by replicaCryptoMiddleware.decryptRowFields.
-        // `??` is nullish so an explicit "" from remote (user cleared
-        // the password) still overwrites.
-        const old = state.catalogs[idx]!;
-        const merged: OPDSCatalog = {
-          ...catalog,
-          username: catalog.username ?? old.username,
-          password: catalog.password ?? old.password,
-          // Preserve the previously-applied cipher fingerprint when
-          // the orchestrator didn't attach a fresh one (e.g., row
-          // carried no cipher fields, or every decrypt failed).
-          // Without this fallback the next pull would treat the row
-          // as "never decrypted" and prompt again unnecessarily.
-          lastSeenCipher: catalog.lastSeenCipher ?? old.lastSeenCipher,
-          deletedAt: undefined,
-        };
-        return { catalogs: state.catalogs.map((c, i) => (i === idx ? merged : c)) };
-      }
-      return { catalogs: [...state.catalogs, catalog] };
-    });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomOPDSCatalogs(env);
-  },
-
-  softDeleteByContentId: (contentId) => {
-    const target = get().catalogs.find((c) => c.contentId === contentId && !c.deletedAt);
-    if (!target) return;
-    set((state) => ({
-      catalogs: state.catalogs.map((c) =>
-        c.id === target.id ? { ...c, deletedAt: Date.now() } : c,
-      ),
-    }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomOPDSCatalogs(env);
   },
 
   loadCustomOPDSCatalogs: async (_envConfig) => {
@@ -267,13 +200,10 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
       const persisted = settings?.opdsCatalogs ?? [];
       const backfilled = backfillSyncFields(persisted);
       set({ catalogs: backfilled });
-      // If backfill mutated anything, persist + publish the fresh
-      // contentIds so existing catalogs start syncing on next push.
+      // Backfill mutated something: persist the fresh contentIds so the
+      // rest of the code can keep treating them as stable row identities.
       if (backfilled !== persisted) {
         await get().saveCustomOPDSCatalogs(_envConfig);
-        for (const c of backfilled) {
-          if (c.contentId && !c.deletedAt) publishOpdsUpsert(c);
-        }
       }
     } catch (error) {
       console.error('Failed to load OPDS catalogs:', error);
@@ -299,10 +229,9 @@ export const useCustomOPDSStore = create<OPDSStoreState>((set, get) => ({
 }));
 
 /**
- * Look up an OPDS catalog by its cross-device contentId, falling back to
- * the persisted settings when the in-memory store is empty. The pull-side
- * orchestrator runs before the OPDS page mounts; without the fallback
- * every refresh would treat existing catalogs as new and double up.
+ * Look up an OPDS catalog by its contentId, falling back to the persisted
+ * settings when the in-memory store is empty (the settings page can ask
+ * before the OPDS page mounts).
  */
 export const findOPDSCatalogByContentId = (contentId: string): OPDSCatalog | undefined => {
   if (!contentId) return undefined;

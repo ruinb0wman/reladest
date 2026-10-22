@@ -41,23 +41,20 @@ export interface MigrateLegacyReplicasDeps<T extends LegacyReplicaRecord> {
   updateRecord: (id: string, next: T) => void;
   /** Persist the kind's settings entry post-migration. */
   saveStore: (envConfig: EnvConfigType) => Promise<void>;
-  /** Publish the now-syncable record to the replica row. */
-  publishUpsert: (record: T) => void;
 }
 
 /**
- * One-time migration: rehash legacy flat-path records (imported before
- * replica sync shipped) into the per-bundle layout so they sync
- * across devices without forcing the user to re-import.
+ * One-time migration: rehash legacy flat-path records (imported before the
+ * per-bundle layout existed) into `<baseDir>/<bundleDir>/<filename>` so the
+ * stores find them without forcing the user to re-import.
  *
  * For each candidate:
  *   1. Read bytes from `<baseDir>/<filename>`.
  *   2. Compute partialMD5 + size + filename → contentId.
  *   3. Mint `bundleDir = uniqueId()`; copy the file to
  *      `<baseDir>/<bundleDir>/<filename>` and remove the flat-path one.
- *   4. Patch the in-memory record (contentId, bundleDir, byteSize,
- *      path), persist via `saveStore`, then publish through
- *      `publishUpsert` and queue the binary upload.
+ *   4. Patch the in-memory record (contentId, bundleDir, byteSize, path)
+ *      and persist via `saveStore`.
  *
  * Idempotent: a record that already carries `contentId` is filtered
  * out upstream by `getCandidates`. If the file is missing on disk,
@@ -118,8 +115,4 @@ export const migrateLegacyReplicas = async <T extends LegacyReplicaRecord>(
   } catch (err) {
     console.warn(`migrateLegacyReplicas[${deps.kind}]: save failed`, err);
   }
-  // The replica publish that used to follow (`deps.publishUpsert` +
-  // `queueReplicaBinaryUpload`) is gone with the cloud sync layer: this is now a
-  // purely LOCAL migration, rehashing legacy flat-path records into the
-  // per-bundle layout the stores expect.
 };

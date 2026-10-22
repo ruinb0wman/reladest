@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useMemo, ReactNode } from '
 import { EnvConfigType } from '../services/environment';
 import { AppService } from '@/types/system';
 import env from '../services/environment';
-import { enableReplicaAutoPersist } from '@/services/sync/replicaPersist';
 
 interface EnvContextType {
   envConfig: EnvConfigType;
@@ -18,7 +17,6 @@ export const EnvProvider = ({ children }: { children: ReactNode }) => {
   const [appService, setAppService] = useState<AppService | null>(null);
 
   React.useEffect(() => {
-    enableReplicaAutoPersist(envConfig);
     envConfig
       .getAppService()
       .then(async (service) => {

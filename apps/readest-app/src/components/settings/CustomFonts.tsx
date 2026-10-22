@@ -10,11 +10,6 @@ import { useCustomFontStore } from '@/store/customFontStore';
 import { useFileSelector } from '@/hooks/useFileSelector';
 import { saveViewSettings } from '@/helpers/settings';
 import { CustomFont, mountCustomFont } from '@/styles/fonts';
-import {
-  queueReplicaBinaryDownload,
-  queueReplicaBinaryUpload,
-} from '@/services/sync/replicaBinaryUpload';
-import { eventDispatcher } from '@/utils/event';
 import { Tips } from './primitives';
 
 interface CustomFontsProps {
@@ -81,7 +76,6 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
           if (customFont && !customFont.error) {
             const loadedFont = await loadFont(envConfig, customFont.id);
             mountCustomFont(document, loadedFont);
-            if (appService) void queueReplicaBinaryUpload('font', customFont, appService);
           }
         }
         saveCustomFonts(envConfig);
@@ -110,19 +104,7 @@ const CustomFonts: React.FC<CustomFontsProps> = ({ bookKey, onBack }) => {
     }
   };
 
-  const handleSelectFamily = async (family: FontFamily) => {
-    // Synced fonts download on demand: fetch every missing weight of the
-    // family, then select it — the download handler mounts the faces.
-    const cloudFonts = family.fonts.filter((f) => f.unavailable);
-    if (cloudFonts.length > 0) {
-      const queued = await Promise.all(
-        cloudFonts.map((font) => queueReplicaBinaryDownload('font', font)),
-      );
-      if (!queued.some(Boolean)) {
-        eventDispatcher.dispatch('toast', { type: 'error', message: _('Download failed') });
-        return;
-      }
-    }
+  const handleSelectFamily = (family: FontFamily) => {
     if (currentDefaultFont === 'serif') {
       saveViewSettings(envConfig, bookKey, 'serifFont', family.name);
     } else {

@@ -8,20 +8,9 @@ import {
   unmountBackgroundTexture,
 } from '@/styles/textures';
 import { useSettingsStore } from './settingsStore';
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
-import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import { TEXTURE_KIND } from '@/services/sync/replicaKinds';
 import { computeTextureContentId } from '@/services/imageService';
 import { migrateLegacyReplicas } from '@/services/sync/migrateLegacy';
-
-const publishTextureUpsert = (texture: CustomTexture): void => {
-  if (!texture.contentId) return;
-  void publishReplicaUpsert(TEXTURE_KIND, texture, texture.contentId, texture.reincarnation);
-};
-
-const publishTextureDelete = (contentId: string): void => {
-  void publishReplicaDelete(TEXTURE_KIND, contentId);
-};
+import { TEXTURE_KIND } from '@/services/sync/replicaKinds';
 
 interface TextureStoreState {
   textures: CustomTexture[];
@@ -41,26 +30,6 @@ interface TextureStoreState {
 
   /** Look up a local texture by its cross-device contentId. */
   findByContentId: (contentId: string) => CustomTexture | undefined;
-  /**
-   * Add a remote-sourced texture from a replica pull WITHOUT republishing.
-   * The placeholder lands with `unavailable: true`; the binary download
-   * handler clears the flag on completion.
-   */
-  applyRemoteTexture: (texture: CustomTexture) => void;
-  /** Soft-delete by contentId, skipping the publish call. */
-  softDeleteByContentId: (contentId: string) => void;
-  /** Clear the placeholder unavailable flag once binaries land on disk. */
-  markAvailableByContentId: (contentId: string) => void;
-  /**
-   * Activation path for a remote-pulled texture once its binary has
-   * landed on disk: clear the `unavailable` flag and load the file
-   * into a blob URL so the panel can render the swatch and so
-   * `applyTexture` can mount it without re-reading disk. Mirrors the
-   * font activation, minus the @font-face injection (textures only
-   * mount when selected via `applyTexture`).
-   */
-  activateTextureByContentId: (envConfig: EnvConfigType, contentId: string) => Promise<void>;
-
   applyTexture: (envConfig: EnvConfigType, textureId: string) => Promise<void>;
   loadTexture: (envConfig: EnvConfigType, textureId: string) => Promise<CustomTexture>;
   loadTextures: (envConfig: EnvConfigType, textureIds: string[]) => Promise<CustomTexture[]>;
@@ -125,7 +94,6 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
         textures: [...state.textures],
       }));
       const refreshed = get().getTexture(texture.id) ?? existingTexture;
-      publishTextureUpsert(refreshed);
       return refreshed;
     }
 
@@ -138,7 +106,6 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
       textures: [...state.textures, newTexture],
     }));
 
-    publishTextureUpsert(newTexture);
     return newTexture;
   },
 
@@ -159,7 +126,6 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
     set((state) => ({
       textures: [...state.textures],
     }));
-    if (texture.contentId) publishTextureDelete(texture.contentId);
     return result;
   },
 
@@ -180,57 +146,6 @@ export const useCustomTextureStore = create<TextureStoreState>((set, get) => ({
 
   findByContentId: (contentId) =>
     contentId ? get().textures.find((t) => t.contentId === contentId) : undefined,
-
-  applyRemoteTexture: (texture) => {
-    set((state) => {
-      const existingIdx = state.textures.findIndex((t) => t.id === texture.id);
-      const textures =
-        existingIdx >= 0
-          ? state.textures.map((t, i) =>
-              i === existingIdx ? { ...texture, deletedAt: undefined } : t,
-            )
-          : [...state.textures, texture];
-      return { textures };
-    });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures(env);
-  },
-
-  softDeleteByContentId: (contentId) => {
-    const target = get().textures.find((t) => t.contentId === contentId && !t.deletedAt);
-    if (!target) return;
-    set((state) => ({
-      textures: state.textures.map((t) =>
-        t.id === target.id ? { ...t, deletedAt: Date.now(), blobUrl: undefined, loaded: false } : t,
-      ),
-    }));
-    if (target.blobUrl) URL.revokeObjectURL(target.blobUrl);
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures(env);
-  },
-
-  markAvailableByContentId: (contentId) => {
-    set((state) => ({
-      textures: state.textures.map((t) =>
-        t.contentId === contentId ? { ...t, unavailable: undefined } : t,
-      ),
-    }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomTextures(env);
-  },
-
-  activateTextureByContentId: async (envConfig, contentId) => {
-    get().markAvailableByContentId(contentId);
-    const target = get().textures.find((t) => t.contentId === contentId && !t.deletedAt);
-    if (!target) return;
-    try {
-      await get().loadTexture(envConfig, target.id);
-      const env = getReplicaPersistEnv();
-      if (env) await get().saveCustomTextures(env);
-    } catch (err) {
-      console.warn('activateTextureByContentId failed', contentId, err);
-    }
-  },
 
   getTexture: (id) => {
     return get().textures.find((texture) => texture.id === id);
@@ -473,7 +388,6 @@ export const migrateLegacyTextures = (envConfig: EnvConfigType): Promise<void> =
     computeContentId: computeTextureContentId,
     updateRecord: (id, next) => useCustomTextureStore.getState().updateTexture(id, next),
     saveStore: (env) => useCustomTextureStore.getState().saveCustomTextures(env),
-    publishUpsert: publishTextureUpsert,
   });
 
 // Cleanup blob URLs before page unload

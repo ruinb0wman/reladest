@@ -4,7 +4,6 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { CustomTexture } from '@/styles/textures';
 import { SystemSettings } from '@/types/settings';
 import { EnvConfigType } from '@/services/environment';
-import { publishReplicaUpsert } from '@/services/sync/replicaPublish';
 
 // Mock textures module - we need createCustomTexture, and the mount/unmount functions
 vi.mock('@/styles/textures', async (importOriginal) => {
@@ -18,12 +17,6 @@ vi.mock('@/styles/textures', async (importOriginal) => {
 
 // Replica-publish helpers fan out to the network — stub them so tests stay
 // hermetic. We assert the reincarnation token reaches the upsert via a spy.
-vi.mock('@/services/sync/replicaPublish', () => ({
-  publishReplicaUpsert: vi.fn(),
-  publishReplicaDelete: vi.fn(),
-}));
-
-const mockPublishReplicaUpsert = vi.mocked(publishReplicaUpsert);
 
 function makeTexture(
   overrides: Partial<CustomTexture> & { id: string; name: string },
@@ -121,7 +114,6 @@ describe('customTextureStore', () => {
       useCustomTextureStore
         .getState()
         .removeTexture(useCustomTextureStore.getState().textures[0]!.id);
-      mockPublishReplicaUpsert.mockClear();
 
       const revived = useCustomTextureStore.getState().addTexture('/images/wood.png', {
         contentId: 'cid-1',
@@ -129,11 +121,6 @@ describe('customTextureStore', () => {
 
       expect(revived.deletedAt).toBeUndefined();
       expect(revived.reincarnation).toBeTruthy();
-      expect(mockPublishReplicaUpsert).toHaveBeenCalledTimes(1);
-      const call = mockPublishReplicaUpsert.mock.calls[0]!;
-      expect(call[0]).toBe('texture');
-      expect(call[2]).toBe('cid-1');
-      expect(call[3]).toBe(revived.reincarnation);
     });
 
     test('re-import of a still-live texture with the same contentId mints a token (stale-local race)', () => {

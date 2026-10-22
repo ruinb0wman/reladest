@@ -7,19 +7,7 @@ import type {
 } from '@/services/dictionaries/types';
 import { BUILTIN_PROVIDER_IDS, BUILTIN_WEB_SEARCH_IDS } from '@/services/dictionaries/types';
 import { useSettingsStore } from './settingsStore';
-import { publishReplicaDelete, publishReplicaUpsert } from '@/services/sync/replicaPublish';
-import { DICTIONARY_KIND } from '@/services/sync/replicaKinds';
-import { markExplicitProviderOrderPublish } from '@/services/sync/replicaSettingsSync';
 import type { DictionaryPluginControlStore } from '@/services/dictionaries/plugins/controlStore';
-
-const publishDictUpsert = (dict: ImportedDictionary): void => {
-  if (!dict.contentId) return;
-  void publishReplicaUpsert(DICTIONARY_KIND, dict, dict.contentId, dict.reincarnation);
-};
-
-const publishDictDelete = (contentId: string): void => {
-  void publishReplicaDelete(DICTIONARY_KIND, contentId);
-};
 
 /**
  * Built-in web-search ids are seeded into `providerOrder` but disabled by
@@ -71,33 +59,8 @@ interface DictionaryStoreState {
 
   /** Add (or revive) an imported dictionary. New entries are appended to providerOrder + enabled. */
   addDictionary(dict: ImportedDictionary): void;
-  /**
-   * Add a dictionary received via replica sync from another device. Same
-   * effect on local state as addDictionary, but does NOT call
-   * publishDictionaryUpsert — the row already exists on the server (we
-   * just pulled it). Re-publishing would create a tight feedback loop
-   * with stale HLCs. Used exclusively by the pull-side orchestrator.
-   */
-  applyRemoteDictionary(dict: ImportedDictionary): void;
-  /**
-   * Look up a local imported entry by its cross-device contentId. Used
-   * by the pull-side orchestrator to detect "row from another device"
-   * vs "row originated here" cases.
-   */
+  /** Look up a local imported entry by its stable contentId. */
   findByContentId(contentId: string): ImportedDictionary | undefined;
-  /**
-   * Clears the `unavailable` flag on the dict matching `contentId`. Called
-   * by the replica-transfer-complete listener after a remote-sourced dict
-   * finishes downloading from cloud storage. No-op if the dict isn't found.
-   */
-  markAvailableByContentId(contentId: string): void;
-  /**
-   * Soft-delete by contentId, skipping the publishDictionaryDelete call
-   * that removeDictionary does. Used by the pull orchestrator when a
-   * server row arrives tombstoned — the row is already deleted on the
-   * server; we just observed it and need to mirror locally.
-   */
-  softDeleteByContentId(contentId: string): void;
   /**
    * Patch an imported dictionary's mutable display fields (currently just
    * `name`). The on-disk bundle is untouched. No-op if the id is unknown
@@ -132,29 +95,10 @@ interface DictionaryStoreState {
   /** Soft-delete a custom web search and remove from order/enabled. */
   removeWebSearch(id: string): boolean;
 
-  /**
-   * Mirror an inbound dictionarySettings patch from the bundled
-   * `settings` replica into the in-memory store so the dictionary
-   * panel and the reader popup pick up the change without a reload.
-   * Pull-side only — no publish, no save.
-   */
-  applyRemoteDictionarySettings(patch: Partial<DictionarySettings>): void;
-
   /** Hydrate from `settings.customDictionaries` + `settings.dictionarySettings` + check on-disk availability. */
   loadCustomDictionaries(envConfig: EnvConfigType): Promise<void>;
-  /**
-   * Persist current state back into settings (which then syncs to
-   * cloud). Pass `{ publishOrderChange: true }` from explicit user
-   * actions that mutated `providerOrder` (drag-drop reorder, dict
-   * import, dict delete, web-search add/remove) so the auto-mutation
-   * gate releases providerOrder for that single push. Auto-save
-   * callers (replica pull, download-complete) leave it false so
-   * automatic local order changes never publish back to the server.
-   */
-  saveCustomDictionaries(
-    envConfig: EnvConfigType,
-    opts?: { publishOrderChange?: boolean },
-  ): Promise<void>;
+  /** Persist current state back into settings. */
+  saveCustomDictionaries(envConfig: EnvConfigType): Promise<void>;
 }
 
 function toSettingsDict(dict: ImportedDictionary): ImportedDictionary {
@@ -164,15 +108,6 @@ function toSettingsDict(dict: ImportedDictionary): ImportedDictionary {
   const { unavailable: _u, ...rest } = dict;
   return rest;
 }
-
-// Replica-side mutators (applyRemoteDictionary, softDeleteByContentId,
-// markAvailableByContentId) fire from boot-time pull / download-complete
-// handlers, NOT the settings UI. The shared `replicaPersist` registry
-// holds the envConfig (registered once by EnvProvider); each mutator
-// fire-and-forget saves through it so the next loadCustomDictionaries
-// reads up-to-date settings.customDictionaries instead of wiping the
-// in-memory rows.
-import { getReplicaPersistEnv } from '@/services/sync/replicaPersist';
 
 /**
  * Look up a dict by its cross-device contentId, falling back to the
@@ -225,84 +160,10 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         settings: { ...state.settings, providerOrder: order, providerEnabled: enabled },
       };
     });
-    publishDictUpsert(dict);
-  },
-
-  applyRemoteDictionary: (dict) => {
-    // Same local-state mutation as addDictionary, minus the publish call.
-    // The row already exists on the server (we just pulled it).
-    set((state) => {
-      const existingIdx = state.dictionaries.findIndex((d) => d.id === dict.id);
-      const dictionaries =
-        existingIdx >= 0
-          ? state.dictionaries.map((d, i) =>
-              i === existingIdx ? { ...dict, deletedAt: undefined } : d,
-            )
-          : [...state.dictionaries, dict];
-      const order = state.settings.providerOrder.includes(dict.id)
-        ? state.settings.providerOrder
-        : [...state.settings.providerOrder, dict.id];
-      const enabled = { ...state.settings.providerEnabled };
-      if (!(dict.id in enabled)) enabled[dict.id] = !dict.unsupported;
-      return {
-        dictionaries,
-        settings: { ...state.settings, providerOrder: order, providerEnabled: enabled },
-      };
-    });
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries(env);
   },
 
   findByContentId: (contentId) =>
     contentId ? get().dictionaries.find((d) => d.contentId === contentId) : undefined,
-
-  markAvailableByContentId: (contentId) => {
-    set((state) => ({
-      dictionaries: state.dictionaries.map((d) =>
-        d.contentId === contentId ? { ...d, unavailable: undefined } : d,
-      ),
-    }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries(env);
-  },
-
-  softDeleteByContentId: (contentId) => {
-    // Scrub providerOrder/providerEnabled by contentId regardless of
-    // whether a local dict matches — Device B fresh-install pulls the
-    // contentId via the settings replica's providerOrder/providerEnabled
-    // before (or even without) the dict replica row arriving alive, so
-    // we still need to clean the provider-side entries when the dict
-    // arrives tombstoned. For sync-era dicts, dict.id === contentId,
-    // so a contentId-keyed scrub also covers the local-id case.
-    // Match the local entry by contentId regardless of its deletedAt
-    // status: stale provider-side entries can survive a partial cleanup
-    // in a prior session and would otherwise be republished with a
-    // fresh HLC and clobber the cleaned server state under per-field LWW.
-    const target = get().dictionaries.find((d) => d.contentId === contentId);
-    const alreadyDeleted = !target || !!target.deletedAt;
-    // Scrub by both contentId AND any local id — they're usually equal
-    // for sync-era dicts, but legacy entries (pre-replica-sync) may
-    // have a separate bundleDir-derived id.
-    const idsToScrub = new Set<string>([contentId]);
-    if (target) idsToScrub.add(target.id);
-    set((state) => ({
-      dictionaries:
-        target && !alreadyDeleted
-          ? state.dictionaries.map((d) =>
-              d.id === target.id ? { ...d, deletedAt: Date.now() } : d,
-            )
-          : state.dictionaries,
-      settings: {
-        ...state.settings,
-        providerOrder: state.settings.providerOrder.filter((p) => !idsToScrub.has(p)),
-        providerEnabled: Object.fromEntries(
-          Object.entries(state.settings.providerEnabled).filter(([k]) => !idsToScrub.has(k)),
-        ),
-      },
-    }));
-    const env = getReplicaPersistEnv();
-    if (env) void get().saveCustomDictionaries(env);
-  },
 
   updateDictionary: (id, patch) => {
     let updated: ImportedDictionary | null = null;
@@ -319,7 +180,6 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
       const dictionaries = state.dictionaries.map((d, i) => (i === idx ? updated! : d));
       return { dictionaries };
     });
-    if (updated) publishDictUpsert(updated);
   },
 
   replaceDictionaries: (oldIds, newDict) => {
@@ -328,13 +188,6 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
       return;
     }
     const oldIdSet = new Set(oldIds);
-    // Capture contentIds of replaced dicts so we can tombstone them on the
-    // server. Only contentId-bearing entries actually existed cross-device;
-    // legacy bundleDir-only ids never published, so nothing to tombstone.
-    const oldContentIds = get()
-      .dictionaries.filter((d) => oldIdSet.has(d.id))
-      .map((d) => d.contentId)
-      .filter((id): id is string => Boolean(id));
     set((state) => {
       // Drop all old entries (hard-remove since the disk bundles are gone)
       // and append the new one. Soft-delete isn't needed: the previously
@@ -375,19 +228,6 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         settings: { ...state.settings, providerOrder, providerEnabled },
       };
     });
-    // When reincarnating (re-import after delete), the server-side row is
-    // already tombstoned — re-publishing the tombstone is redundant. The
-    // upsert below carries a reincarnation token so clients see the row
-    // as alive again. For non-reincarnation replacements (re-import of a
-    // still-live entry, importer collapsing duplicate names), we skip
-    // tombstoning if the contentId is preserved across the swap (same
-    // content → same row → no need to delete then immediately recreate).
-    const isContentSurvivingSwap =
-      Boolean(newDict.contentId) && oldContentIds.includes(newDict.contentId!);
-    if (!isContentSurvivingSwap) {
-      for (const contentId of oldContentIds) publishDictDelete(contentId);
-    }
-    publishDictUpsert(newDict);
   },
 
   removeDictionary: (id) => {
@@ -405,7 +245,6 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
         ),
       },
     }));
-    if (dict.contentId) publishDictDelete(dict.contentId);
     return true;
   },
 
@@ -515,12 +354,6 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
       },
     }));
     return true;
-  },
-
-  applyRemoteDictionarySettings: (patch) => {
-    set((state) => ({
-      settings: { ...state.settings, ...patch },
-    }));
   },
 
   loadCustomDictionaries: async (envConfig) => {
@@ -649,27 +482,17 @@ export const useCustomDictionaryStore = create<DictionaryStoreState>((set, get) 
     }
   },
 
-  saveCustomDictionaries: async (envConfig, opts) => {
+  saveCustomDictionaries: async (envConfig) => {
     try {
       const { settings, setSettings, saveSettings } = useSettingsStore.getState();
       const { dictionaries, settings: dictSettings } = get();
-      // Build a NEW settings object — Zustand subscribers (notably
-      // replicaSettingsSync.initSettingsSync) compare references to
-      // detect changes, so mutating the existing object in place
-      // bypasses the bundled-settings publish path entirely.
+      // Build a NEW settings object: Zustand subscribers compare
+      // references to detect changes.
       const next = {
         ...settings,
         customDictionaries: dictionaries.map(toSettingsDict),
         dictionarySettings: dictSettings,
       };
-      // Open the auto-mutation gate for providerOrder when this save
-      // originates from a user action that intentionally changed the
-      // order (drag-drop, dict import, dict delete, web-search add).
-      // Auto-saves from replica pull / download-complete leave it
-      // closed so automatic local order changes never publish.
-      if (opts?.publishOrderChange) {
-        markExplicitProviderOrderPublish();
-      }
       setSettings(next);
       saveSettings(envConfig, next);
     } catch (error) {

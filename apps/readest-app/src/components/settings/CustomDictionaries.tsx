@@ -37,7 +37,6 @@ import {
   isSystemDictionarySupported,
   type RememberedLookupApp,
 } from '@/services/dictionaries/systemDictionary';
-import { queueDictionaryBinaryUpload } from '@/services/sync/replicaBinaryUpload';
 import type { ImportedDictionary, WebSearchEntry } from '@/services/dictionaries/types';
 import {
   getBuiltinWebSearch,
@@ -271,7 +270,6 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     removeWebSearch,
     saveCustomDictionaries,
     loadCustomDictionaries,
-    markAvailableByContentId,
   } = useCustomDictionaryStore();
 
   useEffect(() => {
@@ -363,7 +361,6 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       });
       return;
     }
-    const isAdd = !webModal.editingId;
     if (webModal.editingId) {
       updateWebSearch(webModal.editingId, { name, urlTemplate: url });
       // Re-create the cached provider so the new template + label take effect.
@@ -371,10 +368,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     } else {
       addWebSearch(name, url);
     }
-    // Adding a new web search appends to providerOrder (an explicit
-    // user reorder); editing only changes name/URL, so providerOrder
-    // is untouched and the auto-mutation gate stays closed.
-    await saveCustomDictionaries(envConfig, { publishOrderChange: isAdd });
+    await saveCustomDictionaries(envConfig);
     setWebModal(null);
   };
 
@@ -559,18 +553,11 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       let added = 0;
       for (const dict of importResult.imported) {
         addDictionary(dict);
-        // The freshly imported bundle exists on disk now; clear any lingering
-        // `unavailable` flag on an in-memory entry with the same contentId
-        // (e.g. when a prior import lost its bundle dir for any reason).
-        if (dict.contentId) markAvailableByContentId(dict.contentId);
-        if (appService) void queueDictionaryBinaryUpload(dict, appService);
         added += 1;
       }
       let replaced = 0;
       for (const { oldIds, newDict } of importResult.replacements) {
         replaceDictionaries(oldIds, newDict);
-        if (newDict.contentId) markAvailableByContentId(newDict.contentId);
-        if (appService) void queueDictionaryBinaryUpload(newDict, appService);
         // Invalidate any cached provider instances for the replaced ids so
         // their next lookup picks up the new bundle's files.
         for (const oldId of oldIds) evictProvider(oldId);
@@ -578,7 +565,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       }
       // Import / replace both mutate providerOrder (prepend or splice
       // into existing slot), so this is an explicit user reorder.
-      await saveCustomDictionaries(envConfig, { publishOrderChange: added > 0 || replaced > 0 });
+      await saveCustomDictionaries(envConfig);
       if (added > 0) {
         eventDispatcher.dispatch('toast', {
           type: 'info',
@@ -674,7 +661,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
       return;
     }
     // Delete removes the id from providerOrder — explicit user reorder.
-    await saveCustomDictionaries(envConfig, { publishOrderChange: true });
+    await saveCustomDictionaries(envConfig);
     // Auto-leave delete mode when the last deletable entry is gone — there's
     // nothing left to delete (edit mode is gated on the same row set).
     const remaining = rows.filter(
@@ -719,7 +706,7 @@ const CustomDictionaries: React.FC<CustomDictionariesProps> = ({ onBack }) => {
     reorder(order);
     // Drag-drop is the canonical user-action providerOrder change;
     // open the gate so the new order ships cross-device.
-    await saveCustomDictionaries(envConfig, { publishOrderChange: true });
+    await saveCustomDictionaries(envConfig);
   };
 
   const handleDragCancel = () => setDragOverId(null);
