@@ -1,15 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { MdChevronRight } from 'react-icons/md';
-import {
-  RiPlanetLine,
-  RiRssLine,
-  RiBook3Line,
-  RiBookmark3Line,
-  RiDiscordLine,
-  RiWifiLine,
-  RiCloudLine,
-} from 'react-icons/ri';
+import { RiPlanetLine, RiRssLine, RiDiscordLine, RiWifiLine, RiCloudLine } from 'react-icons/ri';
 import { useAppRouter } from '@/hooks/useAppRouter';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
@@ -32,8 +24,6 @@ import {
 import { navigateToLogin, navigateToProfile } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
 import BookOrbitForm from './integrations/BookOrbitForm';
-import HardcoverForm from './integrations/HardcoverForm';
-import PageboundForm from './integrations/PageboundForm';
 import LocalSendForm from './integrations/LocalSendForm';
 import WebDAVForm from './integrations/WebDAVForm';
 import { persistCloudProviderEnabled } from './integrations/cloudSync';
@@ -52,15 +42,7 @@ import type { FileSyncBackendKind } from '@/services/sync/file/providerRegistry'
 import SubPageHeader from './SubPageHeader';
 import { BoxedList, NavigationRow, SectionTitle, SettingLabel, Tips } from './primitives';
 
-type SubPage =
-  | 'bookorbit'
-  | 'webdav'
-  | 'readest-cloud'
-  | 'hardcover'
-  | 'pagebound'
-  | 'opds'
-  | 'localsend'
-  | null;
+type SubPage = 'bookorbit' | 'webdav' | 'readest-cloud' | 'opds' | 'localsend' | null;
 
 /**
  * Integrations panel — single point of discovery for external service config:
@@ -157,8 +139,6 @@ const IntegrationsPanel: React.FC = () => {
     if (
       requestedSubPage === 'bookorbit' ||
       requestedSubPage === 'webdav' ||
-      requestedSubPage === 'hardcover' ||
-      requestedSubPage === 'pagebound' ||
       requestedSubPage === 'opds' ||
       requestedSubPage === 'localsend'
     ) {
@@ -244,18 +224,6 @@ const IntegrationsPanel: React.FC = () => {
         </BoxedList>
       </div>
     );
-  if (subPage === 'hardcover')
-    return (
-      <div className='my-4 w-full'>
-        <HardcoverForm onBack={() => setSubPage(null)} />
-      </div>
-    );
-  if (subPage === 'pagebound')
-    return (
-      <div className='my-4 w-full'>
-        <PageboundForm onBack={() => setSubPage(null)} />
-      </div>
-    );
   if (subPage === 'opds')
     return (
       <div className='my-4 w-full'>
@@ -274,11 +242,6 @@ const IntegrationsPanel: React.FC = () => {
       : _('Connected')
     : _('Not connected');
 
-  const hardcoverStatus = settings.hardcover?.enabled ? _('Connected') : _('Not connected');
-  const pageboundStatus =
-    settings.pagebound?.enabled && settings.pagebound.refreshToken
-      ? _('Connected')
-      : _('Not connected');
   // Cloud sync providers are independently selectable (#5062): any subset of
   // {Readest Cloud, WebDAV, Google Drive, S3, OneDrive, iCloud} can sync the
   // library at once. A "configured" third-party provider (WebDAV creds / a Drive
@@ -364,21 +327,6 @@ const IntegrationsPanel: React.FC = () => {
               status={bookOrbitStatus}
               onClick={() => setSubPage('bookorbit')}
             />
-            <IntegrationRow
-              icon={RiBook3Line}
-              title={_('Hardcover')}
-              status={hardcoverStatus}
-              onClick={() => setSubPage('hardcover')}
-            />
-            {/* Pagebound's API sends no CORS headers, so only native HTTP reaches it. */}
-            {isTauriAppPlatform() && (
-              <IntegrationRow
-                icon={RiBookmark3Line}
-                title={_('Pagebound')}
-                status={pageboundStatus}
-                onClick={() => setSubPage('pagebound')}
-              />
-            )}
           </div>
         </div>
       </div>

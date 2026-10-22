@@ -2,8 +2,6 @@ import { useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useFileSyncStore } from '@/store/fileSyncStore';
-import { useHardcoverSyncStore } from '@/store/hardcoverSyncStore';
-import { isHardcoverConnected } from '@/services/hardcover/hardcoverConnection';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatSyncTimeFromNow } from '@/utils/time';
 import {
@@ -15,7 +13,7 @@ import { getReadyFileSyncBackends } from '@/services/sync/file/runLibrarySync';
 
 /** One enabled provider's health, for a per-provider breakdown. */
 export interface CloudSyncProviderStatus {
-  kind: CloudSyncProviderKind | 'hardcover';
+  kind: CloudSyncProviderKind;
   /** Product name — deliberately untranslated. */
   name: string;
   /** Newest successful sync for this provider, or 0 when it never synced. */
@@ -65,9 +63,6 @@ export interface CloudSyncStatus {
  *
  * KOSync is deliberately absent: it keeps no `lastSyncedAt`, so it has nothing
  * to contribute to a timestamp. The reader's manual action still pokes it.
- *
- * `bookKey` scopes the status to one open book, which adds Hardcover: it has
- * no library-level sync.
  */
 export const useCloudSyncStatus = (nativeLastSyncedAt = 0, bookKey?: string): CloudSyncStatus => {
   const _ = useTranslation();
@@ -75,9 +70,6 @@ export const useCloudSyncStatus = (nativeLastSyncedAt = 0, bookKey?: string): Cl
   const settings = useSettingsStore((state) => state.settings);
   const fileSyncByKind = useFileSyncStore((state) => state.byKind);
   const fileSyncLastError = useFileSyncStore((state) => state.lastErrorByKind);
-  const hardcoverSync = useHardcoverSyncStore((state) =>
-    bookKey ? state.byBook[bookKey] : undefined,
-  );
 
   return useMemo(() => {
     // Only backends that can actually run. A backend that cannot run right now
@@ -94,17 +86,6 @@ export const useCloudSyncStatus = (nativeLastSyncedAt = 0, bookKey?: string): Cl
         syncing: !!fileSyncByKind[kind]?.isSyncing,
         failed: !!fileSyncLastError[kind],
       })),
-      ...(bookKey && settings.hardcover?.enabled && isHardcoverConnected(settings.hardcover)
-        ? [
-            {
-              kind: 'hardcover' as const,
-              name: 'Hardcover',
-              lastSyncedAt: settings.hardcover.lastSyncedAt ?? 0,
-              syncing: !!hardcoverSync?.pending,
-              failed: !!hardcoverSync?.lastError,
-            },
-          ]
-        : []),
     ];
 
     const syncing = providers.some((p) => p.syncing);
@@ -125,16 +106,7 @@ export const useCloudSyncStatus = (nativeLastSyncedAt = 0, bookKey?: string): Cl
             : _('Never synced');
 
     return { providers, syncing, failed, lastSyncedAt, needsSignIn, label };
-  }, [
-    _,
-    user,
-    settings,
-    fileSyncByKind,
-    fileSyncLastError,
-    nativeLastSyncedAt,
-    bookKey,
-    hardcoverSync,
-  ]);
+  }, [_, user, settings, fileSyncByKind, fileSyncLastError, nativeLastSyncedAt, bookKey]);
 };
 
 export default useCloudSyncStatus;

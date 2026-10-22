@@ -47,8 +47,6 @@ import Notebook from './notebook/Notebook';
 import LocalSendManager from '@/components/localsend/LocalSendManager';
 import BooksGrid from './BooksGrid';
 import SettingsDialog from '@/components/settings/SettingsDialog';
-import HardcoverLinkDialog from './hardcover/HardcoverLinkDialog';
-import PageboundLinkDialog from './pagebound/PageboundLinkDialog';
 import ModalPortal from '@/components/ModalPortal';
 import NotebookTransitionAlert from './notebook/NotebookTransitionAlert';
 
@@ -70,8 +68,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
   const { initViewState, getViewState, clearViewState } = useReaderStore();
   const { isSettingsDialogOpen, settingsDialogBookKey } = useSettingsStore();
   const [showDetailsBook, setShowDetailsBook] = useState<Book | null>(null);
-  const [hardcoverLinkBookKey, setHardcoverLinkBookKey] = useState<string | null>(null);
-  const [pageboundLinkBookKey, setPageboundLinkBookKey] = useState<string | null>(null);
   const isInitiating = useRef(false);
   const [loading, setLoading] = useState(false);
   const [errorLoading, setErrorLoading] = useState(false);
@@ -131,23 +127,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
   }, []);
 
   useEffect(() => {
-    const handleLinkHardcoverBook = (event: CustomEvent) => {
-      const detail = event.detail as { bookKey?: string } | undefined;
-      if (detail?.bookKey) setHardcoverLinkBookKey(detail.bookKey);
-    };
-    const handleLinkPageboundBook = (event: CustomEvent) => {
-      const detail = event.detail as { bookKey?: string } | undefined;
-      if (detail?.bookKey) setPageboundLinkBookKey(detail.bookKey);
-    };
-    eventDispatcher.on('hardcover-link-book', handleLinkHardcoverBook);
-    eventDispatcher.on('pagebound-link-book', handleLinkPageboundBook);
-    return () => {
-      eventDispatcher.off('hardcover-link-book', handleLinkHardcoverBook);
-      eventDispatcher.off('pagebound-link-book', handleLinkPageboundBook);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleShowBookDetails = (event: CustomEvent) => {
       setShowDetailsBook(event.detail as Book);
       return true;
@@ -198,7 +177,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
       const settings = useSettingsStore.getState().settings;
       eventDispatcher.dispatch('sync-book-progress', { bookKey });
       eventDispatcher.dispatch('flush-kosync', { bookKey });
-      eventDispatcher.dispatch('flush-hardcover-sync', { bookKey });
       // Persist locally before any remote flush: `beforeunload` and `quit-app`
       // can unload the document while a flush is still in flight, and losing the
       // reading position costs the user more than deferring a remote push (the
@@ -398,18 +376,6 @@ const ReaderContent: React.FC<{ ids?: string; settings: SystemSettings }> = ({ i
         onGoToLibrary={handleCloseBooksToLibrary}
       />
       {isSettingsDialogOpen && <SettingsDialog bookKey={settingsDialogBookKey} />}
-      {hardcoverLinkBookKey && (
-        <HardcoverLinkDialog
-          bookKey={hardcoverLinkBookKey}
-          onClose={() => setHardcoverLinkBookKey(null)}
-        />
-      )}
-      {pageboundLinkBookKey && (
-        <PageboundLinkDialog
-          bookKey={pageboundLinkBookKey}
-          onClose={() => setPageboundLinkBookKey(null)}
-        />
-      )}
       <Notebook />
       <LocalSendManager />
       {showDetailsBook && (

@@ -123,31 +123,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     eventDispatcher.dispatch('push-kosync', { bookKey: sideBarBookKey, provider });
     setIsDropdownOpen?.(false);
   };
-  const handlePushHardcoverNotes = () => {
-    eventDispatcher.dispatch('hardcover-push-notes', { bookKey: sideBarBookKey });
-    setIsDropdownOpen?.(false);
-  };
-  const handlePushHardcoverProgress = () => {
-    eventDispatcher.dispatch('hardcover-push-progress', { bookKey: sideBarBookKey });
-    setIsDropdownOpen?.(false);
-  };
-  // Hosted by ReaderContent (like the audiobook dialog) so the picker
-  // outlives this dropdown.
-  const handleLinkHardcoverBook = () => {
-    eventDispatcher.dispatch('hardcover-link-book', { bookKey: sideBarBookKey });
-    setIsDropdownOpen?.(false);
-  };
-  const hardcoverLink = sideBarBookKey ? getConfig(sideBarBookKey)?.hardcover : undefined;
-  const handlePushPageboundProgress = () => {
-    eventDispatcher.dispatch('pagebound-push-progress', { bookKey: sideBarBookKey });
-    setIsDropdownOpen?.(false);
-  };
-  const handleLinkPageboundBook = () => {
-    eventDispatcher.dispatch('pagebound-link-book', { bookKey: sideBarBookKey });
-    setIsDropdownOpen?.(false);
-  };
-  const pageboundLink = sideBarBookKey ? getConfig(sideBarBookKey)?.pagebound : undefined;
-  const pageboundEnabled = !!(settings.pagebound?.enabled && settings.pagebound.refreshToken);
   const bookOrbitProgressSync = settings.bookorbit.enabled && settings.bookorbit.syncProgress;
   // Routed through Annotator (per-book, long-lived) so that the
   // confirmation dialog isn't unmounted with the dropdown menu.
@@ -199,41 +174,12 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
         ) : (
           <MenuItem label={_('Enter Parallel Read')} onClick={handleSetParallel} />
         ))}
-      {(bookOrbitProgressSync || settings.hardcover.enabled || pageboundEnabled) && (
-        <hr aria-hidden='true' className='border-base-200 my-1' />
-      )}
+      {bookOrbitProgressSync && <hr aria-hidden='true' className='border-base-200 my-1' />}
       {bookOrbitProgressSync && (
         <MenuItem label={_('BookOrbit Sync')} detailsOpen={false} buttonClass='py-2'>
           <ul className='flex flex-col ps-1'>
             <MenuItem label={_('Push Progress')} noIcon onClick={handlePushKOSync('bookorbit')} />
             <MenuItem label={_('Pull Progress')} noIcon onClick={handlePullKOSync('bookorbit')} />
-          </ul>
-        </MenuItem>
-      )}
-      {settings.hardcover.enabled && (
-        <MenuItem label={_('Hardcover Sync')} detailsOpen={false} buttonClass='py-2'>
-          <ul className='flex flex-col ps-1'>
-            <MenuItem label={_('Push Progress')} noIcon onClick={handlePushHardcoverProgress} />
-            <MenuItem label={_('Push Notes')} noIcon onClick={handlePushHardcoverNotes} />
-            <MenuItem
-              label={_('Link Book')}
-              description={hardcoverLink?.title}
-              noIcon
-              onClick={handleLinkHardcoverBook}
-            />
-          </ul>
-        </MenuItem>
-      )}
-      {pageboundEnabled && (
-        <MenuItem label={_('Pagebound Sync')} detailsOpen={false} buttonClass='py-2'>
-          <ul className='flex flex-col ps-1'>
-            <MenuItem label={_('Push Progress')} noIcon onClick={handlePushPageboundProgress} />
-            <MenuItem
-              label={_('Link Book')}
-              description={pageboundLink?.title}
-              noIcon
-              onClick={handleLinkPageboundBook}
-            />
           </ul>
         </MenuItem>
       )}

@@ -16,8 +16,6 @@ import {
   WordLensConfig,
 } from '@/types/book';
 import {
-  HardcoverSettings,
-  PageboundSettings,
   BookOrbitSettings,
   LibraryGroupByType,
   LibrarySortByType,
@@ -83,22 +81,6 @@ export const DEFAULT_BOOKORBIT_SETTINGS = {
   syncBookStates: true,
   autoSync: true,
 } as BookOrbitSettings;
-
-export const DEFAULT_HARDCOVER_SETTINGS = {
-  enabled: false,
-  accessToken: '',
-  lastSyncedAt: 0,
-  autoSync: false,
-} as HardcoverSettings;
-
-export const DEFAULT_PAGEBOUND_SETTINGS = {
-  enabled: false,
-  email: '',
-  refreshToken: '',
-  apiToken: '',
-  lastSyncedAt: 0,
-  autoSync: false,
-} as PageboundSettings;
 
 export const NOTION_API_VERSION = '2026-03-11';
 
@@ -173,8 +155,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   },
 
   bookorbit: DEFAULT_BOOKORBIT_SETTINGS,
-  hardcover: DEFAULT_HARDCOVER_SETTINGS,
-  pagebound: DEFAULT_PAGEBOUND_SETTINGS,
   webdav: DEFAULT_WEBDAV_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 

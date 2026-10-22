@@ -47,6 +47,8 @@ const migrations: Record<SchemaType, MigrationEntry[]> = {
       `,
     },
   ],
+  // The Hardcover integration is gone; this step stays so every database keeps
+  // the same schema history. Nothing reads hardcover_note_mappings any more.
   'hardcover-sync': [
     {
       name: '2026032901_hardcover_note_mappings',

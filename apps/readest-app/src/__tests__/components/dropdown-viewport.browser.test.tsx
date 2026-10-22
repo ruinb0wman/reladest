@@ -188,7 +188,7 @@ describe('Dropdown menu viewport layout', () => {
             showTooltip={false}
           >
             <Menu className='book-menu dropdown-content no-triangle z-20 mt-2 shadow-2xl'>
-              <MenuItem label='Hardcover Sync'>
+              <MenuItem label='BookOrbit Sync'>
                 <ul className='flex flex-col ps-1'>
                   <MenuItem label='Push Progress' noIcon />
                   <MenuItem label='Push Notes' noIcon />
@@ -210,13 +210,13 @@ describe('Dropdown menu viewport layout', () => {
     const menu = openMenu();
     const collapsedWidth = menu.getBoundingClientRect().width;
 
-    fireEvent.click(screen.getByRole('button', { name: 'Hardcover Sync' }));
+    fireEvent.click(screen.getByRole('button', { name: 'BookOrbit Sync' }));
 
     await waitFor(() => {
       expect(
         (
           screen
-            .getByRole('button', { name: 'Hardcover Sync' })
+            .getByRole('button', { name: 'BookOrbit Sync' })
             .closest('details') as HTMLDetailsElement
         ).open,
       ).toBe(true);

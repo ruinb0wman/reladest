@@ -60,8 +60,6 @@ vi.mock('@/app/reader/components/BooksGrid', () => ({ default: () => null }));
 vi.mock('@/app/reader/components/audiobook/AudiobookPairingDialog', () => ({
   default: () => null,
 }));
-vi.mock('@/app/reader/components/hardcover/HardcoverLinkDialog', () => ({ default: () => null }));
-vi.mock('@/app/reader/components/pagebound/PageboundLinkDialog', () => ({ default: () => null }));
 vi.mock('@/components/localsend/LocalSendManager', () => ({ default: () => null }));
 vi.mock('@/components/settings/SettingsDialog', () => ({ default: () => null }));
 vi.mock('@/components/metadata', () => ({ BookDetailModal: () => null }));

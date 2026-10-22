@@ -54,8 +54,6 @@ export const BACKUP_SETTINGS_BLACKLIST = [
   'lastSyncedAtConfigs',
   'lastSyncedAtNotes',
   'lastSyncedAtReplicas',
-  'hardcover.lastSyncedAt',
-  'pagebound.lastSyncedAt',
   'googleDrive.deviceId',
   'googleDrive.lastSyncedAt',
   'webdav.deviceId',
@@ -91,10 +89,6 @@ export const BACKUP_SETTINGS_CREDENTIAL_FIELDS = [
   'bookorbit.username',
   'bookorbit.userkey',
   'bookorbit.password',
-  'hardcover.accessToken',
-  'hardcover.oauth',
-  'pagebound.refreshToken',
-  'pagebound.apiToken',
   // S3 access keys are strong, long-lived cloud credentials — strip them from
   // unencrypted backup zips unless the user opts into including credentials.
   's3.accessKeyId',

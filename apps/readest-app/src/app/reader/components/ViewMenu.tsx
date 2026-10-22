@@ -144,18 +144,12 @@ const ViewMenu: React.FC<ViewMenuProps> = ({
       return;
     }
     // One tap, every provider the user selected. Before #5910 this dispatched
-    // `sync-book-progress` alone, which only useProgressSync (Readest Cloud)
-    // and useHardcoverSync listen for — so for a third-party-only user the row
-    // did nothing at all.
+    // `sync-book-progress` alone, which only the native cloud channel listened
+    // for — so for a user on a file backend the row did nothing at all.
     eventDispatcher.dispatch('sync-book-progress', { bookKey });
     eventDispatcher.dispatch('push-file-sync', { bookKey });
     eventDispatcher.dispatch('pull-file-sync', { bookKey });
     eventDispatcher.dispatch('flush-kosync', { bookKey });
-    // A tap is a manual sync, so Hardcover pushes even with its Auto Sync off.
-    if (syncStatus.providers.some((p) => p.kind === 'hardcover')) {
-      eventDispatcher.dispatch('hardcover-push-progress', { bookKey, silent: true });
-      eventDispatcher.dispatch('hardcover-push-notes', { bookKey, silent: true });
-    }
     // BookOrbit may be in manual mode (#6029), where nothing is ever pending
     // and the flush above does nothing, so ask it for a real push.
     eventDispatcher.dispatch('push-kosync', { bookKey, provider: 'bookorbit' });

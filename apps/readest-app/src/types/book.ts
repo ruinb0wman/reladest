@@ -598,25 +598,6 @@ export interface BookSearchResult {
 
 export const BOOK_CONFIG_SCHEMA_VERSION = 3;
 
-/**
- * The Hardcover book this file syncs to. Set explicitly from the book menu
- * ("Link Book") or recorded from the first successful automatic match; once
- * present it bypasses ISBN and title matching entirely (#5846). Device-local:
- * the cloud config push only carries the columns in `transformBookConfigToDB`.
- */
-export interface HardcoverBookLink {
-  bookId: number;
-  /** Display only — lets the menu show the linked book without a request. */
-  title: string;
-}
-
-/** The Pagebound book this file syncs to; device-local like `hardcover`. */
-export interface PageboundBookLink {
-  bookId: number;
-  uuid: string;
-  title: string;
-}
-
 export interface BookConfig {
   schemaVersion?: number;
   bookHash?: string;
@@ -636,8 +617,6 @@ export interface BookConfig {
    * shared cross-device state.
    */
   audiobook?: PairedAudiobook;
-  hardcover?: HardcoverBookLink;
-  pagebound?: PageboundBookLink;
   /**
    * The pages of a comic laid out as spreads of their own (wide images), by
    * page path: a device-local cache of measuring them, so a later open skips

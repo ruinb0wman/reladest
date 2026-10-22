@@ -109,31 +109,6 @@ export interface BookOrbitSettings {
   autoSync?: boolean;
 }
 
-export interface HardcoverSettings {
-  enabled: boolean;
-  /** Pasted API token; empty when signed in with OAuth. */
-  accessToken: string;
-  /** Device-local OAuth session; not synced (short-lived, refresh token rotates). */
-  oauth?: { accessToken: string; refreshToken?: string; expiresAt: number };
-  lastSyncedAt: number;
-  // When true, progress + notes are pushed to Hardcover automatically as the
-  // user reads (debounced) instead of only via the reader menu. Default OFF;
-  // existing connected users (undefined) stay manual until they opt in.
-  autoSync?: boolean;
-}
-
-export interface PageboundSettings {
-  enabled: boolean;
-  /** Display only: the account the session belongs to. */
-  email: string;
-  /** Firebase refresh token; Pagebound has no API tokens or OAuth. */
-  refreshToken: string;
-  /** Pagebound's own API token, exchanged from a Firebase id token. */
-  apiToken: string;
-  lastSyncedAt: number;
-  autoSync?: boolean;
-}
-
 /**
  * Sort field for the WebDAV browser listing. 'name' reproduces the
  * legacy directories-first/alphabetical default; the date fields drive
@@ -154,7 +129,7 @@ export interface WebDAVSettings {
   browseSortBy?: WebDAVBrowseSortByType;
   browseSortAscending?: boolean;
   // Sync sub-toggles. WebDAV sync runs as a parallel channel alongside the
-  // native cloud sync, KOSync, Readwise, and Hardcover; each sub-toggle
+  // native cloud sync and KOSync; each sub-toggle
   // gates a category independently so a user can e.g. mirror progress to
   // their own server without uploading book binaries.
   syncProgress?: boolean;
@@ -184,8 +159,8 @@ export interface WebDAVSettings {
  * (reading progress) sync, 'note' gates annotations, 'book' gates book
  * binaries + metadata, 'dictionary' gates the imported-dictionary replica
  * sync. 'credentials' is a meta-toggle that gates the encrypted-credential
- * fields (OPDS username/password, KOSync credentials, Readwise / Hardcover
- * tokens) across whichever replica kinds carry them. Adding a new replica
+ * fields (OPDS username/password, KOSync credentials) across whichever
+ * replica kinds carry them. Adding a new replica
  * kind extends this union.
  */
 export type SyncCategory =
@@ -376,8 +351,6 @@ export interface SystemSettings {
   biometricUnlockEnabled?: boolean;
 
   bookorbit: BookOrbitSettings;
-  hardcover: HardcoverSettings;
-  pagebound: PageboundSettings;
   webdav: WebDAVSettings;
 
   aiSettings: AISettings;

@@ -72,7 +72,6 @@ function makeSettings(overrides: Partial<SystemSettings> = {}): SystemSettings {
       deviceId: 'webdav-device-id',
       lastSyncedAt: 666,
     },
-    hardcover: { enabled: false, accessToken: 'hc-token', lastSyncedAt: 888 },
     googleDrive: {
       enabled: true,
       accountLabel: 'me@gmail.com',
@@ -151,7 +150,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
     expect(out['lastSyncedAtConfigs']).toBeUndefined();
     expect(out['lastSyncedAtNotes']).toBeUndefined();
     expect(out['lastSyncedAtReplicas']).toBeUndefined();
-    expect(rec(out['hardcover'])['lastSyncedAt']).toBeUndefined();
     expect(rec(out['googleDrive'])['lastSyncedAt']).toBeUndefined();
   });
 
@@ -197,7 +195,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
 describe('sanitizeSettingsForBackup - credentials', () => {
   it('strips credentials by default', () => {
     const out = sanitizeSettingsForBackup(makeSettings());
-    expect(rec(out.hardcover)['accessToken']).toBeUndefined();
     expect(rec(out.aiSettings)['aiGatewayApiKey']).toBeUndefined();
     expect(rec(out.aiSettings)['openrouterApiKey']).toBeUndefined();
     // non-credential aiSettings fields (e.g. base URL) survive
@@ -214,7 +211,6 @@ describe('sanitizeSettingsForBackup - credentials', () => {
 
   it('keeps credentials when includeCredentials is true', () => {
     const out = sanitizeSettingsForBackup(makeSettings(), { includeCredentials: true });
-    expect(out.hardcover.accessToken).toBe('hc-token');
     expect(rec(out.aiSettings)['aiGatewayApiKey']).toBe('ai-secret-key');
     expect(rec(out.aiSettings)['openrouterApiKey']).toBe('or-secret-key');
     expect(out.opdsCatalogs[0]!.username).toBe('opds-user');
