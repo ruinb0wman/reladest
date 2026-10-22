@@ -191,7 +191,7 @@ const IntegrationsPanel: React.FC = () => {
               </li>
               <li>
                 {_(
-                  'App settings, reading statistics, and dictionaries still sync through your Readest account while signed in.',
+                  'App settings, reading statistics, and dictionaries stay on the device that made them.',
                 )}
               </li>
             </Tips>
@@ -339,7 +339,7 @@ const IntegrationsPanel: React.FC = () => {
               </li>
               <li>
                 {_(
-                  'App settings, reading statistics, and dictionaries still sync through your Readest account while signed in.',
+                  'App settings, reading statistics, and dictionaries stay on the device that made them.',
                 )}
               </li>
             </Tips>

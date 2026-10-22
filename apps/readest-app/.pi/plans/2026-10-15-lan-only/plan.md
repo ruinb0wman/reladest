@@ -1429,3 +1429,29 @@ Node ≥22 自带 `WebSocket` 即可发 CDP：`Runtime.evaluate`（DOM/路径 + 
 **有意保留**：`replicaKinds.ts`（本地仍在用的 kind 词汇 + contentId 算法）、`migrateLegacy.ts`（真实的磁盘重排迁移，只是不再发布）。
 
 验收：tsc 干净；**776 文件 / 9,132 用例**；`lan:rebuild` 200/200/207；web 端字体面板、管理字体子页、OPDS 目录页全部正常、零 console 错误。
+
+#### 2026-10-22 M3 · 真机验收（vivo V2536A / Android 16 / WebView 138）
+
+**怎么连上的**：真机 `192.168.1.35:44741` 无线 adb。release 包在真机上**没有 devtools socket**——根因是 wry 把 `setWebContentsDebuggingEnabled` 包在 `#[cfg(any(debug_assertions, feature = "devtools"))]` 里（见知识库 `安卓webview-cdp调试`）。带特性重打一次即可：
+
+```sh
+pnpm tauri android build -t aarch64 --features tauri/devtools   # 产物只大 16 KB
+adb -s 192.168.1.35:44741 forward tcp:9223 localabstract:webview_devtools_remote_$PID
+```
+
+**验收结果（真机，全部通过）**：
+| 项 | 结果 |
+|---|---|
+| 集成面板 | 只有 局域网 Nearby BookDrop / 云同步 WebDAV / 内容来源 OPDS ✓ |
+| 首次连接 WebDAV | `几秒前已同步`，**空库拉到 2 本** ✓ |
+| 无本地文件的书 | 点开《毛泽东选集》⇒ 从镜像下载 ⇒ `/reader` 稳定 3216 页 ✓ |
+| 进度回推 | 翻到第 2 页 ⇒ 镜像 `library.json` 的 `progress=[1,3216]`、`updatedAt` 刷新为 `1792678441409` ✓ |
+| Windows 防火墙 | 需要 `New-NetFirewallRule ... -LocalPort 17322`，且**必须 `-Profile Any`**（默认 Private/Domain 在「公用」网络上不生效，表现为端口在听但手机 TCP 超时）✓ |
+| 局域网直连 | 手机 `curl http://192.168.1.20:17321/` → 200、`PROPFIND :17322` → 401（需认证）✓ |
+
+**真机暴露的问题**：
+1. **已修**：集成面板提示还写着「登录期间，应用设置/阅读统计/词典仍会通过您的 Readest 账户同步」——LAN 版没有账户，改成「留在创建设备上」（两处，`IntegrationsPanel.tsx`）
+2. **待复现确认**：改 WebDAV 服务器地址后，**紧接着的一次同步可能仍打旧地址**（真机上看到错误信息里是 `localhost`，而设置已是 `192.168.1.20`；重启应用后正常）。疑似「连接成功后立刻触发的那次同步用了保存前的 settings 快照」，下次先在代码里确认 `persistCloudProviderEnabled` 与首次同步的时序
+3. **不是 bug**：《毛泽东选集》在镜像里没有 `cover.png`，因为**本地也没有生成封面**（`pushBookCover` 正确返回 `no-source`）⇒ 属封面抽取问题，与同步无关；A5 从 backlog 划掉
+
+**驱动方式备忘（比截图准）**：真机上 `uiautomator dump` 对 WebView 只有空节点；`input text` 会被吞字；CDP `Input.dispatchTouchEvent` 点不动书卡而 `el.click()` 立刻生效；填表用「原生 setter + input/change 事件」。细节都在知识库页。
