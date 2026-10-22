@@ -33,7 +33,6 @@ import { eventDispatcher } from '@/utils/event';
 import { getFilename, getFolderImportGroupName, joinScannedPath } from '@/utils/path';
 import { parseOpenWithFiles } from '@/helpers/openWith';
 import { getInitializedAppService, isTauriAppPlatform } from '@/services/environment';
-import { checkForAppUpdates, checkAppReleaseNotes } from '@/helpers/updater';
 import { impactFeedback } from '@tauri-apps/plugin-haptics';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
 
@@ -83,7 +82,6 @@ import { AboutWindow } from '@/components/AboutWindow';
 import { KeyboardShortcutsHelp } from '@/components/KeyboardShortcutsHelp';
 import LocalSendManager from '@/components/localsend/LocalSendManager';
 import { BookDetailModal } from '@/components/metadata';
-import { UpdaterWindow } from '@/components/UpdaterWindow';
 import { CatalogDialog } from './components/OPDSDialog';
 import { FeedsView } from './components/feeds/FeedsView';
 import AddFeedModal from './components/feeds/AddFeedModal';
@@ -467,19 +465,11 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   });
 
   useEffect(() => {
-    const doCheckAppUpdates = async () => {
-      if (appService?.hasUpdater && settings.autoCheckUpdates) {
-        await checkForAppUpdates(_, true, settings.updateChannel);
-      } else if (appService?.hasUpdater === false) {
-        checkAppReleaseNotes();
-      }
-    };
     if (settings.alwaysOnTop) {
       tauriHandleSetAlwaysOnTop(settings.alwaysOnTop);
     }
-    doCheckAppUpdates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appService?.hasUpdater, settings]);
+  }, [settings]);
 
   useEffect(() => {
     if (appService?.isMobileApp) {
@@ -1969,7 +1959,6 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
       <AboutWindow />
       <KeyboardShortcutsHelp />
       <LocalSendManager />
-      <UpdaterWindow />
       <MigrateDataWindow />
       <BackupWindow onPullLibrary={pullLibrary} />
       <CacheManagerWindow />

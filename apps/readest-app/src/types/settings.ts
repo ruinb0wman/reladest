@@ -310,8 +310,6 @@ export interface SystemSettings {
   keepLogin: boolean;
   alwaysOnTop: boolean;
   openBookInNewWindow: boolean;
-  autoCheckUpdates: boolean;
-  updateChannel: 'stable' | 'nightly';
   screenWakeLock: boolean;
   autohideCursor: boolean;
   screenBrightness: number;

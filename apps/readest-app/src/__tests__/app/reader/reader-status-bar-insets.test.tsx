@@ -48,7 +48,6 @@ vi.mock('@/utils/bridge', () => ({
 }));
 vi.mock('@/components/AboutWindow', () => ({ AboutWindow: () => null }));
 vi.mock('@/components/KeyboardShortcutsHelp', () => ({ KeyboardShortcutsHelp: () => null }));
-vi.mock('@/components/UpdaterWindow', () => ({ UpdaterWindow: () => null }));
 vi.mock('@/components/Toast', () => ({ Toast: () => null }));
 vi.mock('@/app/reader/components/ProofreadRules', () => ({ ProofreadRulesManager: () => null }));
 vi.mock('@/app/reader/components/ReaderContent', () => ({ default: () => null }));

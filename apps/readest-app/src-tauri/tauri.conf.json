@@ -13,7 +13,7 @@
   "app": {
     "windows": [],
     "security": {
-      "capabilities": ["default", "desktop-capability"],
+      "capabilities": ["default"],
       "csp": {
         "default-src": "'self' 'unsafe-inline' blob: data: customprotocol: asset: http://asset.localhost http://rangefile.localhost ipc: http://ipc.localhost",
         "connect-src": "'self' blob: data: asset: http://asset.localhost http://rangefile.localhost ipc: http://ipc.localhost http://*:* https://*:* https://*.posthog.com https://*.deepl.com https://*.wikipedia.org https://*.wiktionary.org https://translate.googleapis.com https://translate.toil.cc https://*.microsofttranslator.com https://*.googleusercontent.com",
@@ -174,8 +174,7 @@
         "role": "Viewer",
         "rank": "Alternate"
       }
-    ],
-    "createUpdaterArtifacts": true
+    ]
   },
   "plugins": {
     "fs": {
@@ -216,13 +215,6 @@
       "desktop": {
         "schemes": ["readest"]
       }
-    },
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJFMEQ1QjE2OEU1NEIzNTEKUldSUnMxU09GbHNOdmpEaWFMT1crRFpEV2VORzQ2MklxaFc0M1R0ci9xY2c1bENXS0xhM1R1L2sK",
-      "endpoints": [
-        "https://download.readest.com/releases/latest.json",
-        "https://github.com/readest/readest/releases/latest/download/latest.json"
-      ]
     },
     "webview-upgrade": {
       "minUpgradeMajor": 121,

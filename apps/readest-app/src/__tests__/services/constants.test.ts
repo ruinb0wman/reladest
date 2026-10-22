@@ -63,14 +63,11 @@ import {
   DOWNLOAD_READEST_URL,
   READEST_WEB_BASE_URL,
   READEST_NODE_BASE_URL,
-  READEST_UPDATER_FILE,
-  READEST_CHANGELOG_FILE,
   READEST_PUBLIC_STORAGE_BASE_URL,
   READEST_OPDS_USER_AGENT,
   SYNC_PROGRESS_INTERVAL_SEC,
   SYNC_NOTES_INTERVAL_SEC,
   SYNC_BOOKS_INTERVAL_SEC,
-  CHECK_UPDATE_INTERVAL_SEC,
   MAX_ZOOM_LEVEL,
   MIN_ZOOM_LEVEL,
   ZOOM_STEP,
@@ -207,7 +204,6 @@ describe('services/constants', () => {
       expect(typeof DEFAULT_SYSTEM_SETTINGS.alwaysOnTop).toBe('boolean');
       expect(typeof DEFAULT_SYSTEM_SETTINGS.openBookInNewWindow).toBe('boolean');
       expect(typeof DEFAULT_SYSTEM_SETTINGS.alwaysShowStatusBar).toBe('boolean');
-      expect(typeof DEFAULT_SYSTEM_SETTINGS.autoCheckUpdates).toBe('boolean');
       expect(typeof DEFAULT_SYSTEM_SETTINGS.screenWakeLock).toBe('boolean');
       expect(typeof DEFAULT_SYSTEM_SETTINGS.autohideCursor).toBe('boolean');
       expect(typeof DEFAULT_SYSTEM_SETTINGS.openLastBooks).toBe('boolean');
@@ -824,16 +820,6 @@ describe('services/constants', () => {
       expect(READEST_NODE_BASE_URL).toMatch(/^https:\/\//);
     });
 
-    it('READEST_UPDATER_FILE is a URL ending with .json', () => {
-      expect(READEST_UPDATER_FILE).toMatch(/^https:\/\//);
-      expect(READEST_UPDATER_FILE).toMatch(/\.json$/);
-    });
-
-    it('READEST_CHANGELOG_FILE is a URL ending with .json', () => {
-      expect(READEST_CHANGELOG_FILE).toMatch(/^https:\/\//);
-      expect(READEST_CHANGELOG_FILE).toMatch(/\.json$/);
-    });
-
     it('READEST_PUBLIC_STORAGE_BASE_URL is a valid URL', () => {
       expect(READEST_PUBLIC_STORAGE_BASE_URL).toMatch(/^https:\/\//);
     });
@@ -861,11 +847,6 @@ describe('services/constants', () => {
     it('SYNC_BOOKS_INTERVAL_SEC is a positive number', () => {
       expect(typeof SYNC_BOOKS_INTERVAL_SEC).toBe('number');
       expect(SYNC_BOOKS_INTERVAL_SEC).toBeGreaterThan(0);
-    });
-
-    it('CHECK_UPDATE_INTERVAL_SEC is at least one hour', () => {
-      expect(typeof CHECK_UPDATE_INTERVAL_SEC).toBe('number');
-      expect(CHECK_UPDATE_INTERVAL_SEC).toBeGreaterThanOrEqual(3600);
     });
   });
 

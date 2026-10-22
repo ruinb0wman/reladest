@@ -32,7 +32,6 @@ function makeSettings(overrides: Partial<SystemSettings> = {}): SystemSettings {
     keepLogin: false,
     alwaysOnTop: false,
     openBookInNewWindow: false,
-    autoCheckUpdates: true,
     screenWakeLock: false,
     screenBrightness: 1,
     autoScreenBrightness: true,

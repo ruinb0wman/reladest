@@ -141,8 +141,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   alwaysOnTop: false,
   openBookInNewWindow: true,
   alwaysShowStatusBar: false,
-  autoCheckUpdates: true,
-  updateChannel: 'stable',
   screenWakeLock: false,
   autohideCursor: true,
   screenBrightness: -1, // -1~100, -1 for system default
@@ -862,20 +860,6 @@ export const SHARE_TOKEN_LENGTH = 22;
 export const SHARE_PRESIGN_TTL_SECONDS = 300;
 export const SHARE_CFI_MAX_LENGTH = 512;
 
-const LATEST_DOWNLOAD_BASE_URL = 'https://download.readest.com/releases';
-
-export const READEST_UPDATER_FILE = `${LATEST_DOWNLOAD_BASE_URL}/latest.json`;
-
-export const READEST_CHANGELOG_FILE = `${LATEST_DOWNLOAD_BASE_URL}/release-notes.json`;
-
-export const READEST_NIGHTLY_UPDATER_FILE = 'https://download.readest.com/nightly/latest.json';
-
-// Public (verification) key, identical to src-tauri/tauri.conf.json `updater.pubkey`.
-// Used to verify nightly artifacts in the custom install flows (portable /
-// AppImage / Android). Safe to embed — it is a public key.
-export const READEST_UPDATER_PUBKEY =
-  'dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJFMEQ1QjE2OEU1NEIzNTEKUldSUnMxU09GbHNOdmpEaWFMT1crRFpEV2VORzQ2MklxaFc0M1R0ci9xY2c1bENXS0xhM1R1L2sK';
-
 export const READEST_PUBLIC_STORAGE_BASE_URL = 'https://storage.readest.com';
 // Custom domain serving the readest-public bucket; durable media assets
 // (e.g. published book covers) are linked through this host.
@@ -886,7 +870,6 @@ export const READEST_OPDS_USER_AGENT = 'Readest/1.0 (OPDS Browser)';
 export const SYNC_PROGRESS_INTERVAL_SEC = 3;
 export const SYNC_NOTES_INTERVAL_SEC = 5;
 export const SYNC_BOOKS_INTERVAL_SEC = 5;
-export const CHECK_UPDATE_INTERVAL_SEC = 24 * 60 * 60;
 
 export const MAX_ZOOM_LEVEL = 500;
 export const MIN_ZOOM_LEVEL = 50;
