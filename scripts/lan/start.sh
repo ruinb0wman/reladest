@@ -17,12 +17,13 @@ for p in "$APP_PORT" "$HUB_PORT"; do
   if port_listening "$p"; then echo "!! :$p 已被占用（先 pnpm lan:stop，或用 pnpm lan:status 看看是谁）"; exit 1; fi
 done
 
-# --- WebDAV hub（rclone；dufs 也行）---
-nohup setsid rclone serve webdav "$SYNC_ROOT" \
-  --addr "0.0.0.0:$HUB_PORT" \
-  --user "$WEBDAV_USER" --pass "$WEBDAV_PASS" \
-  --log-file "$LOGS/webdav.log" --log-level INFO \
-  > /dev/null 2>&1 &
+# --- WebDAV hub（我们自己的小服务，见 scripts/lan/dav-server.mjs）---
+# 换掉 rclone 的理由：只需要 OPTIONS/HEAD/GET/PUT/MKCOL/DELETE/PROPFIND 七个动词，
+# 而 rclone 是 60 MB 的外部二进制，配置语法还要单独学。自己这份 ~250 行、跟着仓库走，
+# 出错时日志和代码都在手边。Next 的 route handler 顶不上：App Router 只派发它认识的
+# 方法，PROPFIND/MKCOL 根本进不来。
+SYNC_ROOT="$SYNC_ROOT" HUB_PORT="$HUB_PORT" WEBDAV_USER="$WEBDAV_USER" WEBDAV_PASS="$WEBDAV_PASS" \
+  nohup setsid node "$LAN_SCRIPT_DIR/dav-server.mjs" >> "$LOGS/webdav.log" 2>&1 &
 echo "webdav hub   pid=$!   http://0.0.0.0:$HUB_PORT   root=$SYNC_ROOT"
 
 # --- Next standalone（LAN 档 env，理由见 plan §0.1）---

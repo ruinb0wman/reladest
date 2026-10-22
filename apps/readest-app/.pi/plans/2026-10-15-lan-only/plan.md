@@ -1484,3 +1484,24 @@ adb -s 192.168.1.35:44741 forward tcp:9223 localabstract:webview_devtools_remote
 - **A4**（可选）局域网更新通道：hub 放 `latest.json` + APK，应用只做版本比对并给下载链接，不出局域网
 - **B6** LAN 运维文档（启停/端口/防火墙/镜像结构/排障）
 - `[P4-5]` `start.sh` 看门狗（服务曾静默死过一次）
+
+#### 2026-10-22 M4 · 去掉 rclone + 运维手册 + 看门狗
+
+**A3 WebDAV 换自己实现**（`scripts/lan/dav-server.mjs`，~250 行）：七动词 `OPTIONS/HEAD/GET/PUT/MKCOL/DELETE/PROPFIND`（Depth 0/1）、HTTP Basic（定长比较）、路径逃逸防护（含 symlink realpath 检查）。
+
+**为什么没放进 Next 路由**：App Router 只派发它认识的 HTTP 方法，**PROPFIND / MKCOL 进不来**；绕过去要写 middleware（Edge runtime 没有 fs）。而 rclone 是 60 MB 外部二进制 + 另一套配置语法。自己这份跟着仓库走、日志和代码都在手边，且 hub 单独端口——同步卡死也拖不垮 app。
+
+**协议单测**（`src/__tests__/services/sync/file/dav-server.test.ts`，7 个）：无凭据 401、MKCOL 201/405、PUT 201→204、父目录缺失 409、PROPFIND Depth 0/1 的 207 与 href、递归 DELETE、`..` 逃逸被拒。
+
+**真机/模拟器实测**（`DAV_VERBOSE=1` 看访问日志）：
+- 模拟器 app 起来后：`PROPFIND /` → `HEAD library.json` → `GET library.json` → `PROPFIND /Readest/books`
+- 开书翻页后：`HEAD cover.png` / `HEAD <书文件>` → `MKCOL /Readest`、`/Readest/books`、`/Readest/books/<hash>` → **`PUT .../config.json`**
+- 全程 0 个 401/500 ⇒ Tauri 侧 Rust HTTP 传输（HEAD/GET/PUT/PROPFIND/MKCOL）与我们的服务完全兼容
+
+**B6 运维手册**：`scripts/lan/README.md`（端口、命令、镜像结构、设备配置、防火墙 `-Profile Any`、排障表、为什么不用 rclone/不放 Next、APK 更新与 devtools 特性）
+
+**P4-5 看门狗**：`scripts/lan/watch.sh` + `pnpm lan:watch`，每 30s 检查两个端口，谁掉重启谁（实测 `kill` hub 后 2 秒内自愈）
+
+**A4 局域网更新通道**：本轮**未做**（可选）。现在的路径是手动 `adb install -r`，已在手册里写清。
+
+验收：tsc 干净；**778 文件 / 9,146 用例**（+7 DAV 协议测试）；`lan:start` 起来后 app 200 / dav 207；模拟器端到端同步与 PUT 回推均通过。

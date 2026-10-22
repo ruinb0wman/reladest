@@ -1,0 +1,105 @@
+# LAN 档运维手册
+
+这个分支只做两件事:**PC 上用浏览器读书** + **Android APK 通过局域网和 PC 同步**。
+没有账号、没有云端、没有任何外部请求(除了你自己配的 WebDAV 地址)。
+
+## 端口
+
+| 端口 | 谁 | 说明 |
+|---|---|---|
+| 17321 | Next standalone(app) | 浏览器用 `http://localhost:17321` 打开;**必须**用 `localhost` 或局域网 IP,不要用别的域名 |
+| 17322 | WebDAV hub(自带,`dav-server.mjs`) | 手机/其他设备填 `http://<PC的局域网IP>:17322` |
+
+## 命令
+
+```sh
+pnpm lan:start     # 起 webdav hub + app
+pnpm lan:stop      # 按端口找 pid 停掉两个服务
+pnpm lan:status    # 端口/探活/同步根摘要
+pnpm lan:logs      # 跟随日志
+pnpm lan:build     # 只重建 web 产物(不启动)
+pnpm lan:rebuild   # stop → build → start → status
+pnpm lan:watch     # 常驻看门狗:服务掉了自动重启(见下)
+```
+
+配置在 `~/readest-lan/webdav.env`(由 `scripts/lan/lan.env.example` 首次生成):
+
+```
+SYNC_ROOT=/home/<you>/readest-sync     # 镜像目录(用 Windows 路径也可,WSL 里能访问)
+WEBDAV_USER=readest
+WEBDAV_PASS=<自定>
+APP_PORT=17321
+HUB_PORT=17322
+```
+
+## 镜像结构(FROZEN,别手改目录名)
+
+```
+<SYNC_ROOT>/
+  Readest/
+    library.json                 书库索引(所有设备的并集)
+    settings.json                书架分组 + 阅读偏好(允许清单内的三组)
+    books/<hash>/
+      <标题>.epub                书文件
+      cover.png                  封面(本地有才上传)
+      config.json                进度 + 标注/笔记
+```
+
+## 手机/其他设备怎么配
+
+1. 设置 → 集成 → **云同步 → WebDAV**
+2. 服务器 URL:`http://<PC 的局域网 IP>:17322`
+3. 用户名/密码:上面 `webdav.env` 里的值
+4. 根目录:`/`
+5. 点「连接」→ 状态应显示「几秒前已同步」,书库出现 PC 上的书
+
+点一本没有本地文件的书会从镜像下载;读了之后进度/标注会推回镜像。书架分组和阅读偏好也会跟着走。
+
+## 防火墙(Windows)
+
+端口在 `0.0.0.0` 上监听但手机连不上,九成是防火墙。规则**必须覆盖所有 profile**,
+默认的 `Private,Domain` 在 Windows 把网络判定为「公用」时完全不生效:
+
+```powershell
+New-NetFirewallRule -DisplayName 'ReadestLAN-17321-17322' -Direction Inbound `
+  -Action Allow -Protocol TCP -LocalPort 17321-17322 -Profile Any
+```
+
+临时验证不想动防火墙,可以用 adb 隧道(仅调试):
+
+```sh
+adb -s <serial> reverse tcp:17322 tcp:17322   # 手机里的 http://localhost:17322 直通 PC
+```
+
+## 排障
+
+| 现象 | 原因 / 处理 |
+|---|---|
+| PC 打开是白屏 | `.next/static` 没进 standalone。跑 `pnpm lan:build`(它会拷) |
+| 手机「同步失败 error sending request for url (...localhost...)」 | 手机端 URL 还是 `localhost`(调试隧道已断)。改成 PC 局域网 IP,或重开隧道后重启应用 |
+| 服务在听但手机 TCP 超时 | 防火墙:见上,`-Profile Any` |
+| 改完 WebDAV 地址后第一次同步像没生效 | 已知小问题:紧接着的那次同步可能用了保存前的设置快照。再点一次「立即同步」或重启应用即可 |
+| 书库里有书但打开是空白/闪回 | 书文件没落到本地。打开 WebDAV 子页看目录里 `books/<hash>/` 是否有书文件;`pnpm lan:logs` 看 `webdav.log` 有无 4xx/5xx |
+| 镜像里某本书没封面 | 导出/生成封面失败,不是同步问题:上传链路对没有封面的书会跳过 |
+| 服务静默死掉 | `pnpm lan:watch`,或手动 `pnpm lan:start`;日志在 `~/readest-lan/logs/` |
+
+## 为什么 WebDAV 不用 rclone / 不放 Next 路由里
+
+- Next App Router 只派发它认识的方法(GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS),
+  **PROPFIND / MKCOL 根本进不来**,要用 middleware 绕(Edge runtime 没有 fs)。
+- rclone 是 60 MB 外部二进制,还得单独学一套配置语法。
+- 所以留了一份 ~250 行的 `scripts/lan/dav-server.mjs`:七个动词、HTTP Basic、
+  路径逃逸防护,协议行为有单测(`src/__tests__/services/sync/file/dav-server.test.ts`)。
+
+## 更新 APK
+
+没有应用内更新(那份逻辑会请求外网,已删)。手动换包:
+
+```sh
+cd apps/readest-app
+pnpm tauri android build -t aarch64        # 产物 gen/android/.../app-universal-release.apk
+adb install -r <apk>                        # 同签名可覆盖安装,数据保留
+```
+
+想要能远程调试 WebView(CDP),加一个特性重新打:`--features tauri/devtools`
+(详见知识库 `安卓webview-cdp调试`;日常包不要带,它会把调试台暴露给任何能 adb 的设备)。
