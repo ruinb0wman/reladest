@@ -1354,3 +1354,16 @@ Node ≥22 自带 `WebSocket` 即可发 CDP：`Runtime.evaluate`（DOM/路径 + 
 - PC 侧（bow，真实指针）：库内两本在、卡片上传按钮修复后 WebDAV 子页正常、显示「几秒前已同步」。
 
 **⚠️ 本轮的一次误操作与恢复（记录在案）**：清理「样书行」时，网格顺序与截图不同，长按命中的是第一张卡 = **用户自己的《毛泽东选集》**（不是样书），在模拟器上被删除（本机文件清除 + 镜像 tombstone + manifest）。恢复：① 从镜像 `library.json` 撤掉 tombstone（留了 `.bak-before-revive` 备份）；② PC 副本始终完好（未受影响）；③ 按 `layout.ts` 的布局把源文件（identifier 与行内 `urn:uuid:6ebcf06e…` **完全一致**）放回 `books/e957fd27…/50799_毛泽东选集（全四卷）_-.epub`；④ 手机重装后重新拉取 + 下载，阅读器正常打开。**教训**：那张「指数基金投资指南」卡不是样书，是用户自己的真书（中信出版社、355 页、2.79MB），它的 `url` 字段才是样书路径 —— WP1 文档里「同源样书地址使真书 `06e01d70…` 被误判」说的就是这件事。清理任何行之前先读它的元数据。
+
+#### 2026-10-22 模拟器验收：APK v4（updater + Readwise 移除后）
+
+**产物**：`~/readest-lan/dist/readest-lan-v0.12.16-slim-v4.apk`（57,279,418 B；sha256 `0c90674d…`；签名 `21e30a9b…55e5e4` ⇒ 可覆盖安装）。比 v3 小 **1.2 MB**，差额来自 updater（1,216 行 TS + 226 行 Rust）与 Readwise（808 行）。
+
+**模拟器实测（升级安装，保留数据）**：
+- 启动正常，书库 2 本，无幽灵行 ✓
+- 关于窗口**没有**「Check Update」行（`hasCheckUpdate=false`）✓
+- 集成面板：`Local Network → Nearby BookDrop`、`Reading Sync → BookOrbit/Hardcover/Pagebound/Notion`（P2–P5 待删）、`Cloud Sync → WebDAV`、`Content Sources → OPDS`，**Readwise 已消失** ✓
+- WebDAV 子页正常打开（无崩溃）；首次打开显示 `Sync failed` —— 那是**构建期间 hub 被停**（`lan:build` 只构建不启动）造成的，`pnpm lan:start` 之后点「Sync now」→ `Synced a few seconds ago`，无失败 ✓
+- 点《毛泽东选集》→ `/reader|reader` 连续 6 秒稳定 ✓
+
+**运维注意**：`pnpm lan:build` 结束只打印「构建完成 → pnpm lan:start」，**不会自动启动服务**；构建 APK 也要先 `lan:stop`。顺序：`lan:stop` → `tauri android build` → `lan:build` → `lan:start`。
