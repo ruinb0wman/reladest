@@ -73,13 +73,6 @@ function makeSettings(overrides: Partial<SystemSettings> = {}): SystemSettings {
       lastSyncedAt: 666,
     },
     hardcover: { enabled: false, accessToken: 'hc-token', lastSyncedAt: 888 },
-    notion: {
-      enabled: true,
-      accessToken: 'notion-token',
-      databaseId: 'notion-database-id',
-      lastSyncedAt: 777,
-      includeChapterHeading: false,
-    },
     googleDrive: {
       enabled: true,
       accountLabel: 'me@gmail.com',
@@ -159,8 +152,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
     expect(out['lastSyncedAtNotes']).toBeUndefined();
     expect(out['lastSyncedAtReplicas']).toBeUndefined();
     expect(rec(out['hardcover'])['lastSyncedAt']).toBeUndefined();
-    expect(rec(out['notion'])['lastSyncedAt']).toBeUndefined();
-    expect(rec(out['notion'])['databaseId']).toBe('notion-database-id');
     expect(rec(out['googleDrive'])['lastSyncedAt']).toBeUndefined();
   });
 
@@ -207,7 +198,6 @@ describe('sanitizeSettingsForBackup - credentials', () => {
   it('strips credentials by default', () => {
     const out = sanitizeSettingsForBackup(makeSettings());
     expect(rec(out.hardcover)['accessToken']).toBeUndefined();
-    expect(rec(out.notion)['accessToken']).toBeUndefined();
     expect(rec(out.aiSettings)['aiGatewayApiKey']).toBeUndefined();
     expect(rec(out.aiSettings)['openrouterApiKey']).toBeUndefined();
     // non-credential aiSettings fields (e.g. base URL) survive
@@ -225,7 +215,6 @@ describe('sanitizeSettingsForBackup - credentials', () => {
   it('keeps credentials when includeCredentials is true', () => {
     const out = sanitizeSettingsForBackup(makeSettings(), { includeCredentials: true });
     expect(out.hardcover.accessToken).toBe('hc-token');
-    expect(out.notion.accessToken).toBe('notion-token');
     expect(rec(out.aiSettings)['aiGatewayApiKey']).toBe('ai-secret-key');
     expect(rec(out.aiSettings)['openrouterApiKey']).toBe('or-secret-key');
     expect(out.opdsCatalogs[0]!.username).toBe('opds-user');
@@ -236,7 +225,6 @@ describe('sanitizeSettingsForBackup - credentials', () => {
     const out = rec(sanitizeSettingsForBackup(makeSettings(), { includeCredentials: true }));
     expect(out['localBooksDir']).toBeUndefined();
     expect(out['replicaDeviceId']).toBeUndefined();
-    expect(rec(out['notion'])['lastSyncedAt']).toBeUndefined();
   });
 
   it('every credential path is a string', () => {

@@ -21,7 +21,6 @@ import {
   BookOrbitSettings,
   LibraryGroupByType,
   LibrarySortByType,
-  NotionSettings,
   ReadSettings,
   SystemSettings,
   WebDAVSettings,
@@ -101,16 +100,7 @@ export const DEFAULT_PAGEBOUND_SETTINGS = {
   autoSync: false,
 } as PageboundSettings;
 
-export const NOTION_API_BASE_URL = 'https://api.notion.com/v1';
 export const NOTION_API_VERSION = '2026-03-11';
-
-export const DEFAULT_NOTION_SETTINGS = {
-  enabled: false,
-  accessToken: '',
-  databaseId: '',
-  lastSyncedAt: 0,
-  includeChapterHeading: true,
-} as NotionSettings;
 
 export const DEFAULT_WEBDAV_SETTINGS = {
   enabled: false,
@@ -185,7 +175,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
   bookorbit: DEFAULT_BOOKORBIT_SETTINGS,
   hardcover: DEFAULT_HARDCOVER_SETTINGS,
   pagebound: DEFAULT_PAGEBOUND_SETTINGS,
-  notion: DEFAULT_NOTION_SETTINGS,
   webdav: DEFAULT_WEBDAV_SETTINGS,
   aiSettings: DEFAULT_AI_SETTINGS,
 

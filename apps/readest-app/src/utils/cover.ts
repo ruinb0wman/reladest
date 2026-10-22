@@ -2,7 +2,7 @@ import { Book } from '@/types/book';
 import { AppService } from '@/types/system';
 
 /**
- * True when the URL is fetchable by external services (Readwise, markdown
+ * True when the URL is fetchable by external services (markdown
  * readers), i.e. not a local dev server or the Tauri asset protocol.
  */
 export const isPublicImageUrl = (url?: string | null): url is string =>
@@ -15,7 +15,7 @@ export const isPublicImageUrl = (url?: string | null): url is string =>
  *
  * The local cover.png used to be published to Readest's public bucket
  * (`media/book_covers/<user-seg>/<coverHash>.png`, served via
- * assets.readest.com) so external services — Readwise, Notion, Discord, an
+ * assets.readest.com) so external services — Discord, an
  * exported markdown file — could fetch it. A LAN build has no public bucket to
  * publish to and no account to own the object, so books without a public
  * `coverImageUrl` simply have no public cover. Every caller already treats

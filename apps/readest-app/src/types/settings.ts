@@ -134,21 +134,6 @@ export interface PageboundSettings {
   autoSync?: boolean;
 }
 
-export interface NotionSettings {
-  enabled: boolean;
-  /** Notion integration token (`secret_...`). */
-  accessToken: string;
-  /**
-   * Target Notion data source id. The connection form also accepts a database
-   * container or a page containing a child database and resolves it before
-   * persisting settings.
-   */
-  databaseId: string;
-  lastSyncedAt: number;
-  /** Append a chapter heading block before each highlight (default ON). */
-  includeChapterHeading?: boolean;
-}
-
 /**
  * Sort field for the WebDAV browser listing. 'name' reproduces the
  * legacy directories-first/alphabetical default; the date fields drive
@@ -393,7 +378,6 @@ export interface SystemSettings {
   bookorbit: BookOrbitSettings;
   hardcover: HardcoverSettings;
   pagebound: PageboundSettings;
-  notion: NotionSettings;
   webdav: WebDAVSettings;
 
   aiSettings: AISettings;

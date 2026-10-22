@@ -65,6 +65,9 @@ const migrations: Record<SchemaType, MigrationEntry[]> = {
       `,
     },
   ],
+  // The Notion integration is gone, but this step stays: it is part of the
+  // schema history every existing database already ran, and dropping it would
+  // make old and new installs diverge. Nothing reads these tables any more.
   'notion-sync': [
     {
       name: '2026083001_notion_sync_mappings',

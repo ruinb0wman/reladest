@@ -6,7 +6,6 @@ import {
   RiRssLine,
   RiBook3Line,
   RiBookmark3Line,
-  RiFileList3Line,
   RiDiscordLine,
   RiWifiLine,
   RiCloudLine,
@@ -35,7 +34,6 @@ import { eventDispatcher } from '@/utils/event';
 import BookOrbitForm from './integrations/BookOrbitForm';
 import HardcoverForm from './integrations/HardcoverForm';
 import PageboundForm from './integrations/PageboundForm';
-import NotionForm from './integrations/NotionForm';
 import LocalSendForm from './integrations/LocalSendForm';
 import WebDAVForm from './integrations/WebDAVForm';
 import { persistCloudProviderEnabled } from './integrations/cloudSync';
@@ -60,7 +58,6 @@ type SubPage =
   | 'readest-cloud'
   | 'hardcover'
   | 'pagebound'
-  | 'notion'
   | 'opds'
   | 'localsend'
   | null;
@@ -162,7 +159,6 @@ const IntegrationsPanel: React.FC = () => {
       requestedSubPage === 'webdav' ||
       requestedSubPage === 'hardcover' ||
       requestedSubPage === 'pagebound' ||
-      requestedSubPage === 'notion' ||
       requestedSubPage === 'opds' ||
       requestedSubPage === 'localsend'
     ) {
@@ -260,12 +256,6 @@ const IntegrationsPanel: React.FC = () => {
         <PageboundForm onBack={() => setSubPage(null)} />
       </div>
     );
-  if (subPage === 'notion')
-    return (
-      <div className='my-4 w-full'>
-        <NotionForm onBack={() => setSubPage(null)} />
-      </div>
-    );
   if (subPage === 'opds')
     return (
       <div className='my-4 w-full'>
@@ -289,11 +279,6 @@ const IntegrationsPanel: React.FC = () => {
     settings.pagebound?.enabled && settings.pagebound.refreshToken
       ? _('Connected')
       : _('Not connected');
-  const notionStatus =
-    settings.notion?.enabled && settings.notion.accessToken && settings.notion.databaseId
-      ? _('Connected')
-      : _('Not connected');
-
   // Cloud sync providers are independently selectable (#5062): any subset of
   // {Readest Cloud, WebDAV, Google Drive, S3, OneDrive, iCloud} can sync the
   // library at once. A "configured" third-party provider (WebDAV creds / a Drive
@@ -394,12 +379,6 @@ const IntegrationsPanel: React.FC = () => {
                 onClick={() => setSubPage('pagebound')}
               />
             )}
-            <IntegrationRow
-              icon={RiFileList3Line}
-              title={_('Notion')}
-              status={notionStatus}
-              onClick={() => setSubPage('notion')}
-            />
           </div>
         </div>
       </div>
