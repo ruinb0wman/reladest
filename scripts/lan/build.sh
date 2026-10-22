@@ -23,4 +23,5 @@ cp -r public "$DEST/public"
 du -sh "$STANDALONE"
 
 echo
-echo "构建完成 → pnpm lan:start"
+echo "构建完成。启动：pnpm lan:start（或一条命令：pnpm lan:rebuild）"
+echo "提示：如果同时要打 APK，先关掉模拟器——cargo/gradle 的并行编译会把它挤死。"

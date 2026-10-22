@@ -1,7 +1,6 @@
 import { FileSystem, SaveLibraryBooksOptions } from '@/types/system';
 import { Book } from '@/types/book';
 import { getLibraryFilename } from '@/utils/book';
-import { isDemoBook } from './demoBooks';
 import { safeLoadJSON, safeSaveJSON } from './persistence';
 
 const COVER_CONCURRENCY = 20;
@@ -41,17 +40,7 @@ export async function saveLibraryBooks(
   books: Book[],
   options?: SaveLibraryBooksOptions,
 ): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  // The sample shelf is shown, not owned. `isDemo` rows reach this function
-  // because the library page merges them into the store so the cards can be
-  // rendered, and every save from then on passes the store's library — a save
-  // here, a progress stamp there. Dropping them at the persistence boundary is
-  // the only choke point all of those share, and it is what keeps a 6.8 MB
-  // sample out of library.json (and therefore out of the WebDAV mirror, which
-  // would hand every other device a book nobody imported).
-  const incoming = books
-    .filter((book) => !isDemoBook(book))
-    .map(({ coverImageUrl, ...rest }) => rest);
+  const incoming = books.map(({ coverImageUrl, ...rest }) => rest);
 
   if (options?.replace) {
     await safeSaveJSON(fs, getLibraryFilename(), 'Books', incoming);

@@ -39,14 +39,6 @@ pub(crate) async fn save_image_to_gallery<R: Runtime>(
 }
 
 #[command]
-pub(crate) async fn use_background_audio<R: Runtime>(
-    app: AppHandle<R>,
-    payload: UseBackgroundAudioRequest,
-) -> Result<()> {
-    app.native_bridge().use_background_audio(payload)
-}
-
-#[command]
 pub(crate) async fn set_multicast_lock<R: Runtime>(
     app: AppHandle<R>,
     payload: MulticastLockRequest,
@@ -68,14 +60,6 @@ pub(crate) async fn read_share_clip_html<R: Runtime>(
     payload: ReadShareClipHtmlRequest,
 ) -> Result<ReadShareClipHtmlResponse> {
     app.native_bridge().read_share_clip_html(payload)
-}
-
-#[command]
-pub(crate) async fn install_package<R: Runtime>(
-    app: AppHandle<R>,
-    payload: InstallPackageRequest,
-) -> Result<InstallPackageResponse> {
-    app.native_bridge().install_package(payload)
 }
 
 #[command]

@@ -3,8 +3,6 @@ const COMMANDS: &[&str] = &[
     "copy_uri_to_path",
     "render_pdf_cover",
     "save_image_to_gallery",
-    "use_background_audio",
-    "install_package",
     "set_system_ui_visibility",
     "get_status_bar_height",
     "get_sys_fonts_list",

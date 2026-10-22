@@ -44,7 +44,6 @@ import android.graphics.fonts.SystemFonts
 import android.graphics.fonts.Font
 import androidx.core.view.WindowCompat
 import androidx.core.app.ActivityCompat
-import androidx.core.content.FileProvider
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -87,11 +86,6 @@ class SaveImageToGalleryRequestArgs {
     var fileName: String? = null
     var mimeType: String? = null
     var albumName: String? = null
-}
-
-@InvokeArg
-class InstallPackageRequestArgs {
-    var path: String? = null
 }
 
 @InvokeArg
@@ -713,41 +707,6 @@ class NativeBridgePlugin(private val activity: Activity): Plugin(activity) {
                     Log.e("NativeBridge", "Failed to save image to gallery", e)
                     r.put("success", false)
                     r.put("error", "${e.javaClass.simpleName}: ${e.message}")
-                }
-                r
-            }
-            if (isActive) invoke.resolve(ret)
-        }
-    }
-
-    @Command
-    fun install_package(invoke: Invoke) {
-        val args = invoke.parseArgs(InstallPackageRequestArgs::class.java)
-        pluginScope.launch {
-            val ret = withContext(Dispatchers.IO) {
-                val r = JSObject()
-                try {
-                    val file = File(args.path ?: "")
-                    if (file.exists()) {
-                        val intent = Intent(Intent.ACTION_VIEW)
-                        val apkUri = FileProvider.getUriForFile(activity, "${activity.packageName}.fileprovider", file)
-                        intent.setDataAndType(apkUri, "application/vnd.android.package-archive")
-                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                        val packageManager = activity.packageManager
-                        val resolveInfos = packageManager.queryIntentActivities(intent, 0)
-                        for (resolveInfo in resolveInfos) {
-                            val packageName = resolveInfo.activityInfo.packageName
-                            activity.grantUriPermission(packageName, apkUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        }
-                        withContext(Dispatchers.Main) { activity.startActivity(intent) }
-                        r.put("success", true)
-                    } else {
-                        r.put("success", false)
-                        r.put("error", "File does not exist")
-                    }
-                } catch (e: Exception) {
-                    r.put("success", false)
-                    r.put("error", e.message)
                 }
                 r
             }

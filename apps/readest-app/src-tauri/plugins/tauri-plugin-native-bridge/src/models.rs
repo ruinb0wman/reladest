@@ -66,12 +66,6 @@ pub struct SaveImageToGalleryResponse {
     pub error: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct UseBackgroundAudioRequest {
-    pub enabled: bool,
-}
-
 /// Acquire/release the Android WifiManager MulticastLock so LocalSend
 /// discovery announcements are delivered while the service runs.
 #[derive(Debug, Deserialize, Serialize)]
@@ -88,19 +82,6 @@ pub struct MulticastLockRequest {
 pub struct SetSelectionSuppressedRequest {
     pub target: String,
     pub suppressed: bool,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InstallPackageRequest {
-    pub path: String,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InstallPackageResponse {
-    pub success: bool,
-    pub error: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

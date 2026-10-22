@@ -11,7 +11,6 @@ import { debounce } from '@/utils/debounce';
 import { eventDispatcher } from '@/utils/event';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getActiveFileSyncBackends } from '@/services/sync/cloudSyncProvider';
-import { isDemoBook } from '@/services/demoBooks';
 import { isFeedBook } from '@/services/rss/feedBookUrl';
 import { ensureFeedBookCover } from '@/services/rss/feedBook';
 import { runFileLibrarySyncPass } from '@/services/sync/file/runLibrarySync';
@@ -47,9 +46,6 @@ export const useBooksSync = () => {
     if (!user) return {};
     const library = useLibraryStore.getState().library;
     const newBooks = library
-      // Demo books are the sample shelf we hand anonymous web visitors, not the
-      // user's content — they never go to the cloud (issue #5049).
-      .filter((book) => !isDemoBook(book))
       .filter(
         (book) =>
           !book.syncedAt ||
@@ -180,13 +176,7 @@ export const useBooksSync = () => {
     // book deleted before deletes stamped `updatedAt` (#6663), the not-deleted
     // cloud row wins the LWW tie and clears `deletedAt`, resurrecting a book
     // the user deleted (coverless, since its cover was never uploaded either).
-    const demoHashes = new Set(
-      useLibraryStore
-        .getState()
-        .library.filter(isDemoBook)
-        .map((book) => book.hash),
-    );
-    const cloudBooks = syncedBooks.filter((book) => !demoHashes.has(book.hash));
+    const cloudBooks = syncedBooks;
     if (!cloudBooks.length) return;
 
     // Process old books first so that when we update the library the order is preserved

@@ -151,12 +151,22 @@ describe('downloadNovel', () => {
       '<div id="content">',
       '<div id="content"><img src="https://cdn.example.org/x.jpg"/><figure><img src="/y.png"/></figure>',
     );
-    const book = await downloadNovel(toc({ chapters: toc().chapters.slice(0, 5) }), TOC_URL, {
-      fetchPage: makeFetchPage({ [`${BASE}/novel/7/1`]: page }),
-    });
-    const files = await unzipEpub(book.file);
-    expect(files.get('OEBPS/chapter1.xhtml')).not.toContain('src="https://cdn.example.org');
-    expect(files.get('OEBPS/chapter1.xhtml')).not.toContain('src="/y.png');
+    // The bundler downloads images through `globalThis.fetch`, not through the
+    // injected `fetchPage`. Left alone, that is a real DNS lookup of
+    // cdn.example.org: the test passes on a fast network and times out when the
+    // suite runs in parallel. The scenario under test is "the image download
+    // fails", so fail it immediately and deterministically.
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
+    try {
+      const book = await downloadNovel(toc({ chapters: toc().chapters.slice(0, 5) }), TOC_URL, {
+        fetchPage: makeFetchPage({ [`${BASE}/novel/7/1`]: page }),
+      });
+      const files = await unzipEpub(book.file);
+      expect(files.get('OEBPS/chapter1.xhtml')).not.toContain('src="https://cdn.example.org');
+      expect(files.get('OEBPS/chapter1.xhtml')).not.toContain('src="/y.png');
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it('keeps going when a chapter fails and inserts a placeholder', async () => {

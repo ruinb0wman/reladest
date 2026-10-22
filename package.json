@@ -8,6 +8,7 @@
     "tauri": "pnpm --filter @readest/readest-app tauri",
     "dev-web": "pnpm --filter @readest/readest-app dev-web",
     "lan:build": "bash scripts/lan/build.sh",
+    "lan:rebuild": "bash scripts/lan/rebuild.sh",
     "lan:start": "bash scripts/lan/start.sh",
     "lan:stop": "bash scripts/lan/stop.sh",
     "lan:status": "bash scripts/lan/status.sh",

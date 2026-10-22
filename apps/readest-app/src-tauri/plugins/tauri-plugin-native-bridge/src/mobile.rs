@@ -61,14 +61,6 @@ impl<R: Runtime> NativeBridge<R> {
 }
 
 impl<R: Runtime> NativeBridge<R> {
-    pub fn use_background_audio(&self, payload: UseBackgroundAudioRequest) -> crate::Result<()> {
-        self.0
-            .run_mobile_plugin("use_background_audio", payload)
-            .map_err(Into::into)
-    }
-}
-
-impl<R: Runtime> NativeBridge<R> {
     /// The MulticastLock is an Android concept; iOS delivers multicast
     /// without one (entitlements permitting), so this is a no-op there.
     pub fn set_multicast_lock(&self, payload: MulticastLockRequest) -> crate::Result<()> {
@@ -98,14 +90,6 @@ impl<R: Runtime> NativeBridge<R> {
 }
 
 impl<R: Runtime> NativeBridge<R> {
-    pub fn install_package(
-        &self,
-        payload: InstallPackageRequest,
-    ) -> crate::Result<InstallPackageResponse> {
-        self.0
-            .run_mobile_plugin("install_package", payload)
-            .map_err(Into::into)
-    }
 }
 
 impl<R: Runtime> NativeBridge<R> {
