@@ -109,23 +109,6 @@ export interface BookOrbitSettings {
   autoSync?: boolean;
 }
 
-export interface ReadwiseSettings {
-  enabled: boolean;
-  accessToken: string;
-  lastSyncedAt: number;
-  /**
-   * Send the book cover with pushed highlights (image_url). Optional so
-   * settings persisted before this option existed default to enabled.
-   */
-  includeCoverImage?: boolean;
-  /**
-   * Advanced: override the Readwise API base URL (e.g. for a self-hosted,
-   * Readwise-compatible receiver). When unset or blank, the official
-   * `READWISE_API_BASE_URL` is used.
-   */
-  baseUrl?: string;
-}
-
 export interface HardcoverSettings {
   enabled: boolean;
   /** Pasted API token; empty when signed in with OAuth. */
@@ -408,7 +391,6 @@ export interface SystemSettings {
   biometricUnlockEnabled?: boolean;
 
   bookorbit: BookOrbitSettings;
-  readwise: ReadwiseSettings;
   hardcover: HardcoverSettings;
   pagebound: PageboundSettings;
   notion: NotionSettings;

@@ -72,7 +72,6 @@ function makeSettings(overrides: Partial<SystemSettings> = {}): SystemSettings {
       deviceId: 'webdav-device-id',
       lastSyncedAt: 666,
     },
-    readwise: { enabled: true, accessToken: 'rw-token', lastSyncedAt: 999 },
     hardcover: { enabled: false, accessToken: 'hc-token', lastSyncedAt: 888 },
     notion: {
       enabled: true,
@@ -159,7 +158,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
     expect(out['lastSyncedAtConfigs']).toBeUndefined();
     expect(out['lastSyncedAtNotes']).toBeUndefined();
     expect(out['lastSyncedAtReplicas']).toBeUndefined();
-    expect(rec(out['readwise'])['lastSyncedAt']).toBeUndefined();
     expect(rec(out['hardcover'])['lastSyncedAt']).toBeUndefined();
     expect(rec(out['notion'])['lastSyncedAt']).toBeUndefined();
     expect(rec(out['notion'])['databaseId']).toBe('notion-database-id');
@@ -208,7 +206,6 @@ describe('sanitizeSettingsForBackup - blacklist', () => {
 describe('sanitizeSettingsForBackup - credentials', () => {
   it('strips credentials by default', () => {
     const out = sanitizeSettingsForBackup(makeSettings());
-    expect(rec(out.readwise)['accessToken']).toBeUndefined();
     expect(rec(out.hardcover)['accessToken']).toBeUndefined();
     expect(rec(out.notion)['accessToken']).toBeUndefined();
     expect(rec(out.aiSettings)['aiGatewayApiKey']).toBeUndefined();
@@ -227,7 +224,6 @@ describe('sanitizeSettingsForBackup - credentials', () => {
 
   it('keeps credentials when includeCredentials is true', () => {
     const out = sanitizeSettingsForBackup(makeSettings(), { includeCredentials: true });
-    expect(out.readwise.accessToken).toBe('rw-token');
     expect(out.hardcover.accessToken).toBe('hc-token');
     expect(out.notion.accessToken).toBe('notion-token');
     expect(rec(out.aiSettings)['aiGatewayApiKey']).toBe('ai-secret-key');

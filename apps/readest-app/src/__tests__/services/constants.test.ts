@@ -23,8 +23,6 @@ import {
   BOOK_UNGROUPED_ID,
   SUPPORTED_IMAGE_EXTS,
   IMAGE_ACCEPT_FORMATS,
-  READWISE_API_BASE_URL,
-  DEFAULT_READWISE_SETTINGS,
   DEFAULT_SYSTEM_SETTINGS,
   DEFAULT_MOBILE_SYSTEM_SETTINGS,
   HIGHLIGHT_COLOR_HEX,
@@ -174,23 +172,6 @@ describe('services/constants', () => {
   // ---------------------------------------------------------------------------
 
   // ---------------------------------------------------------------------------
-  // Readwise settings
-  // ---------------------------------------------------------------------------
-  describe('Readwise constants', () => {
-    it('READWISE_API_BASE_URL is a valid URL string', () => {
-      expect(typeof READWISE_API_BASE_URL).toBe('string');
-      expect(READWISE_API_BASE_URL).toMatch(/^https:\/\//);
-    });
-
-    it('DEFAULT_READWISE_SETTINGS has expected structure', () => {
-      expect(typeof DEFAULT_READWISE_SETTINGS).toBe('object');
-      expect(DEFAULT_READWISE_SETTINGS.enabled).toBe(false);
-      expect(typeof DEFAULT_READWISE_SETTINGS.accessToken).toBe('string');
-      expect(typeof DEFAULT_READWISE_SETTINGS.lastSyncedAt).toBe('number');
-    });
-  });
-
-  // ---------------------------------------------------------------------------
   // System settings
   // ---------------------------------------------------------------------------
   describe('DEFAULT_SYSTEM_SETTINGS', () => {
@@ -253,7 +234,6 @@ describe('services/constants', () => {
     });
 
     it('has nested settings objects', () => {
-      expect(DEFAULT_SYSTEM_SETTINGS.readwise).toBeDefined();
       expect(DEFAULT_SYSTEM_SETTINGS.aiSettings).toBeDefined();
     });
 

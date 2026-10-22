@@ -123,10 +123,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
     eventDispatcher.dispatch('push-kosync', { bookKey: sideBarBookKey, provider });
     setIsDropdownOpen?.(false);
   };
-  const handlePushReadwise = () => {
-    eventDispatcher.dispatch('readwise-push-all', { bookKey: sideBarBookKey });
-    setIsDropdownOpen?.(false);
-  };
   const handlePushNotion = () => {
     eventDispatcher.dispatch('notion-push-all', { bookKey: sideBarBookKey });
     setIsDropdownOpen?.(false);
@@ -208,7 +204,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
           <MenuItem label={_('Enter Parallel Read')} onClick={handleSetParallel} />
         ))}
       {(bookOrbitProgressSync ||
-        settings.readwise.enabled ||
         settings.hardcover.enabled ||
         pageboundEnabled ||
         (settings.notion.enabled && settings.notion.accessToken && settings.notion.databaseId)) && (
@@ -219,13 +214,6 @@ const BookMenu: React.FC<BookMenuProps> = ({ menuClassName, setIsDropdownOpen })
           <ul className='flex flex-col ps-1'>
             <MenuItem label={_('Push Progress')} noIcon onClick={handlePushKOSync('bookorbit')} />
             <MenuItem label={_('Pull Progress')} noIcon onClick={handlePullKOSync('bookorbit')} />
-          </ul>
-        </MenuItem>
-      )}
-      {settings.readwise.enabled && (
-        <MenuItem label={_('Readwise Sync')} detailsOpen={false} buttonClass='py-2'>
-          <ul className='flex flex-col ps-1'>
-            <MenuItem label={_('Push Highlights')} noIcon onClick={handlePushReadwise} />
           </ul>
         </MenuItem>
       )}

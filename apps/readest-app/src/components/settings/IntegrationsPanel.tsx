@@ -4,7 +4,6 @@ import { MdChevronRight } from 'react-icons/md';
 import {
   RiPlanetLine,
   RiRssLine,
-  RiBookReadLine,
   RiBook3Line,
   RiBookmark3Line,
   RiFileList3Line,
@@ -34,7 +33,6 @@ import {
 import { navigateToLogin, navigateToProfile } from '@/utils/nav';
 import { eventDispatcher } from '@/utils/event';
 import BookOrbitForm from './integrations/BookOrbitForm';
-import ReadwiseForm from './integrations/ReadwiseForm';
 import HardcoverForm from './integrations/HardcoverForm';
 import PageboundForm from './integrations/PageboundForm';
 import NotionForm from './integrations/NotionForm';
@@ -60,7 +58,6 @@ type SubPage =
   | 'bookorbit'
   | 'webdav'
   | 'readest-cloud'
-  | 'readwise'
   | 'hardcover'
   | 'pagebound'
   | 'notion'
@@ -163,7 +160,6 @@ const IntegrationsPanel: React.FC = () => {
     if (
       requestedSubPage === 'bookorbit' ||
       requestedSubPage === 'webdav' ||
-      requestedSubPage === 'readwise' ||
       requestedSubPage === 'hardcover' ||
       requestedSubPage === 'pagebound' ||
       requestedSubPage === 'notion' ||
@@ -252,12 +248,6 @@ const IntegrationsPanel: React.FC = () => {
         </BoxedList>
       </div>
     );
-  if (subPage === 'readwise')
-    return (
-      <div className='my-4 w-full'>
-        <ReadwiseForm onBack={() => setSubPage(null)} />
-      </div>
-    );
   if (subPage === 'hardcover')
     return (
       <div className='my-4 w-full'>
@@ -294,7 +284,6 @@ const IntegrationsPanel: React.FC = () => {
       : _('Connected')
     : _('Not connected');
 
-  const readwiseStatus = settings.readwise?.enabled ? _('Connected') : _('Not connected');
   const hardcoverStatus = settings.hardcover?.enabled ? _('Connected') : _('Not connected');
   const pageboundStatus =
     settings.pagebound?.enabled && settings.pagebound.refreshToken
@@ -389,12 +378,6 @@ const IntegrationsPanel: React.FC = () => {
               title={_('BookOrbit')}
               status={bookOrbitStatus}
               onClick={() => setSubPage('bookorbit')}
-            />
-            <IntegrationRow
-              icon={RiBookReadLine}
-              title={_('Readwise')}
-              status={readwiseStatus}
-              onClick={() => setSubPage('readwise')}
             />
             <IntegrationRow
               icon={RiBook3Line}
