@@ -1455,3 +1455,32 @@ adb -s 192.168.1.35:44741 forward tcp:9223 localabstract:webview_devtools_remote
 3. **不是 bug**：《毛泽东选集》在镜像里没有 `cover.png`，因为**本地也没有生成封面**（`pushBookCover` 正确返回 `no-source`）⇒ 属封面抽取问题，与同步无关；A5 从 backlog 划掉
 
 **驱动方式备忘（比截图准）**：真机上 `uiautomator dump` 对 WebView 只有空节点；`input text` 会被吞字；CDP `Input.dispatchTouchEvent` 点不动书卡而 `el.click()` 立刻生效；填表用「原生 setter + input/change 事件」。细节都在知识库页。
+
+#### 2026-10-22 M3 · 同步覆盖面扩展（`b30d16856`，6 文件 / +360）
+
+范围（用户拍板）：**应用设置 + 书架分组**，字体与词典二进制留到以后。
+
+**新文件 `Readest/settings.json`**，与 `library.json` 同级，三组：
+
+| 组 | 内容 |
+|---|---|
+| `bookshelves` | 书架行（`settings.bookshelves`） |
+| `library` | 分组/排序/列数/封面样式（`libraryGroupBy`/`librarySortBy*`/…） |
+| `reading` | `globalViewSettings` |
+
+**允许清单而非禁止清单**：WebDAV 凭据、设备 id、同步游标、上次打开的书、UI 开关**因为没被点名**而天然留在本机；将来新增字段默认也是本机的，除非有人显式加进来。
+
+**合并策略**：按组 LWW + 每设备记住「上次推送/采纳值的 hash」（`settings.settingsSyncState`）。这个 hash 就是区分「我改的」和「对方改的」的唯一依据 ⇒ 两端改**不同**组时双方都保留；只有同一组真的撞车才退回时间戳比较。对端文件损坏/不可解析 ⇒ 当作不存在并重写，不把同步卡死。
+
+**接入点（两条）**：`runFileLibrarySyncPass` 的每个后端跑完后；以及 WebDAV 子页自己的「立即同步」（它自建引擎，不走 pass，会漏）。同步策略（send/receive）不影响设置镜像——那是给进度用的语义，这几个组是纯 LWW 双向安全。镜像失败算「一个失败项」，不让刚成功的书同步整体失败。
+
+**实测验证（PC web 端）**：把镜像里 `library` 与 `bookshelves` 两组的 `savedAt` 改成「对端更新」并改值 → 下一次同步后：本机 `libraryGroupBy` 变成对端的 `author`、两组 baseline 都取了对端时间戳、镜像没有被旧值覆盖 ✓
+
+**待做**：手机要等下一次 APK 构建才会带上设置镜像（当前真机包只有书库同步）。
+
+#### 剩余：M4
+
+- **A3** WebDAV 收进 Next 路由（去掉 rclone 外部进程，`lan:start` 单进程），实现 PROPFIND/GET/PUT/MKCOL/DELETE + 同一套 basic auth
+- **A4**（可选）局域网更新通道：hub 放 `latest.json` + APK，应用只做版本比对并给下载链接，不出局域网
+- **B6** LAN 运维文档（启停/端口/防火墙/镜像结构/排障）
+- `[P4-5]` `start.sh` 看门狗（服务曾静默死过一次）
