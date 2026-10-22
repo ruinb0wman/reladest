@@ -324,6 +324,12 @@ export interface SystemSettings {
   biometricUnlockEnabled?: boolean;
 
   webdav: WebDAVSettings;
+  /**
+   * Baseline for the settings mirror: hash + timestamp of the value this device
+   * last pushed or adopted, per group (see services/sync/file/settingsMirror).
+   * Device-local by design — it is never itself mirrored.
+   */
+  settingsSyncState?: { groups: Record<string, { hash: string; savedAt: number }> };
 
   aiSettings: AISettings;
   /**

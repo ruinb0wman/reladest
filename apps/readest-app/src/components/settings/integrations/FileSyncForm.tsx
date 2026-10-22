@@ -13,6 +13,7 @@ import { formatSyncFailure } from '@/services/sync/file/syncResult';
 import { FileSyncEngine } from '@/services/sync/file/engine';
 import { FileSyncError } from '@/services/sync/file/provider';
 import { createAppLocalStore } from '@/services/sync/file/appLocalStore';
+import { syncSettingsMirror } from '@/services/sync/file/settingsMirror';
 import {
   createFileSyncProvider,
   type FileSyncBackendKind,
@@ -162,6 +163,22 @@ const FileSyncForm: React.FC<FileSyncFormProps> = ({
           );
         },
       });
+
+      // Bookshelves and reading preferences ride the same transport. This
+      // path builds its own engine instead of going through
+      // `runFileLibrarySyncPass`, so the mirror step is repeated here — a Sync
+      // now from this form must move settings too, not only books.
+      try {
+        const mirrored = await syncSettingsMirror(provider, useSettingsStore.getState().settings);
+        if (Object.keys(mirrored.patch).length > 0 || mirrored.state) {
+          const latest = useSettingsStore.getState().settings;
+          const next = { ...latest, ...mirrored.patch, settingsSyncState: mirrored.state };
+          useSettingsStore.getState().setSettings(next);
+          await appService.saveSettings(next);
+        }
+      } catch (e) {
+        console.warn('[cloudSync] settings mirror failed', kind, e);
+      }
 
       const failure = formatSyncFailure(result, _);
       setLastError(kind, failure);

@@ -20,6 +20,7 @@ import {
 } from '@/services/sync/file/providerRegistry';
 import { createAppLocalStore } from '@/services/sync/file/appLocalStore';
 import { FileSyncEngine, type SyncLibraryResult } from '@/services/sync/file/engine';
+import { syncSettingsMirror } from '@/services/sync/file/settingsMirror';
 
 /**
  * Whether a backend's transport can work at all right now. Web Google Drive
@@ -112,6 +113,29 @@ const syncOneBackend = async (
         );
     },
   });
+
+  // Bookshelves and reading preferences travel on the same transport, after the
+  // library pass so a first-time device already has the books those shelves
+  // point at. Runs regardless of strategy: the strategies describe book and
+  // progress conflict semantics, while settings are per-group LWW and safe in
+  // both directions. A mirror failure must not fail the book sync that just
+  // worked, so it is reported like one failed book rather than thrown.
+  try {
+    const provider = await createFileSyncProvider(kind, useSettingsStore.getState().settings);
+    if (provider) {
+      const current = useSettingsStore.getState().settings;
+      const mirrored = await syncSettingsMirror(provider, current);
+      if (Object.keys(mirrored.patch).length > 0 || mirrored.state !== current.settingsSyncState) {
+        const latest = useSettingsStore.getState().settings;
+        const next = { ...latest, ...mirrored.patch, settingsSyncState: mirrored.state };
+        useSettingsStore.getState().setSettings(next);
+        await appService.saveSettings(next);
+      }
+    }
+  } catch (e) {
+    console.warn('[cloudSync] settings mirror failed', kind, e);
+    result.failures += 1;
+  }
 
   if (!result.failures && !result.indexPushFailed) {
     const latest = useSettingsStore.getState().settings;

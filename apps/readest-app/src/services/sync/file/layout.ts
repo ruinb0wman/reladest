@@ -12,6 +12,7 @@ import { makeSafeFilename } from '@/utils/misc';
  *   <rootPath>/
  *     Readest/
  *       library.json                                 ← shared index
+ *       settings.json                                ← shared bookshelves + reading prefs
  *       books/
  *         <hash>/
  *           <safe-title>.<ext>                       ← the book file
@@ -32,6 +33,7 @@ export const SYNC_BOOKS_DIR = 'books';
 export const SYNC_LIBRARY_FILE = 'library.json';
 export const SYNC_BOOK_CONFIG_FILE = 'config.json';
 export const SYNC_BOOK_COVER_FILE = 'cover.png';
+export const SYNC_SETTINGS_FILE = 'settings.json';
 
 /**
  * Normalise the user-entered rootPath so the rest of the code can rely on
@@ -68,6 +70,10 @@ export const buildBookConfigPath = (rootPath: string, bookHash: string): string 
 /** Absolute path of the shared library.json index. */
 export const buildLibraryPath = (rootPath: string): string =>
   join(buildBasePath(rootPath), SYNC_LIBRARY_FILE);
+
+/** Absolute path of the shared settings.json (bookshelves + reading preferences). */
+export const buildSettingsPath = (rootPath: string): string =>
+  join(buildBasePath(rootPath), SYNC_SETTINGS_FILE);
 
 /**
  * Friendly book file name "<sanitized title>.<ext>" used inside the
