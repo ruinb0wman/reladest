@@ -34,7 +34,7 @@ interface RSVPControlProps {
  * could render an indicator; the read-along follower is gone, so the handle is
  * empty and kept as the ref's type.
  */
-export interface RSVPControlHandle {}
+export type RSVPControlHandle = Record<string, never>;
 
 const expandRangeToSentence = (range: Range, doc: Document): Range => {
   const sentenceRange = doc.createRange();

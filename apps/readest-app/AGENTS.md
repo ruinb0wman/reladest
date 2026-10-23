@@ -4,36 +4,32 @@ Readest is a cross-platform ebook reader built as a **Next.js 16 + Tauri v2** hy
 
 ## Common Commands
 
-这个分支只做 **PC web + Android**：桌面端（CEF/Tauri macOS/Windows/Linux）、iOS、云部署、
-应用商店发布、浏览器扩展都已经删掉了，对应的脚本也一并移除。命令统一在仓库根执行。
+这个分支只做 **PC web（开发服务器）+ Android**：桌面/iOS/云部署/应用商店/浏览器扩展都已删掉。
+命令统一在仓库根执行。
 
 ```bash
-# PC web 开发（Next dev，只改前端时用；不编译 Rust）
+# PC 阅读/开发：一条命令起 WebDAV hub(:17322) + Next dev(:17321)
 pnpm dev
+pnpm dev:check      # 手机连不上时的排查（端口/认证/镜像/防火墙规则）
+pnpm dev:logs       # hub 请求日志
+pnpm stop           # dev 被强杀后清残留
 
-# PC web 打包 / 运行（standalone，LAN 档）
-pnpm build                 # 生成 .next/standalone（会先停服务）
-pnpm start                 # 起 webdav hub + app（:17322 / :17321）
-pnpm stop / pnpm status / pnpm logs
-pnpm rebuild               # stop → build → start
-pnpm watch                 # 看门狗：服务掉了自动重启
-
-# Android 打包（单架构，产物自动拷到 ~/readest-lan/dist/）
-pnpm apk:arm64             # 手机
-pnpm apk:x86               # 模拟器 / x86 平板
-#   额外参数：bash scripts/lan/apk.sh aarch64 --devtools   # 带 CDP 调试台
-#             bash scripts/lan/apk.sh aarch64 --debug      # 调试构建
+# Android 打包（产物在 ~/readest-lan/dist/）
+pnpm build:android:arm64    # 手机
+pnpm build:android:x86      # 模拟器
+#   DEVTOOLS=1 / DEBUG=1 前缀控制调试台与 debug 构建
 
 # 质量门
-pnpm test                  # vitest（jsdom）
-pnpm lint                  # tsc --noEmit + biome lint
-pnpm test:rust             # cargo test -p Readest --lib
-pnpm clippy                # cargo clippy -D warnings
-pnpm fmt:check
+pnpm test                   # 单元（vitest + jsdom）
+pnpm test:browser / test:rust / test:types / test:lint / test:clippy / test:format
+pnpm format
 
-# 打包前置资源（首次或升级 pdfjs 后）
-cd apps/readest-app && pnpm setup-vendors
+# 首次/升级 pdfjs 后
+pnpm setup:vendors
 ```
+
+PC 端不产出生产包：没有 standalone、没有 `build`。APK 打包时的 web 资源由
+`tauri.conf.json` 的 `beforeBuildCommand`（`pnpm assets:web`）自动生成，不用手动跑。
 
 运维细节（端口、防火墙、镜像结构、排障）见 [`scripts/lan/README.md`](../../scripts/lan/README.md)。
 

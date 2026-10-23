@@ -7,38 +7,35 @@
 
 | 端口 | 谁 | 说明 |
 |---|---|---|
-| 17321 | Next standalone(app) | 浏览器用 `http://localhost:17321` 打开;**必须**用 `localhost` 或局域网 IP,不要用别的域名 |
+| 17321 | Next dev(PC 阅读用) | 浏览器打开 `http://localhost:17321`;**必须**用 `localhost` 或局域网 IP |
 | 17322 | WebDAV hub(自带,`dav-server.mjs`) | 手机/其他设备填 `http://<PC的局域网IP>:17322` |
 
 ## 命令
 
+PC 端不打包，直接跑开发服务器；只有安卓需要出包。
+
 ```sh
-# PC web
-pnpm dev           # 开发服务器(Next dev,不编译 Rust)
-pnpm build         # 生产产物(.next/standalone)
-pnpm start         # 起 webdav hub + app
-pnpm stop          # 按端口找 pid 停掉两个服务
-pnpm status        # 端口/探活/同步根摘要
-pnpm logs          # 跟随日志
-pnpm rebuild       # stop → build → start → status
-pnpm watch         # 常驻看门狗:服务掉了自动重启
+pnpm dev            # 一条命令：WebDAV hub(:17322) + Next dev(:17321)
+                    # 启动时会打印「手机该填 http://<本机IP>:17322」
+pnpm dev:check      # 排查：端口在不在听、hub 认证通不通、镜像里有什么、手机该填什么
+pnpm dev:logs       # 盯 hub 请求日志（Next dev 的输出在 pnpm dev 那个终端里）
+pnpm stop           # 逃生：pnpm dev 被强杀后，清掉残留的 hub / dev 进程
 
-# Android(单架构,产物拷到 ~/readest-lan/dist/)
-pnpm apk:arm64     # 手机
-pnpm apk:x86       # 模拟器 / x86 平板
-#   加参数:bash scripts/lan/apk.sh aarch64 --devtools   # 带 CDP 调试台
-#           bash scripts/lan/apk.sh aarch64 --debug      # 调试构建
+pnpm build:android:x86      # 模拟器 / x86 平板
+pnpm build:android:arm64    # 手机
+#   DEVTOOLS=1 pnpm build:android:arm64   # 带 CDP 调试台（要连真机排查时）
+#   DEBUG=1    pnpm build:android:x86     # 调试构建
+#   产物自动拷到 ~/readest-lan/dist/readest-lan-v<版本>-<架构>.apk
+
+pnpm test / test:unit / test:browser / test:coverage
+pnpm test:types / test:lint / test:rust / test:clippy / test:format
+pnpm format                 # 按规范改写
+pnpm setup:vendors          # 首次/升级 pdfjs 后拷资源
+pnpm i18n:extract           # 改文案时扫待翻译键
 ```
 
-配置在 `~/readest-lan/webdav.env`(由 `scripts/lan/lan.env.example` 首次生成):
-
-```
-SYNC_ROOT=/home/<you>/readest-sync     # 镜像目录(用 Windows 路径也可,WSL 里能访问)
-WEBDAV_USER=readest
-WEBDAV_PASS=<自定>
-APP_PORT=17321
-HUB_PORT=17322
-```
+`pnpm dev` 会把 hub 和 dev server 放在同一个前台进程里：Ctrl-C 一起收，不留孤儿。
+两条退出路径都会把端口还回去；被 `kill -9` 打断时才需要 `pnpm stop`。
 
 ## 镜像结构(FROZEN,别手改目录名)
 

@@ -1548,3 +1548,35 @@ CF 环境（`cf-typegen`、`check:all`、`check:lookbehind/optional-chaining/tra
 
 **验证**：`pnpm build` + `pnpm start` → 200/200/207；`pnpm dev` → Ready；`pnpm apk:x86` → 59M 装上模拟器可运行；
 `pnpm apk:arm64` → 55M，两包同签名 `21e30a9b…`；`pnpm test` → 773 文件 / 9,018 用例全绿。
+
+#### 2026-10-23 脚本命名收敛（第二版）：PC 不再打包，只留 dev + android 出包
+
+**规则**：`<动作>[:<对象>][:<变体>]`；`test` = 全部门禁，`test:<x>` = 单项；`build:android:<架构>`。
+
+**PC 端不再有生产包**（没有 standalone、没有 `build`/`build:web`/`start`/`rebuild`）——
+PC 就是一条 `pnpm dev`：WebDAV hub(:17322) + Next dev(:17321) 同一条前台命令，Ctrl-C 一起收；
+启动时打印「手机该填 http://<本机IP>:17322」。
+
+| 命令 | 作用 |
+|---|---|
+| `pnpm dev` | hub + Next dev，前台，退出一起收 |
+| `pnpm dev:check` | 手机连不上时的排查：端口、hub 认证、镜像内容、手机该填什么、防火墙命令 |
+| `pnpm dev:logs` | hub 请求日志（`DAV_VERBOSE=1` 由 dev.sh 默认打开） |
+| `pnpm stop` | `dev` 被强杀后的逃生：按端口清残留 |
+| `pnpm build:android:x86` / `:arm64` | 单架构 APK；`DEVTOOLS=1` / `DEBUG=1` 控制调试台与 debug 构建 |
+| `pnpm test` | = `test:types` → `test:lint` → `test:format` → `test:rust` → `test:unit` |
+| `pnpm test:unit/browser/coverage/types/lint/rust/clippy/format` | 单项 |
+| `pnpm format` / `pnpm setup:vendors` / `pnpm i18n:extract` | 辅助 |
+
+**为什么 hub 塞进 `dev`**：手机同步只连 :17322，跟 PC 的 Next 服务无关。hub 若只在别的命令里起，
+开发时手机就同步不了。`stop`/`status`/`watch`/`logs` 正是原来「standalone 常驻 + 脱离终端」的配套，
+现在没有常驻服务了，只剩 `dev:check`/`dev:logs`/`stop` 三个排查/逃生用。
+
+**修掉的两个坑**：
+1. `test:rust` / `test:clippy` 在宿主目标编译不过（移动端插件方法在 `#[cfg(mobile)]` 下）⇒
+   新增 `scripts/lan/rust-check.sh`，按 **aarch64-android** 目标跑 `cargo check` / `cargo clippy`
+2. `biome format --check` 在 Biome 2.4 已移除 ⇒ `test:format` 用 `biome format`（无 `--write` 即 dry-run，待格式化时退出 1）；
+   顺手修了 `RSVPControl` 的空接口（TTS 裁剪遗留，`noEmptyInterface`）与 `build.rs` 的 rustfmt 漂移
+
+**验证**：`pnpm dev` → 17321 页面 200、dev:check 全绿、dev:logs 看得到 PROPFIND、SIGINT 整组退出不留孤儿；
+`pnpm build:android:x86` → 59M（`beforeBuildCommand` 已改为内部 `pnpm assets:web`）；根 `pnpm test` 走完 5 道门全绿。
