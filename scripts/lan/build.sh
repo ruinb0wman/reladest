@@ -12,7 +12,7 @@ echo "=== 先停服务 ==="
 
 cd "$APP_DIR"
 echo "=== 构建（BUILD_STANDALONE=true, web 平台）==="
-BUILD_STANDALONE=true pnpm build-web
+BUILD_STANDALONE=true pnpm build
 
 echo "=== 把 .next/static 与 public 拷进 standalone（不拷会白屏）==="
 DEST="$STANDALONE/apps/readest-app"
@@ -23,5 +23,5 @@ cp -r public "$DEST/public"
 du -sh "$STANDALONE"
 
 echo
-echo "构建完成。启动：pnpm lan:start（或一条命令：pnpm lan:rebuild）"
+echo "构建完成。启动：pnpm start（或一条命令：pnpm rebuild）"
 echo "提示：如果同时要打 APK，先关掉模拟器——cargo/gradle 的并行编译会把它挤死。"

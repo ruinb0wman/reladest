@@ -1,64 +1,41 @@
 ## Project Overview
 
-Readest is a cross-platform ebook reader built as a **Next.js 16 + Tauri v2** hybrid app. It's part of a pnpm monorepo at `/apps/readest-app/`. The app runs on web (CloudFlare Workers), desktop (macOS/Windows/Linux via Tauri), and mobile (iOS/Android via Tauri).
+Readest is a cross-platform ebook reader built as a **Next.js 16 + Tauri v2** hybrid app. It's part of a pnpm monorepo at `/apps/readest-app/`. In this branch it runs as a **LAN-only** app: PC web (Next standalone) + Android APK, syncing over WebDAV on the local network. No account, no cloud, no third-party services.
 
 ## Common Commands
 
+这个分支只做 **PC web + Android**：桌面端（CEF/Tauri macOS/Windows/Linux）、iOS、云部署、
+应用商店发布、浏览器扩展都已经删掉了，对应的脚本也一并移除。命令统一在仓库根执行。
+
 ```bash
-# Development
-pnpm dev-web               # Web-only dev server (no Rust compilation needed)
-pnpm tauri dev             # Desktop dev with Tauri (compiles Rust backend); on Linux this is the CEF runtime (needs Rust >= 1.95)
+# PC web 开发（Next dev，只改前端时用；不编译 Rust）
+pnpm dev
 
-# Building
-pnpm build                 # Build Next.js for Tauri
-pnpm build-web             # Build Next.js for web deployment
+# PC web 打包 / 运行（standalone，LAN 档）
+pnpm build                 # 生成 .next/standalone（会先停服务）
+pnpm start                 # 起 webdav hub + app（:17322 / :17321）
+pnpm stop / pnpm status / pnpm logs
+pnpm rebuild               # stop → build → start
+pnpm watch                 # 看门狗：服务掉了自动重启
 
-# Testing (see [docs/testing.md](docs/testing.md) for full details)
-pnpm test                  # Unit tests (vitest + jsdom)
-pnpm test --run src/__tests__/utils/misc.test.ts  # Run only these files (no `--`: it would run more than them)
-pnpm test --watch          # Watch mode
-pnpm test:browser          # Browser tests (Chromium via Playwright)
-pnpm tauri:dev:test        # Start Tauri app with webdriver
-pnpm test:tauri            # Run Tauri integration tests
+# Android 打包（单架构，产物自动拷到 ~/readest-lan/dist/）
+pnpm apk:arm64             # 手机
+pnpm apk:x86               # 模拟器 / x86 平板
+#   额外参数：bash scripts/lan/apk.sh aarch64 --devtools   # 带 CDP 调试台
+#             bash scripts/lan/apk.sh aarch64 --debug      # 调试构建
 
-# Linting & Formatting
-pnpm lint                  # Biome (linter) + tsc (type check)
-pnpm format                # Biome formatter (runs from monorepo root)
-pnpm format:check          # Check formatting without writing (Biome)
+# 质量门
+pnpm test                  # vitest（jsdom）
+pnpm lint                  # tsc --noEmit + biome lint
+pnpm test:rust             # cargo test -p Readest --lib
+pnpm clippy                # cargo clippy -D warnings
+pnpm fmt:check
 
-# Rust
-pnpm fmt:check             # Check formatting Rust code (src-tauri)
-pnpm clippy:check          # Lint Rust code (src-tauri)
-
-# Dictionary tooling
-pnpm dictionary:yomitan:convert <input.zip> [output.rdict]  # Build a portable Yomitan dictionary
+# 打包前置资源（首次或升级 pdfjs 后）
+cd apps/readest-app && pnpm setup-vendors
 ```
 
-### Source Layout
-
-| Directory         | Purpose                                                       |
-| ----------------- | ------------------------------------------------------------- |
-| `src/app/`        | Next.js App Router pages and API routes                       |
-| `src/components/` | React components (reader, settings, library, assistant, etc.) |
-| `src/services/`   | Business logic: TTS, translators, OPDS, sync, AI, metadata    |
-| `src/store/`      | Zustand state stores                                          |
-| `src/hooks/`      | Custom React hooks                                            |
-| `src/libs/`       | Document loaders, payment, storage, sync                      |
-| `src/plugins/`    | Bundled plugin implementations, including Yomitan             |
-| `src/utils/`      | Pure utility functions                                        |
-| `src/types/`      | TypeScript type definitions                                   |
-| `src/context/`    | React Context providers (Auth, Env, Sync, etc.)               |
-| `src/workers/`    | Web Workers for background tasks                              |
-| `src-tauri/`      | Rust backend: Tauri plugins, platform-specific code           |
-
-### Path Aliases (tsconfig)
-
-- `@/*` → `./src/*`
-- `@/components/ui/*` → `./src/components/primitives/*`
-
-### Rust Backend (`src-tauri/`)
-
-Platform-specific code lives in `src-tauri/src/{macos,windows,android,ios}/`. Custom Tauri plugins are in `src-tauri/plugins/`.
+运维细节（端口、防火墙、镜像结构、排障）见 [`scripts/lan/README.md`](../../scripts/lan/README.md)。
 
 ## Git Worktrees
 

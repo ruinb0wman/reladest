@@ -13,13 +13,21 @@
 ## 命令
 
 ```sh
-pnpm lan:start     # 起 webdav hub + app
-pnpm lan:stop      # 按端口找 pid 停掉两个服务
-pnpm lan:status    # 端口/探活/同步根摘要
-pnpm lan:logs      # 跟随日志
-pnpm lan:build     # 只重建 web 产物(不启动)
-pnpm lan:rebuild   # stop → build → start → status
-pnpm lan:watch     # 常驻看门狗:服务掉了自动重启(见下)
+# PC web
+pnpm dev           # 开发服务器(Next dev,不编译 Rust)
+pnpm build         # 生产产物(.next/standalone)
+pnpm start         # 起 webdav hub + app
+pnpm stop          # 按端口找 pid 停掉两个服务
+pnpm status        # 端口/探活/同步根摘要
+pnpm logs          # 跟随日志
+pnpm rebuild       # stop → build → start → status
+pnpm watch         # 常驻看门狗:服务掉了自动重启
+
+# Android(单架构,产物拷到 ~/readest-lan/dist/)
+pnpm apk:arm64     # 手机
+pnpm apk:x86       # 模拟器 / x86 平板
+#   加参数:bash scripts/lan/apk.sh aarch64 --devtools   # 带 CDP 调试台
+#           bash scripts/lan/apk.sh aarch64 --debug      # 调试构建
 ```
 
 配置在 `~/readest-lan/webdav.env`(由 `scripts/lan/lan.env.example` 首次生成):
@@ -96,10 +104,10 @@ adb -s <serial> reverse tcp:17322 tcp:17322   # 手机里的 http://localhost:17
 没有应用内更新(那份逻辑会请求外网,已删)。手动换包:
 
 ```sh
-cd apps/readest-app
-pnpm tauri android build -t aarch64        # 产物 gen/android/.../app-universal-release.apk
-adb install -r <apk>                        # 同签名可覆盖安装,数据保留
+pnpm apk:arm64                  # 手机
+pnpm apk:x86                    # 模拟器
+adb install -r ~/readest-lan/dist/readest-lan-v<版本>-<架构>.apk   # 同签名可覆盖,数据保留
 ```
 
-想要能远程调试 WebView(CDP),加一个特性重新打:`--features tauri/devtools`
+想远程调试 WebView(CDP)就打带特性的包:`bash scripts/lan/apk.sh aarch64 --devtools`
 (详见知识库 `安卓webview-cdp调试`;日常包不要带,它会把调试台暴露给任何能 adb 的设备)。

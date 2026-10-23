@@ -5,8 +5,8 @@ import { AppService } from '@/types/system';
  * instead of the asset protocol with a `Range` header. Chromium re-applies a
  * `Range` header's offset to the body of an intercepted custom-protocol
  * response (Chromium 40739128), so every non-zero-start read fails. That is
- * every Chromium-backed build: the Android WebView and Linux, which runs on
- * CEF (see scripts/tauri.mjs).
+ * every Chromium-backed build: the Android WebView (and Linux, which used to run
+ * on CEF before the desktop targets were dropped).
  */
 export const needsQueryRangeReads = (osType: string) => osType === 'android' || osType === 'linux';
 

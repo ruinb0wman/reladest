@@ -1518,3 +1518,33 @@ adb -s 192.168.1.35:44741 forward tcp:9223 localabstract:webview_devtools_remote
 **构建期踩到的坑（已在手册里）**：`tauri android build` 会覆盖 `.next/standalone`，之后必须 `pnpm lan:build` 再 `lan:start`，否则 `start.sh` 直接以「没找到 standalone 构建」退出；模拟器冷启动偶尔卡在 `multiinstance.lock` 僵尸进程上，`Stop-Process emulator,qemu-system-x86_64` + 删 `~/.android/avd/api35.avd/*.lock` 后重起即可。
 
 **M1–M4 全部完成**。剩余只到「可选/以后」：A4 局域网更新通道、`[P3.5]` 字体与词典二进制同步、`[P2-4]` 外链收口、`[Phase 6]` pnpm → bun。
+
+#### 2026-10-23 脚本收敛：只留 PC web + Android（按架构分包）
+
+**根 `package.json`（18 条）**：`dev` / `build` / `start` / `stop` / `status` / `watch` / `logs` / `rebuild` /
+`apk:x86` / `apk:arm64` / `test` / `lint` / `test:rust` / `clippy` / `fmt:check` / `format` / `format:check` / `prepare`。
+
+**app `package.json`（24 条）**：`dev`（= 原来的 dev-web，`.env.web`）/ `build` / `test` / `test:browser` /
+`test:coverage` / `lint` / `fmt:check` / `clippy:check` / `test:rust` / pdfjs 资源五个 / `i18n:extract` / **`tauri`（必须留）**。
+
+**删掉的整类脚本**：桌面（`tauri build/dev`、CEF、iOS）、云部署（opennextjs-cloudflare `deploy/upload/preview`、
+`wrangler`、`worker.ts`）、应用商店（`release-google-play`、`validate-google-play-listing`）、
+CF 环境（`cf-typegen`、`check:all`、`check:lookbehind/optional-chaining/translations`）、
+浏览器扩展（`build-browser-ext`、`test:extension`）、e2e（`test:e2e*`、`test:android`、`test:tauri`）、
+`worktree:*`、`nightly`/`wordlens`/`bench`/`upload-sourcemaps`/`dev-android`。
+连同孤儿文件一起删：`scripts/{tauri,cdp}.mjs`、`test-{tauri,android}.sh`、`worktree-*`、`wordlens*`、
+`upload-sourcemaps`、`db/`、`nightly-verify-harness/`、`wdio.conf.ts`、`playwright.config.ts`、
+`wrangler.toml`、`worker.ts`、`open-next.config.ts`、`e2e/`、`src/__tests__/scripts/`、`.github/workflows/`。
+
+**新脚本 `scripts/lan/apk.sh`**：`pnpm apk:x86` / `pnpm apk:arm64`，可选 `--debug` / `--devtools`，
+产物自动拷到 `~/readest-lan/dist/readest-lan-v<版本>-<架构>.apk`。
+
+**过程中踩到的三个坑（都已修在脚本里）**：
+1. `tauri.conf.json` 的 `beforeBuildCommand` 还在调已删的 `upload-sourcemaps` ⇒ 安卓构建会直接失败；改成 `pnpm build`
+2. **gradle 的 `rustBuild*` 任务会回调 `pnpm tauri`** ⇒ app 的 `tauri` 脚本不能删，否则报 `Command "tauri" not found`
+3. `tauri.conf.json` 的 `"version": "../package.json"` 是**相对路径**，`node -p require(...).version` 会拿到字面量；改成读 app 的 `package.json`
+
+**其它坑**：环境里 `ANDROID_HOME=/opt/android-sdk`（没接受 license）会被继承 ⇒ apk.sh 改用 `READEST_ANDROID_SDK/NDK_HOME/JAVA_HOME` 自己的变量名并 `env -u` 掉三者；`$([ ... ] && echo)` 在条件为假返回 1 会被 `set -e` 静默干掉；tauri CLI 偶有「APK/AAB 都产出却返回 1」⇒ 判成败改成看产物时间戳而不是退出码。
+
+**验证**：`pnpm build` + `pnpm start` → 200/200/207；`pnpm dev` → Ready；`pnpm apk:x86` → 59M 装上模拟器可运行；
+`pnpm apk:arm64` → 55M，两包同签名 `21e30a9b…`；`pnpm test` → 773 文件 / 9,018 用例全绿。
