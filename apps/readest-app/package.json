@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "assets:web": "dotenv -e .env.web -- next build",
+    "assets:app": "dotenv -e .env.tauri -- next build",
     "copy-flatten-pdfjs-annotation-layer-css": "npx postcss \"../../packages/foliate-js/vendor/pdfjs/annotation_layer_builder.css\" --no-map -u postcss-nested > ./public/vendor/pdfjs/annotation_layer_builder.css",
     "copy-flatten-pdfjs-css": "pnpm copy-flatten-pdfjs-annotation-layer-css && pnpm copy-flatten-pdfjs-text-layer-css",
     "copy-flatten-pdfjs-text-layer-css": "npx postcss \"../../packages/foliate-js/vendor/pdfjs/text_layer_builder.css\" --no-map -u postcss-nested > ./public/vendor/pdfjs/text_layer_builder.css",

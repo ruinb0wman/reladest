@@ -8,7 +8,7 @@
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000",
     "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm assets:web"
+    "beforeBuildCommand": "pnpm assets:app"
   },
   "app": {
     "windows": [],
