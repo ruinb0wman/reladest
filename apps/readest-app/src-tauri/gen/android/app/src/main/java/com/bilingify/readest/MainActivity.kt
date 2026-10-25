@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.ActionMode
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.View
 import android.webkit.WebView
 import android.net.Uri
 import android.util.Log
@@ -16,6 +17,10 @@ import android.window.OnBackInvokedCallback
 import android.window.OnBackInvokedDispatcher
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.OnBackPressedCallback
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -269,6 +274,24 @@ class MainActivity : TauriActivity(), KeyDownInterceptor {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // Edge to edge, so the window is not resized when the on-screen keyboard
+        // opens. The web layer places bottom-anchored UI (the reader's note
+        // sheet) from the viewport, and it can only learn the keyboard height
+        // from the visual viewport — which Android WebView does not resize for
+        // the IME before M139 (e.g. the 138 on the V2536A). Shrink the content
+        // view by the IME inset instead, so the page just gets a shorter
+        // viewport and everything in it stays above the keyboard.
+        val contentView = findViewById<View>(android.R.id.content)
+        ViewCompat.setOnApplyWindowInsetsListener(contentView) { view, windowInsets ->
+            view.updatePadding(bottom = windowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
+            // Zero the inset we just applied instead of consuming it: consumed
+            // insets stop the notification, leaving the WebView padded with a
+            // stale keyboard height after the keyboard hides.
+            WindowInsetsCompat.Builder(windowInsets)
+                .setInsets(WindowInsetsCompat.Type.ime(), Insets.NONE)
+                .build()
+        }
 
         handleIncomingIntent(intent)
 
