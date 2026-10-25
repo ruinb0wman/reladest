@@ -798,6 +798,12 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets; gridInsets?:
   }, [isSideBarVisible, handleDismissPopup]);
 
   const lastRelocateCfiRef = useRef<string | null>(null);
+  // While the note editor is open its text area holds the keyboard, which
+  // shrinks the viewport (Android pads the webview by the ime inset) and makes
+  // foliate repaginate: the settle relocate below then carries a new CFI and
+  // would dismiss the very editor the keyboard was opened for. `useFoliateEvents`
+  // registers `onRelocate` once per view, so this has to be a ref.
+  const noteEditorOpenRef = useRef(false);
   const onRelocate = (event: Event) => {
     // A page turn or scroll moves the anchor out from under any open popup
     // (including the note popup), so dismiss instead of leaving it floating
@@ -810,7 +816,7 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets; gridInsets?:
     const moved = lastRelocateCfiRef.current !== null && cfi !== lastRelocateCfiRef.current;
     lastRelocateCfiRef.current = cfi;
     if (!moved) return;
-    if (isTextSelected.current || isInstantAnnotating.current) return;
+    if (isTextSelected.current || isInstantAnnotating.current || noteEditorOpenRef.current) return;
     handleDismissPopup();
   };
 
@@ -1730,6 +1736,7 @@ const Annotator: React.FC<{ bookKey: string; contentInsets: Insets; gridInsets?:
   // path (the pre-#5928 Notebook did the same).
   const pendingNotePlaceholdersRef = useRef<string[]>([]);
   useEffect(() => {
+    noteEditorOpenRef.current = !!noteEditorTarget;
     if (noteEditorTarget) {
       pendingNotePlaceholdersRef.current = noteEditorTarget.placeholderIds;
       return;
