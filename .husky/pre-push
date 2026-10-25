@@ -1,3 +1,5 @@
-pnpm -C apps/readest-app format:check
-pnpm -C apps/readest-app lint
+set -e
+
+pnpm -C apps/readest-app test:format
+pnpm -C apps/readest-app test:lint
 pnpm -C apps/readest-app test
