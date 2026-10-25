@@ -1,7 +1,7 @@
 # 移除三块「内容来源」：网络小说 / 订阅链接 / 在线书库
 
 - 建页：2026-10-25
-- 状态：**方案待批准**（未动一行代码）
+- 状态：**已完成**（2026-10-25，P1–P5 五笔提交；末尾 §9 是实现记录）
 - 范围：`apps/readest-app`（**Rust 不动**）
 - 三者共同点：都是「出网到用户自己指定的站点抓内容」，也是 LAN 版里仅剩的、必须联网才能用的可见功能
 
@@ -139,3 +139,34 @@ Rust 不动 ⇒ 不跑 `cargo check`；P5 之后打一次 APK（`pnpm build:andr
 - 专属测试：**−9,386 行**
 - 共享触点：约 20 个文件，每个 1~15 行
 - 五个提交，全部可单独 revert
+
+## 9. 实现记录（2026-10-25）
+
+实际提交，与方案的差异写在下面：
+
+| 提交 | 内容 |
+|---|---|
+| `f383d4c69` | 本方案文档 |
+| `3d16b2da2` | P1 网络小说 |
+| `1d222d624` | P2 订阅链接 |
+| `802d10309` | **P3 改成「PSE 页流 + OPDSAUDIO」**（方案里的 P4） |
+| `0c6979819` | **P4 改成「OPDS 目录浏览」**（方案里的 P3） |
+| `a35b88e5a` | P5 注释/i18n/死代码收尾 |
+
+**P3 与 P4 换了顺序**：`services/opds/pseStream.ts` 依赖 `app/opds/utils/opdsReq.ts`，
+而 `app/opds/page.tsx` 又 import 了 `buildPseStreamFileName`。先删目录浏览会让页流悬空，
+先删页流则只需顺手摘掉 page.tsx 里那一个 handler（下一笔整页删除）。所以把「风险最高的
+阅读路径」放在前面单独一笔，目录 UI 放在后面。
+
+其它偏离：
+
+- 顺手删了 `utils/mp3Duration.ts` + 测试（自 audiobook 那轮起零引用，唯一读者是 OPDS 音频）；
+- i18n 不是跑 `pnpm i18n:extract`（它会把 900 多个**与本功能无关**的历史孤儿键一起删掉，34 个语言、3.4 万行），
+  而是用脚本按「被删文件里的 `_('…')` 字面量 − 当前源码仍在用的键」精确算出 100 个键（+400 条复数变体）再删；
+- 验收：tsc / biome lint / biome format / 8454 单测 / `next build`（路由表只剩 / /library /o /offline /reader /send）全绿；
+  aarch64 与 x86_64 APK 都重建成功，x86_64 装进模拟器实测：书库 75 本完好、
+  导入菜单只剩 From Local File / From Directory、Integrations 只剩 BookDrop + WebDAV、logcat 无 FATAL。
+
+踩到的坑（下次直接绕）：删 `page.tsx` 后 tsc 会继续对幸存文件报「缺少已删 prop」的幽灵错误，
+根因是增量状态写在 `apps/readest-app/distribution/apps/readest-app/tsconfig.tsbuildinfo`
+（`outDir: ./distribution` + `rootDir: ../..`），删这个文件才干净；`.next/types/**` 里也要抠掉已删路由的校验块。
