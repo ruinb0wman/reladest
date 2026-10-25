@@ -13,6 +13,8 @@ import { MigrationEntry, SchemaType } from '../migrate';
  *   2. Add a new key here with its migration array.
  */
 const migrations: Record<SchemaType, MigrationEntry[]> = {
+  // The OPDS catalogs are gone; this step stays so every database keeps the
+  // same schema history. Nothing reads opds_source_mappings any more.
   opds: [
     {
       name: '2026052701_opds_source_mappings',

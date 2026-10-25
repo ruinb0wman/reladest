@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import React, { useEffect, useState } from 'react';
 import { MdChevronRight } from 'react-icons/md';
-import { RiRssLine, RiDiscordLine, RiWifiLine, RiCloudLine } from 'react-icons/ri';
+import { RiDiscordLine, RiWifiLine, RiCloudLine } from 'react-icons/ri';
 import { useAppRouter } from '@/hooks/useAppRouter';
 import { useEnv } from '@/context/EnvContext';
 import { useAuth } from '@/context/AuthContext';
@@ -9,10 +9,8 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useKeyDownActions } from '@/hooks/useKeyDownActions';
 import { useQuotaStats } from '@/hooks/useQuotaStats';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useCustomOPDSStore } from '@/store/customOPDSStore';
 import { useFileSyncStore } from '@/store/fileSyncStore';
 import { useLocalSendStore } from '@/store/localsendStore';
-import { CatalogManager } from '@/app/opds/components/CatalogManager';
 import { saveSysSettings } from '@/helpers/settings';
 import { isCloudSyncAllowed } from '@/utils/access';
 import { isTauriAppPlatform } from '@/services/environment';
@@ -41,12 +39,11 @@ import type { FileSyncBackendKind } from '@/services/sync/file/providerRegistry'
 import SubPageHeader from './SubPageHeader';
 import { BoxedList, NavigationRow, SectionTitle, SettingLabel, Tips } from './primitives';
 
-type SubPage = 'webdav' | 'readest-cloud' | 'opds' | 'localsend' | null;
+type SubPage = 'webdav' | 'readest-cloud' | 'localsend' | null;
 
 /**
  * Integrations panel — single point of discovery for the network services a
- * LAN build uses: Nearby BookDrop (LocalSend), the WebDAV file mirror, and
- * OPDS catalogs.
+ * LAN build uses: Nearby BookDrop (LocalSend) and the WebDAV file mirror.
  *
  * Pattern: boxed list of NavigationRows. Each row pushes the panel into an
  * inline sub-page (with breadcrumb back-navigation matching the Dictionaries
@@ -62,8 +59,6 @@ const IntegrationsPanel: React.FC = () => {
   const { envConfig, appService } = useEnv();
   const { user } = useAuth();
   const { settings, requestedSubPage, setRequestedSubPage } = useSettingsStore();
-  const opdsCatalogs = useCustomOPDSStore((s) => s.catalogs);
-  const opdsCount = opdsCatalogs.filter((c) => !c.deletedAt).length;
   // The device name Nearby BookDrop announces once its service is running,
   // so the integrations row can show it in place of a bare "On".
   const localSendAlias = useLocalSendStore((s) => s.status?.alias);
@@ -91,17 +86,8 @@ const IntegrationsPanel: React.FC = () => {
 
   const [subPage, setSubPage] = useState<SubPage>(null);
 
-  // Hydrate the OPDS store from settings so the row's catalog count is
-  // accurate on first open. Without this the store starts empty and the
-  // count reads zero until the user drills into the OPDS sub-page (where
-  // CatalogManager loads it). Loading happens once per mount; the store
-  // handles backfilling contentId for legacy entries.
-  useEffect(() => {
-    void useCustomOPDSStore.getState().loadCustomOPDSCatalogs(envConfig);
-  }, [envConfig]);
-
-  // Android Back / Esc: when an integrations sub-page (WebDAV, LocalSend,
-  // OPDS) is open, intercept and
+  // Android Back / Esc: when an integrations sub-page (WebDAV, LocalSend)
+  // is open, intercept and
   // step back to the integrations list instead of letting <Dialog>'s
   // listener close the whole Settings dialog. The hook registers its
   // sync `native-key-down` listener *after* <Dialog>'s, and
@@ -122,8 +108,8 @@ const IntegrationsPanel: React.FC = () => {
     }
   };
 
-  // Deep-link consumption: when a caller (e.g. OPDS browser close handler)
-  // sets `requestedSubPage` in the store before opening the dialog, drill
+  // Deep-link consumption: when a caller sets `requestedSubPage` in the store
+  // before opening the dialog, drill
   // straight into that sub-page on mount and clear the request so it doesn't
   // stick to the next open. Recognised values match the SubPage union.
   useEffect(() => {
@@ -136,11 +122,7 @@ const IntegrationsPanel: React.FC = () => {
       setRequestedSubPage(null);
       return;
     }
-    if (
-      requestedSubPage === 'webdav' ||
-      requestedSubPage === 'opds' ||
-      requestedSubPage === 'localsend'
-    ) {
+    if (requestedSubPage === 'webdav' || requestedSubPage === 'localsend') {
       setSubPage(requestedSubPage);
     } else if (requestedSubPage === 'cloudsync') {
       // Back-compat with the brief unified "Cloud Sync" page.
@@ -217,18 +199,6 @@ const IntegrationsPanel: React.FC = () => {
         </BoxedList>
       </div>
     );
-  if (subPage === 'opds')
-    return (
-      <div className='my-4 w-full'>
-        <SubPageHeader
-          parentLabel={_('Integrations')}
-          currentLabel={_('OPDS Catalogs')}
-          description={_('Browse and download books from online catalogs.')}
-          onBack={() => setSubPage(null)}
-        />
-        <CatalogManager inSubPage />
-      </div>
-    );
   // Cloud sync providers are independently selectable (#5062): any subset of
   // {Readest Cloud, WebDAV, Google Drive, S3, OneDrive, iCloud} can sync the
   // library at once. A "configured" third-party provider (WebDAV creds / a Drive
@@ -259,8 +229,6 @@ const IntegrationsPanel: React.FC = () => {
     await persistCloudProviderEnabled(envConfig, kind, next);
   };
 
-  const opdsStatus =
-    opdsCount > 0 ? _('{{count}} catalog', { count: opdsCount }) : _('No catalogs');
   // Enabled rows show the announced device name (falling back to the stored
   // custom alias, then a bare "On" until the service reports its alias).
   const localSendName = localSendAlias || getLocalSendAlias();
@@ -280,7 +248,7 @@ const IntegrationsPanel: React.FC = () => {
       <div className='w-full px-4'>
         <h2 className='mb-1.5 text-lg font-semibold tracking-tight'>{_('Integrations')}</h2>
         <p className='text-base-content/70 text-sm leading-relaxed'>
-          {_('Keep books and progress on your own network, and add catalog sources.')}
+          {_('Keep books and progress on your own network.')}
         </p>
       </div>
 
@@ -347,20 +315,6 @@ const IntegrationsPanel: React.FC = () => {
         )}
       </div>
 
-      <div className='w-full' data-setting-id='settings.integrations.catalogs'>
-        <SectionTitle className='mb-2'>{_('Content Sources')}</SectionTitle>
-        <div className='card eink-bordered border-base-200 bg-base-100 overflow-hidden border'>
-          <div className='divide-base-200 divide-y'>
-            <IntegrationRow
-              icon={RiRssLine}
-              title={_('OPDS Catalogs')}
-              status={opdsStatus}
-              onClick={() => setSubPage('opds')}
-            />
-          </div>
-        </div>
-      </div>
-
       {appService?.isDesktopApp && (
         <div className='w-full' data-setting-id='settings.integrations.discord'>
           <SectionTitle className='mb-2'>{_('Discord')}</SectionTitle>
@@ -378,43 +332,6 @@ const IntegrationsPanel: React.FC = () => {
         </div>
       )}
     </div>
-  );
-};
-
-interface IntegrationRowProps {
-  icon: React.ElementType;
-  title: string;
-  status: string;
-  onClick: () => void;
-}
-
-const IntegrationRow: React.FC<IntegrationRowProps> = ({ icon: Icon, title, status, onClick }) => {
-  return (
-    <button
-      type='button'
-      onClick={onClick}
-      className={clsx(
-        'group flex w-full items-center gap-3 px-4 py-3 text-left',
-        'transition-colors duration-150',
-        'focus-visible:ring-base-content/15 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-inset',
-      )}
-    >
-      <span
-        className={clsx(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-          'bg-base-200 text-base-content/70',
-          'transition-colors duration-150',
-          'group-hover:bg-base-300/70',
-        )}
-      >
-        <Icon className='h-5 w-5' />
-      </span>
-      <div className='flex min-w-0 flex-1 flex-col gap-0.5'>
-        <SettingLabel>{title}</SettingLabel>
-        <span className='text-base-content/65 truncate text-[0.85em]'>{status}</span>
-      </div>
-      <MdChevronRight className='text-base-content/50 h-5 w-5 shrink-0' />
-    </button>
   );
 };
 
@@ -511,9 +428,8 @@ interface IntegrationToggleRowProps {
 }
 
 /**
- * Sibling of IntegrationRow for settings that are a simple on/off toggle
- * (no sub-page). Keeps the same circular-badge chassis so toggle and
- * navigation rows read as one consistent list.
+ * Integration setting that is a simple on/off toggle (no sub-page): a
+ * circular-badge row whose right-hand control is the switch.
  */
 const IntegrationToggleRow: React.FC<IntegrationToggleRowProps> = ({
   icon: Icon,

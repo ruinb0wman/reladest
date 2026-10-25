@@ -1,7 +1,5 @@
 import clsx from 'clsx';
-import { LuLibrary } from 'react-icons/lu';
 import { IoFileTray } from 'react-icons/io5';
-import { useEnv } from '@/context/EnvContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import MenuItem from '@/components/MenuItem';
 import Menu from '@/components/Menu';
@@ -11,7 +9,6 @@ export interface ImportMenuProps {
   setIsDropdownOpen?: (open: boolean) => void;
   onImportBooksFromFiles: () => void;
   onImportBooksFromDirectory?: () => void;
-  onOpenCatalogManager: () => void;
 }
 
 const ImportMenu: React.FC<ImportMenuProps> = ({
@@ -19,10 +16,8 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
   setIsDropdownOpen,
   onImportBooksFromFiles,
   onImportBooksFromDirectory,
-  onOpenCatalogManager,
 }) => {
   const _ = useTranslation();
-  const { appService } = useEnv();
 
   const handleImportFromFiles = () => {
     onImportBooksFromFiles();
@@ -31,11 +26,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
 
   const handleImportFromDirectory = () => {
     onImportBooksFromDirectory?.();
-    setIsDropdownOpen?.(false);
-  };
-
-  const handleOpenCatalogManager = () => {
-    onOpenCatalogManager();
     setIsDropdownOpen?.(false);
   };
 
@@ -59,12 +49,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
           onClick={handleImportFromDirectory}
         />
       )}
-      <hr aria-hidden='true' className='border-base-200 my-1' />
-      <MenuItem
-        label={appService?.isOnlineCatalogsAccessible ? _('Online Library') : _('OPDS Catalogs')}
-        Icon={<LuLibrary className='h-5 w-5' />}
-        onClick={handleOpenCatalogManager}
-      />
     </Menu>
   );
 };

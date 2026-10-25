@@ -80,9 +80,7 @@ export const BACKUP_SETTINGS_BLACKLIST = [
 
 /**
  * Credential dot-paths stripped from backups unless `includeCredentials`
- * is set. OPDS catalog, Audiobookshelf server, custom translator and custom
- * Credentials live inside the `opdsCatalogs` array and are handled separately in
- * `sanitizeSettingsForBackup`.
+ * is set.
  */
 export const BACKUP_SETTINGS_CREDENTIAL_FIELDS = [
   // S3 access keys are strong, long-lived cloud credentials — strip them from
@@ -129,13 +127,6 @@ export function sanitizeSettingsForBackup(
   if (!options.includeCredentials) {
     for (const path of BACKUP_SETTINGS_CREDENTIAL_FIELDS) {
       deletePath(clone, path);
-    }
-    if (Array.isArray(clone.opdsCatalogs)) {
-      clone.opdsCatalogs = clone.opdsCatalogs.map((catalog) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { username: _username, password: _password, ...rest } = catalog;
-        return rest;
-      });
     }
   }
   return clone;

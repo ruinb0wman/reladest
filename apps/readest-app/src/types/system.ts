@@ -118,7 +118,6 @@ export interface AppService {
   supportsViewTransitionGroup: boolean;
   distChannel: DistChannel;
   storefrontRegionCode: string | null;
-  isOnlineCatalogsAccessible: boolean;
 
   /**
    * The configured library root when it turned out to be unreachable this

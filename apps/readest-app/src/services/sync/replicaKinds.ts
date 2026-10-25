@@ -18,14 +18,9 @@ import { md5 } from '@/utils/md5';
 export const CUSTOM_TRANSLATOR_KIND = 'custom_translator';
 export const DICTIONARY_KIND = 'dictionary';
 export const FONT_KIND = 'font';
-export const OPDS_CATALOG_KIND = 'opds_catalog';
 export const SETTINGS_KIND = 'settings';
 export const TEXTURE_KIND = 'texture';
 export const TRANSLATION_PROMPT_KIND = 'translation_prompt';
-
-/** Stable id for an OPDS catalog row: its feed URL, normalised. */
-export const computeOpdsCatalogContentId = (url: string): string =>
-  md5(`opds:${url.trim().toLowerCase()}`);
 
 /**
  * Stable id for an imported dictionary: its content identity (partial md5 of the

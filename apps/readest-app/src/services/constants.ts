@@ -150,7 +150,6 @@ export const DEFAULT_SYSTEM_SETTINGS: Partial<SystemSettings> = {
     dictionary: true,
     font: true,
     texture: true,
-    opds_catalog: true,
     settings: true,
   },
 };
@@ -809,8 +808,6 @@ export const READEST_PUBLIC_STORAGE_BASE_URL = 'https://storage.readest.com';
 // Custom domain serving the readest-public bucket; durable media assets
 // (e.g. published book covers) are linked through this host.
 export const READEST_PUBLIC_ASSETS_BASE_URL = 'https://assets.readest.com';
-
-export const READEST_OPDS_USER_AGENT = 'Readest/1.0 (OPDS Browser)';
 
 export const SYNC_PROGRESS_INTERVAL_SEC = 3;
 export const SYNC_NOTES_INTERVAL_SEC = 5;

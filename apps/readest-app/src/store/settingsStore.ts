@@ -22,10 +22,10 @@ interface SettingsState {
   requestedPanel: string | null;
   /**
    * Optional sub-page hint paired with `requestedPanel`. When the requested
-   * panel renders nested sub-pages (e.g. Integrations → WebDAV / OPDS), this
+   * panel renders nested sub-pages (e.g. Integrations → WebDAV), this
    * string tells the panel which one to drill into. Cleared by the panel after
    * consumption. Format is panel-specific — Integrations recognises
-   * 'webdav' | 'localsend' | 'opds'.
+   * 'webdav' | 'localsend'.
    */
   requestedSubPage: string | null;
   setSettings: (settings: SystemSettings) => void;

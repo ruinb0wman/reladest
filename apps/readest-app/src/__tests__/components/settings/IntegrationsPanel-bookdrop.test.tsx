@@ -61,11 +61,6 @@ describe('IntegrationsPanel Nearby BookDrop section', () => {
     expect(sections[0]).toBe('settings.integrations.localsend');
     expect(within(bookDropSection()).getByText('Local Network')).toBeTruthy();
     expect(within(bookDropSection()).getByText('Nearby BookDrop')).toBeTruthy();
-    // No longer buried in Content Sources.
-    const catalogs = document.querySelector(
-      '[data-setting-id="settings.integrations.catalogs"]',
-    ) as HTMLElement;
-    expect(within(catalogs).queryByText('Nearby BookDrop')).toBeNull();
   });
 
   it('shows the announced device name while on', () => {

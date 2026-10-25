@@ -613,7 +613,6 @@ export class NativeAppService extends BaseAppService {
   override supportsViewTransitionGroup = detectViewTransitionGroup();
   override distChannel = DIST_CHANNEL;
   override storefrontRegionCode: string | null = null;
-  override isOnlineCatalogsAccessible = true;
 
   private execDir?: string = undefined;
   private customRootDir?: string = undefined;
@@ -665,7 +664,6 @@ export class NativeAppService extends BaseAppService {
       }
     }
     if (this.isIOSApp) {
-      this.isOnlineCatalogsAccessible = this.distChannel !== 'appstore';
       try {
         const res = await getStorefrontRegionCode();
         if (res?.regionCode) {

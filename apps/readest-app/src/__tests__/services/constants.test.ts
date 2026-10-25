@@ -62,7 +62,6 @@ import {
   READEST_WEB_BASE_URL,
   READEST_NODE_BASE_URL,
   READEST_PUBLIC_STORAGE_BASE_URL,
-  READEST_OPDS_USER_AGENT,
   SYNC_PROGRESS_INTERVAL_SEC,
   SYNC_NOTES_INTERVAL_SEC,
   SYNC_BOOKS_INTERVAL_SEC,
@@ -208,7 +207,6 @@ describe('services/constants', () => {
         dictionary: true,
         font: true,
         texture: true,
-        opds_catalog: true,
         settings: true,
       });
     });
@@ -802,11 +800,6 @@ describe('services/constants', () => {
 
     it('READEST_PUBLIC_STORAGE_BASE_URL is a valid URL', () => {
       expect(READEST_PUBLIC_STORAGE_BASE_URL).toMatch(/^https:\/\//);
-    });
-
-    it('READEST_OPDS_USER_AGENT is a non-empty string', () => {
-      expect(typeof READEST_OPDS_USER_AGENT).toBe('string');
-      expect(READEST_OPDS_USER_AGENT.length).toBeGreaterThan(0);
     });
   });
 

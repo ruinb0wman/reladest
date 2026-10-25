@@ -21,7 +21,6 @@ const renderPopup = (props: Partial<React.ComponentProps<typeof ImportMenuPopup>
       anchor={anchor}
       onClose={onClose}
       onImportBooksFromFiles={vi.fn()}
-      onOpenCatalogManager={vi.fn()}
       {...props}
     />,
   );
@@ -29,7 +28,7 @@ const renderPopup = (props: Partial<React.ComponentProps<typeof ImportMenuPopup>
 };
 
 beforeEach(() => {
-  useEnvMock.mockReturnValue({ appService: { isOnlineCatalogsAccessible: true } });
+  useEnvMock.mockReturnValue({ appService: {} });
 });
 
 afterEach(() => {
@@ -43,7 +42,6 @@ describe('ImportMenuPopup', () => {
     renderPopup();
 
     expect(screen.getByRole('menuitem', { name: 'From Local File' })).toBeTruthy();
-    expect(screen.getByRole('menuitem', { name: 'Online Library' })).toBeTruthy();
     expect(screen.queryByRole('menuitem', { name: 'From Directory' })).toBeNull();
   });
 
@@ -56,13 +54,6 @@ describe('ImportMenuPopup', () => {
 
     expect(screen.queryByRole('menuitem', { name: 'From Web URL' })).toBeNull();
     expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it('uses the OPDS label when curated online catalogs are unavailable', () => {
-    useEnvMock.mockReturnValue({ appService: { isOnlineCatalogsAccessible: false } });
-    renderPopup();
-
-    expect(screen.getByRole('menuitem', { name: 'OPDS Catalogs' })).toBeTruthy();
   });
 
   it('runs the selected action and dismisses the popup', () => {

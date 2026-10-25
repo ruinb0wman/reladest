@@ -4,7 +4,6 @@ import { CustomTheme } from '@/styles/themes';
 import { CustomFont } from '@/styles/fonts';
 import { CustomTexture } from '@/styles/textures';
 import { HighlightColor, HighlightStyle, UserHighlightColor, ViewSettings } from './book';
-import { OPDSCatalog } from './opds';
 import type { AISettings } from '@/services/ai/types';
 import type { NotebookTab } from '@/store/notebookStore';
 import type { DictionarySettings, ImportedDictionary } from '@/services/dictionaries/types';
@@ -132,9 +131,8 @@ export interface WebDAVSettings {
  * (reading progress) sync, 'note' gates annotations, 'book' gates book
  * binaries + metadata, 'dictionary' gates the imported-dictionary replica
  * sync. 'credentials' is a meta-toggle that gates the encrypted-credential
- * fields (OPDS username/password) across whichever
- * replica kinds carry them. Adding a new replica
- * kind extends this union.
+ * fields across whichever replica kinds carry them. Adding a new replica kind
+ * extends this union.
  */
 export type SyncCategory =
   | 'book'
@@ -143,7 +141,6 @@ export type SyncCategory =
   | 'dictionary'
   | 'font'
   | 'texture'
-  | 'opds_catalog'
   | 'settings'
   | 'credentials'
   | 'stats';
@@ -155,7 +152,6 @@ export const SYNC_CATEGORIES: readonly SyncCategory[] = [
   'dictionary',
   'font',
   'texture',
-  'opds_catalog',
   'settings',
   'stats',
   'credentials',
@@ -295,7 +291,6 @@ export interface SystemSettings {
   customTextures: CustomTexture[];
   customDictionaries: ImportedDictionary[];
   dictionarySettings: DictionarySettings;
-  opdsCatalogs: OPDSCatalog[];
   /** Saved sites for the "From Web Browser" import (#5775). Device-local. */
   metadataSeriesCollapsed: boolean;
   metadataOthersCollapsed: boolean;
