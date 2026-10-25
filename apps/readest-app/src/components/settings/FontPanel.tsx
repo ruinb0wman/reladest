@@ -13,6 +13,7 @@ import {
   NON_FREE_FONTS,
   SANS_SERIF_FONTS,
   SERIF_FONTS,
+  SYSTEM_FONT,
   WINDOWS_FONTS,
 } from '@/services/constants';
 import { useEnv } from '@/context/EnvContext';
@@ -56,6 +57,7 @@ interface FontFaceProps {
 }
 
 const handleFontFaceFont = (option: string, family: string) => {
+  if (option === SYSTEM_FONT) return `system-ui, ${family}`;
   return `'${option}', ${family}`;
 };
 
@@ -356,6 +358,7 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
             family='serif'
             label={_('Serif Font')}
             options={[
+              SYSTEM_FONT,
               ...customFonts,
               ...SERIF_FONTS.filter(filterNonFreeFonts),
               ...CJK_SERIF_FONTS,
@@ -369,6 +372,7 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
             family='sans-serif'
             label={_('Sans-Serif Font')}
             options={[
+              SYSTEM_FONT,
               ...customFonts,
               ...SANS_SERIF_FONTS.filter(filterNonFreeFonts),
               ...CJK_SANS_SERIF_FONTS,
@@ -381,7 +385,7 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
           <FontFace
             family='monospace'
             label={_('Monospace Font')}
-            options={[...customFonts, ...MONOSPACE_FONTS]}
+            options={[SYSTEM_FONT, ...customFonts, ...MONOSPACE_FONTS]}
             moreOptions={sysFonts}
             selected={monospaceFont}
             onSelect={setMonospaceFont}
@@ -395,7 +399,7 @@ const FontPanel: React.FC<SettingsPanelPanelProp> = ({ bookKey, onRegisterReset 
           <FontFace
             family='serif'
             label={_('CJK Font')}
-            options={CJKFonts}
+            options={[SYSTEM_FONT, ...CJKFonts]}
             selected={defaultCJKFont}
             onSelect={setDefaultCJKFont}
             data-setting-id='settings.font.cjkFont'

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import { getBaseFontFamily, getFontFamilies } from '@/utils/style';
 import { ViewSettings } from '@/types/book';
-import { DEFAULT_BOOK_FONT } from '@/services/constants';
+import { DEFAULT_BOOK_FONT, SYSTEM_FONT } from '@/services/constants';
 
 /** Build a minimal ViewSettings carrying just the font fields under test. */
 function makeFontSettings(overrides: Partial<ViewSettings> = {}): ViewSettings {
@@ -43,6 +43,13 @@ describe('getBaseFontFamily', () => {
     });
     const family = getBaseFontFamily(vs);
     expect(family).toContain('"Source Han Serif CN"');
+  });
+
+  it('emits the system-font sentinel as the unquoted CSS generic', () => {
+    const vs = makeFontSettings({ defaultFont: 'Serif', serifFont: SYSTEM_FONT });
+    const family = getBaseFontFamily(vs);
+    expect(family.startsWith('system-ui,')).toBe(true);
+    expect(family).not.toContain(`"${SYSTEM_FONT}"`);
   });
 });
 

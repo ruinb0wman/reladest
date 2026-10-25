@@ -5,6 +5,7 @@ import {
   FALLBACK_FONTS,
   CJK_SANS_SERIF_FONTS,
   CJK_SERIF_FONTS,
+  SYSTEM_FONT,
 } from '@/services/constants';
 import { BookFormat, FIXED_LAYOUT_FORMATS, ViewSettings } from '@/types/book';
 import {
@@ -55,7 +56,10 @@ const buildFontFamilyLists = (
     ...FALLBACK_FONTS,
   ];
   const monospaceFonts = [monospace, ...MONOSPACE_FONTS.filter((font) => font !== monospace)];
-  const quote = (fonts: string[]) => fonts.map((font) => `"${font}"`).join(', ');
+  // SYSTEM_FONT is a settings sentinel, not a real family: emit the CSS generic
+  // unquoted so the device's own font wins for every glyph it has.
+  const quote = (fonts: string[]) =>
+    fonts.map((font) => (font === SYSTEM_FONT ? 'system-ui' : `"${font}"`)).join(', ');
   return {
     serif: `${quote(serifFonts)}, serif`,
     sansSerif: `${quote(sansSerifFonts)}, sans-serif`,

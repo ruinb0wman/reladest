@@ -462,6 +462,12 @@ export const MONOSPACE_FONTS = [
 
 export const FALLBACK_FONTS = ['MiSans L3'];
 
+// Sentinel for "use whatever this device installs": the value stored in the font
+// view settings, handed to CSS as the `system-ui` generic when a family chain is
+// built (utils/style.ts). Spelled as a family name rather than as the CSS
+// keyword so the settings UI and the synced per-book config can carry it as-is.
+export const SYSTEM_FONT = 'System Font';
+
 export const WINDOWS_FONTS = [
   'Arial',
   'Arial Black',
