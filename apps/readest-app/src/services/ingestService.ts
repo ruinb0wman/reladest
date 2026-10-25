@@ -3,7 +3,6 @@ import type { AppService, OsPlatform } from '@/types/system';
 import type { SystemSettings } from '@/types/settings';
 import { normalizeFilePathForIndex } from '@/services/bookService';
 import { isContentURI, isValidURL } from '@/utils/misc';
-import { isPseStreamFileName } from '@/services/opds/pseStream';
 
 export interface IngestFileDeps {
   appService: AppService;
@@ -189,7 +188,6 @@ export async function ingestFile(
     !opts.transient &&
     opts.lookupIndex &&
     typeof opts.file === 'string' &&
-    !isPseStreamFileName(opts.file) &&
     !isValidURL(opts.file) &&
     !isContentURI(opts.file)
   ) {

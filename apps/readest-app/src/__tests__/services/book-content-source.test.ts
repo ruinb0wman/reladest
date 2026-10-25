@@ -86,8 +86,8 @@ describe('book content source resolution', () => {
     });
   });
 
-  test('isBookAvailable treats PSE streams as available content sources', async () => {
-    const book = makeBook({ format: 'CBZ', url: 'pse://encoded-stream' });
+  test('isBookAvailable treats an http url as available content', async () => {
+    const book = makeBook({ format: 'CBZ', url: 'https://example.com/book.cbz' });
     const fs = makeFs({});
 
     await expect(isBookAvailable(fs, book)).resolves.toBe(true);

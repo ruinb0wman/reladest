@@ -162,8 +162,6 @@ export const EXTS: Record<BookFormat, string> = {
   // this extension is never used to write or look up a file. It exists only
   // to satisfy the Record<BookFormat, string> exhaustiveness check.
   ABS: 'abs',
-  // Same for OPDS audio: the tracks are fetched from the catalog, never stored.
-  OPDSAUDIO: 'opdsaudio',
 };
 
 export const MIMETYPES: Record<BookFormat, string[]> = {
@@ -180,9 +178,6 @@ export const MIMETYPES: Record<BookFormat, string[]> = {
   HTML: ['text/html'],
   // Never matched against a real download; see the EXTS.ABS comment above.
   ABS: ['application/vnd.audiobookshelf'],
-  // OPDS audio is identified from the acquisition link (services/opds/formats),
-  // never by looking a BookFormat up here.
-  OPDSAUDIO: [],
 };
 
 export interface DocumentLoaderOptions {

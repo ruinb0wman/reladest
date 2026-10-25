@@ -16,9 +16,7 @@ export type BookFormat =
   | 'MD'
   | 'HTML'
   // Streaming audiobook from an Audiobookshelf server; filePath is abs://<serverId>/<itemId>
-  | 'ABS'
-  // Streaming audiobook from an OPDS catalog; filePath is opdsaudio://<encoded entry> (#6224)
-  | 'OPDSAUDIO';
+  | 'ABS';
 export type BookNoteType = 'bookmark' | 'annotation' | 'excerpt' | 'notebook' | 'ink';
 export type ReadingStatus = 'unread' | 'reading' | 'finished' | 'abandoned';
 export type HighlightStyle = 'highlight' | 'underline' | 'squiggly';

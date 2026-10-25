@@ -19,7 +19,6 @@ import { useCustomOPDSStore } from '@/store/customOPDSStore';
 import { useTheme } from '@/hooks/useTheme';
 import { useLibrary } from '@/hooks/useLibrary';
 import { eventDispatcher } from '@/utils/event';
-import { navigateToReader } from '@/utils/nav';
 import { getFileExtFromMimeType } from '@/libs/document';
 import { OPDSFeed, OPDSPublication, OPDSSearch, REL } from '@/types/opds';
 import {
@@ -48,7 +47,6 @@ import { READEST_OPDS_USER_AGENT } from '@/services/constants';
 import { findBookByOPDSSources, upsertOPDSSourceMapping } from '@/services/opds/sourceMap';
 import { applyOPDSCover, getOPDSCoverHref, getOPDSImageCacheFilename } from '@/services/opds/cover';
 import { applyOPDSMetadata, getOPDSBookMetadata } from '@/services/opds/metadata';
-import { buildPseStreamFileName } from '@/services/opds/pseStream';
 import type { Book } from '@/types/book';
 import { FeedView } from './components/FeedView';
 import { PublicationView } from './components/PublicationView';
@@ -677,29 +675,6 @@ export default function BrowserPage() {
     ],
   );
 
-  const handleStream = useCallback(
-    async (href: string, count: number, title: string, author: string) => {
-      if (!appService || !libraryLoaded) return;
-      try {
-        const url = resolveURL(href, state.baseURL);
-        const psePath = buildPseStreamFileName({ url, catalogId, count, title, author });
-        const { library, setLibrary } = useLibraryStore.getState();
-        const book = await appService.importBook(psePath, library, { transient: true });
-        if (book) {
-          setLibrary(library);
-          navigateToReader(router, [book.hash]);
-        }
-      } catch (e) {
-        console.error('Stream error:', e);
-        eventDispatcher.dispatch('toast', {
-          type: 'error',
-          message: _('Failed to start stream') + `:\n${e instanceof Error ? e.message : e}`,
-        });
-      }
-    },
-    [state.baseURL, catalogId, appService, libraryLoaded, router, _],
-  );
-
   const handleGenerateCachedImageUrl = useCallback(
     async (url: string, cacheVersion?: string) => {
       if (!appService) return url;
@@ -1068,7 +1043,6 @@ export default function BrowserPage() {
             baseURL={state.baseURL}
             existingBook={existingBookForPublication}
             onDownload={handleDownload}
-            onStream={handleStream}
             resolveURL={resolveURL}
             onNavigate={handleNavigate}
             onGenerateCachedImageUrl={handleGenerateCachedImageUrl}

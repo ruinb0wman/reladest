@@ -32,7 +32,6 @@ import { BookDoc, DocumentLoader } from '@/libs/document';
 import { tryNativeParseEpub } from '@/utils/tauriEpubBridge';
 import { tryNativeParseMobi } from '@/utils/tauriMobiBridge';
 import { tryNativeParsePdf } from '@/utils/tauriPdfBridge';
-import { isPseStreamFileName, openPseStreamBook, parsePseStreamFileName } from './opds/pseStream';
 import { DEFAULT_BOOK_SEARCH_CONFIG, DEFAULT_FIXED_LAYOUT_VIEW_SETTINGS } from './constants';
 import { isContentURI, isValidURL, makeSafeFilename } from '@/utils/misc';
 import { deserializeConfig, serializeConfig, serializeRawConfig } from '@/utils/serializer';
@@ -470,7 +469,6 @@ export async function importBook(
     lookupIndex,
     osPlatform,
   } = options;
-  const isPseStream = typeof file === 'string' && isPseStreamFileName(file);
 
   let loadedBook: BookDoc | undefined;
   let fileobj: File | undefined;
@@ -502,11 +500,7 @@ export async function importBook(
     }
 
     try {
-      if (isPseStream) {
-        const data = parsePseStreamFileName(file as string);
-        ({ book: loadedBook, format } = await openPseStreamBook(data));
-        filename = file as string;
-      } else {
+      {
         if (typeof file === 'string') {
           fileobj = await fs.openFile(file, 'None');
           filename = fileobj.name || getFilename(file);
@@ -601,7 +595,7 @@ export async function importBook(
       throw new Error(`Failed to open the book file: ${(error as Error).message || error}`);
     }
 
-    const hash = isPseStream ? md5(file as string) : (nativeHash ?? (await partialMD5(fileobj!)));
+    const hash = nativeHash ?? (await partialMD5(fileobj!));
 
     // PDF metadata is often generic boilerplate (e.g. every PowerPoint export
     // is titled "PowerPoint Presentation" by the same author), so metadata
@@ -922,10 +916,7 @@ export async function importBook(
     }
 
     // update file links with url or path or content uri
-    if (isPseStream) {
-      book.url = file as string;
-      if (existingBook) existingBook.url = file as string;
-    } else if (typeof file === 'string') {
+    if (typeof file === 'string') {
       if (isValidURL(file)) {
         book.url = file;
         if (existingBook) existingBook.url = file;

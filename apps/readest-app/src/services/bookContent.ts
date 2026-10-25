@@ -3,13 +3,11 @@ import type { FileSystem } from '@/types/system';
 import { EXTS } from '@/libs/document';
 import { getDir, getLocalBookFilename } from '@/utils/book';
 import { isContentURI, isValidURL } from '@/utils/misc';
-import { isPseStreamFileName } from './opds/pseStream';
 
 export type BookContentSource =
   | { kind: 'managed'; path: string; base: 'Books'; legacy?: boolean }
   | { kind: 'external'; path: string; base: 'None' }
   | { kind: 'url'; path: string; base: 'None'; fetcher?: typeof fetch }
-  | { kind: 'stream'; path: string; base: 'None'; scheme: 'pse' }
   | { kind: 'missing' };
 
 export type BookFileContentSource = Extract<
@@ -66,9 +64,6 @@ export async function resolveBookContentSource(
   }
 
   if (book.url) {
-    if (isPseStreamFileName(book.url)) {
-      return { kind: 'stream', path: book.url, base: 'None', scheme: 'pse' };
-    }
     if (isValidURL(book.url)) {
       return { kind: 'url', path: book.url, base: 'None' };
     }

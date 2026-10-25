@@ -13,11 +13,6 @@ import { Insets } from '@/types/misc';
 import { EnvConfigType } from '@/services/environment';
 import { FoliateView } from '@/types/view';
 import { DocumentLoader, TOCItem } from '@/libs/document';
-import {
-  isPseStreamFileName,
-  openPseStreamBook,
-  parsePseStreamFileName,
-} from '@/services/opds/pseStream';
 import { computeBookNav, hydrateBookNav, isBookNavCacheCurrent, updateToc } from '@/services/nav';
 import {
   formatTitle,
@@ -207,7 +202,6 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         );
         throw new Error('Book not found');
       }
-      const isPseStream = !!book.url && isPseStreamFileName(book.url);
       let bookDoc = bookData?.bookDoc;
       let docFormat = bookData?.docFormat;
       let file: File | null = bookData?.file ?? null;
@@ -231,14 +225,9 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         known: config.widePages,
         onFound: (ids) => useBookDataStore.getState().setConfig(id, { widePages: ids }),
       });
-      if (!bookDoc || (!isPseStream && !file) || reload) {
+      if (!bookDoc || !file || reload) {
         console.log('Loading book', key);
-        if (isPseStream) {
-          const data = parsePseStreamFileName(book.url!);
-          const doc = await openPseStreamBook(data, makeWidePages(await configPromise));
-          bookDoc = doc.book;
-          file = null;
-        } else {
+        {
           // resolveNativeBookFilePath only reads `book` (it feeds the Rust
           // EPUB prefetch), so it can race the content load instead of
           // queueing behind it.
