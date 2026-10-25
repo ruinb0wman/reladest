@@ -35,7 +35,7 @@ function isBlockedV4(a: number, b: number, c: number, _d: number): boolean {
 
 /**
  * Canonical SSRF host blocklist, shared by every server route that fetches a
- * client-supplied URL (`/api/opds/proxy`, `/api/opds/audio`, …).
+ * client-supplied URL.
  * Returns true for hosts that must never be reached: loopback, private,
  * link-local, CGNAT, benchmarking, multicast, internal hostname suffixes, and
  * bare single-label names.
@@ -88,7 +88,7 @@ export function isBlockedHost(hostname: string): boolean {
 /**
  * Whether a URL points at a LAN / internal address. Delegates to the canonical
  * {@link isBlockedHost} so the proxy SSRF guard and the LAN-detection callers
- * (the WebDAV/file-sync direct-vs-proxy routing, OPDS catalog warnings) stay in sync.
+ * (the WebDAV/file-sync direct-vs-proxy routing) stay in sync.
  * Returns false for unparseable URLs (matching the previous best-effort
  * behavior — an invalid host can't be reached anyway).
  */

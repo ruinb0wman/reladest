@@ -28,8 +28,6 @@ const LibraryEmptyState: React.FC<LibraryEmptyStateProps> = ({ onImport }) => {
         </p>
         <div className='flex w-full max-w-xs flex-col gap-3'>
           <LibraryImportButton onImport={onImport} primary />
-          {/* TODO: add a 'Browse free catalogs' secondary action that opens the
-              OPDS dialog (handleShowOPDSDialog) once we settle on placement. */}
         </div>
       </div>
     </div>

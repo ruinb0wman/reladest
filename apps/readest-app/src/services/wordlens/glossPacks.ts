@@ -61,8 +61,7 @@ type DownloadFileFn = (params: {
  * Download `url` through the Rust downloader into an absolute temp path under
  * 'Data', read the bytes back, then delete the temp file. Both the download
  * destination and the read/delete use the SAME absolute path (resolved via
- * `resolveFilePath(rel, 'Data')` and addressed with base 'None'), mirroring
- * the OPDS auto-download idiom in `services/opds/autoDownload.ts`. Routing
+ * `resolveFilePath(rel, 'Data')` and addressed with base 'None'). Routing
  * through Rust (rather than a webview fetch) avoids cross-origin/CORS concerns
  * on the webview — CSP itself is fine, since tauri.conf's connect-src
  * whitelists https://*.readest.com.

@@ -263,7 +263,7 @@ export const useProgressSync = (bookKey: string) => {
 
     const bookHash = bookKey.split('-')[0]!;
     const metaHash = book.metaHash;
-    // OPDS re-downloads mint a NEW book_hash for a re-packaged-but-identical
+    // A re-download can mint a NEW book_hash for a re-packaged-but-identical
     // file, so the cloud accumulates several configs for one book: the exact
     // same-book_hash config plus same-metaHash SIBLINGS from other hashes.
     // Reconcile them like importBook's mergeBooks — furthest position wins — but
@@ -320,7 +320,7 @@ export const useProgressSync = (bookKey: string) => {
         siblingFraction > exactFraction &&
         siblingFraction > localFraction + SIBLING_FORWARD_EPSILON
       ) {
-        // A sibling copy holds the furthest position after OPDS hash-churn.
+        // A sibling copy holds the furthest position after a re-download.
         // Apply it ONLY by fraction (goToFraction resolves by cumulative section
         // size, never by node path), so it can't collapse to a section start the
         // way a cross-file CFI would.

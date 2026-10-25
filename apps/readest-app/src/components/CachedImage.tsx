@@ -12,10 +12,9 @@ interface CachedImageProps {
   width?: number;
   height?: number;
   /**
-   * Optional version tag for the image behind `src` (e.g. an OPDS entry's
-   * Atom `<updated>` value). Caching is keyed by URL + version, so a server
-   * that replaces the image at an unchanged URL and bumps the version gets a
-   * fresh fetch instead of the stale cached copy (issue #5492).
+   * Optional version tag for the image behind `src`. Caching is keyed by URL +
+   * version, so a server that replaces the image at an unchanged URL and bumps
+   * the version gets a fresh fetch instead of the stale cached copy (#5492).
    */
   cacheVersion?: string;
   onGenerateCachedImageUrl: (url: string, cacheVersion?: string) => Promise<string>;

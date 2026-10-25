@@ -12,7 +12,7 @@ interface ModalPortalProps {
 //   100 RSVP overlay · 101 RSVP controls · 110 Settings dialog ·
 //   120 modal / command palette · 130 toast · 200 app-lock.
 // ModalPortal is the top modal layer, so it sits above the Settings dialog —
-// a modal opened from inside Settings (e.g. Add OPDS Catalog) must win.
+// a modal opened from inside Settings must win.
 // Invariants are enforced by src/__tests__/styles/zIndexScale.test.ts.
 const ModalPortal: React.FC<ModalPortalProps> = ({ children, showOverlay = true }) => {
   return ReactDOM.createPortal(

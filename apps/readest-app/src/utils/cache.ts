@@ -71,8 +71,8 @@ const KEPT_SIDECARS = new Set(['cover.png', 'config.json', 'nav.json']);
 /**
  * A dir written more recently than this may belong to an import whose row is
  * not in the library yet: files land in Books/<hash>/ before the caller saves
- * the row, and OPDS auto-download and restore persist a whole batch at once.
- * Such dirs are left alone until they settle.
+ * the row, and a restore persists a whole batch at once. Such dirs are left
+ * alone until they settle.
  */
 const ORPHAN_SETTLE_MS = 60 * 60 * 1000;
 

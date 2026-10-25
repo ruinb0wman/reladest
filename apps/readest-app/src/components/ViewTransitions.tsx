@@ -52,7 +52,7 @@ export function ViewTransitions({ children }: { children: ReactNode }) {
   }, []);
 
   // Only explicit push/replace calls animate. Native history navigation can
-  // change just the query string (OPDS), with no new route mount to await.
+  // change just the query string, with no new route mount to await.
   return <NavigationTransition.Provider value={navigate}>{children}</NavigationTransition.Provider>;
 }
 

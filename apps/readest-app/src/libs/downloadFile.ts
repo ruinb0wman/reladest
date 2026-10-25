@@ -6,8 +6,8 @@
  * Upstream this lived in a `libs/storage` module that also spoke to Readest's
  * object storage — uploads, signed URLs, listings, purge — and could mint a
  * download URL from a cloud key. All of that is gone; what is left is the
- * generic downloader, used by OPDS (covers, automatic downloads), WordLens gloss
- * packs and the Audiobookshelf offline cache.
+ * generic downloader, used by WordLens gloss packs and the Audiobookshelf
+ * offline cache.
  */
 import { isWebAppPlatform } from '@/services/environment';
 import { AppService } from '@/types/system';

@@ -134,7 +134,7 @@ const IntegrationsPanel: React.FC = () => {
   // Both subscriptions must be unconditional. The sub-page branches below
   // return early, so a hook that only runs in the list view changes the hook
   // count between renders — React error #300, which meant opening ANY
-  // integration sub-page (WebDAV, OPDS, …) crashed the settings dialog.
+  // integration sub-page crashed the settings dialog.
   // These two landed after the early returns when the cloud providers were
   // reduced to the file backends; the rest of the component is careful to keep
   // every hook above them.

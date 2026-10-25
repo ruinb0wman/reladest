@@ -7,8 +7,8 @@ import { useTrafficLightStore } from '@/store/trafficLightStore';
  * a header ref is provided) keeps Rust's centering calculation in sync
  * with the page's actual header height. Without a ref, the store's
  * h-11 (44px) fallback is used — fine for chrome that matches; pages
- * whose chrome is taller (library's h-[44px] / h-[52px], OPDS's
- * h-[48px], etc.) must pass their own ref so the inset is computed
+ * whose chrome is taller (library's h-[44px] / h-[52px], etc.) must pass
+ * their own ref so the inset is computed
  * from the rendered height instead of the default.
  *
  * Callers that conditionally render the header element (LibraryHeader

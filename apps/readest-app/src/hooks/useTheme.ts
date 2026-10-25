@@ -14,8 +14,8 @@ type UseThemeProps = {
   appThemeColor?: keyof Palette;
   /**
    * Which page's theme this route paints (issue #5945). Only the reader owns
-   * its own scope; the library, OPDS, player, auth and user pages all share
-   * the library's so no route paints a third look.
+   * its own scope; the library, player, auth and user pages all share the
+   * library's so no route paints a third look.
    */
   themeScope?: ThemeScope;
 };
