@@ -23,9 +23,10 @@ pnpm stop           # 逃生：pnpm dev 被强杀后，清掉残留的 hub / dev
 
 pnpm build:android:x86      # 模拟器 / x86 平板
 pnpm build:android:arm64    # 手机
-#   DEVTOOLS=1 pnpm build:android:arm64   # 带 CDP 调试台（要连真机排查时）
-#   DEBUG=1    pnpm build:android:x86     # 调试构建
-#   产物自动拷到 ~/readest-lan/dist/readest-lan-v<版本>-<架构>.apk
+#   要加参数就直接调脚本：bash scripts/lan/apk.sh <x86_64|aarch64> [--devtools] [--debug]
+#     --devtools  带 CDP 调试台（要连真机排查时）
+#     --debug     调试构建
+#   产物自动拷到 ~/readest-lan/dist/readest-lan-v<版本>-<架构>[-debug].apk
 
 pnpm test / test:unit / test:browser / test:coverage
 pnpm test:types / test:lint / test:rust / test:clippy / test:format
@@ -80,13 +81,13 @@ adb -s <serial> reverse tcp:17322 tcp:17322   # 手机里的 http://localhost:17
 
 | 现象 | 原因 / 处理 |
 |---|---|
-| PC 打开是白屏 | `.next/static` 没进 standalone。跑 `pnpm lan:build`(它会拷) |
+| PC 打开是白屏 | `pnpm dev:check` 看 Next dev 有没有在听 17321；编译报错都在 `pnpm dev` 那个终端里 |
 | 手机「同步失败 error sending request for url (...localhost...)」 | 手机端 URL 还是 `localhost`(调试隧道已断)。改成 PC 局域网 IP,或重开隧道后重启应用 |
 | 服务在听但手机 TCP 超时 | 防火墙:见上,`-Profile Any` |
 | 改完 WebDAV 地址后第一次同步像没生效 | 已知小问题:紧接着的那次同步可能用了保存前的设置快照。再点一次「立即同步」或重启应用即可 |
-| 书库里有书但打开是空白/闪回 | 书文件没落到本地。打开 WebDAV 子页看目录里 `books/<hash>/` 是否有书文件;`pnpm lan:logs` 看 `webdav.log` 有无 4xx/5xx |
+| 书库里有书但打开是空白/闪回 | 书文件没落到本地。打开 WebDAV 子页看目录里 `books/<hash>/` 是否有书文件;`pnpm dev:logs` 看 `webdav.log` 有无 4xx/5xx |
 | 镜像里某本书没封面 | 导出/生成封面失败,不是同步问题:上传链路对没有封面的书会跳过 |
-| 服务静默死掉 | `pnpm lan:watch`,或手动 `pnpm lan:start`;日志在 `~/readest-lan/logs/` |
+| 服务静默死掉 | 重跑 `pnpm dev`;端口被占或进程残留用 `pnpm stop` 清。日志在 `~/readest-lan/logs/` |
 
 ## 为什么 WebDAV 不用 rclone / 不放 Next 路由里
 
@@ -101,10 +102,13 @@ adb -s <serial> reverse tcp:17322 tcp:17322   # 手机里的 http://localhost:17
 没有应用内更新(那份逻辑会请求外网,已删)。手动换包:
 
 ```sh
-pnpm apk:arm64                  # 手机
-pnpm apk:x86                    # 模拟器
+pnpm build:android:arm64        # 手机
+pnpm build:android:x86          # 模拟器
 adb install -r ~/readest-lan/dist/readest-lan-v<版本>-<架构>.apk   # 同签名可覆盖,数据保留
 ```
 
 想远程调试 WebView(CDP)就打带特性的包:`bash scripts/lan/apk.sh aarch64 --devtools`
-(详见知识库 `安卓webview-cdp调试`;日常包不要带,它会把调试台暴露给任何能 adb 的设备)。
+(日常包不要带,它会把调试台暴露给任何能 adb 的设备)。
+
+装包时国产 ROM(vivo 超级守护等)会拦「外部来源应用」,要在手机上点一次授权;
+`adb install` 在那之前会一直挂着直到超时。
