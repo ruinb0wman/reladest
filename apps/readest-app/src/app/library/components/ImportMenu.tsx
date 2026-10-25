@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { MdMenuBook, MdRssFeed } from 'react-icons/md';
+import { MdRssFeed } from 'react-icons/md';
 import { LuLibrary } from 'react-icons/lu';
 import { IoFileTray } from 'react-icons/io5';
 import { useEnv } from '@/context/EnvContext';
@@ -12,7 +12,6 @@ export interface ImportMenuProps {
   setIsDropdownOpen?: (open: boolean) => void;
   onImportBooksFromFiles: () => void;
   onImportBooksFromDirectory?: () => void;
-  onImportBookFromNovelUrl?: () => void;
   onOpenCatalogManager: () => void;
   onOpenFeeds: () => void;
 }
@@ -22,7 +21,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
   setIsDropdownOpen,
   onImportBooksFromFiles,
   onImportBooksFromDirectory,
-  onImportBookFromNovelUrl,
   onOpenCatalogManager,
   onOpenFeeds,
 }) => {
@@ -36,11 +34,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
 
   const handleImportFromDirectory = () => {
     onImportBooksFromDirectory?.();
-    setIsDropdownOpen?.(false);
-  };
-
-  const handleImportFromNovelUrl = () => {
-    onImportBookFromNovelUrl?.();
     setIsDropdownOpen?.(false);
   };
 
@@ -75,13 +68,6 @@ const ImportMenu: React.FC<ImportMenuProps> = ({
         />
       )}
       <hr aria-hidden='true' className='border-base-200 my-1' />
-      {onImportBookFromNovelUrl && (
-        <MenuItem
-          label={_('From Web Novel')}
-          Icon={<MdMenuBook className='h-5 w-5' />}
-          onClick={handleImportFromNovelUrl}
-        />
-      )}
       <MenuItem
         label={_('From Feed URL')}
         Icon={<MdRssFeed className='h-5 w-5' />}
