@@ -9,7 +9,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useResponsiveSize } from '@/hooks/useResponsiveSize';
 import { LibraryCoverFitType, LibraryViewModeType } from '@/types/settings';
-import { isFeedBook } from '@/services/rss/feedBookUrl';
 import { formatAuthors, formatDescription, formatSeries } from '@/utils/book';
 import { INDETERMINATE_PROGRESS } from '@/utils/transfer';
 import { getBookTags } from '../utils/libraryUtils';
@@ -253,10 +252,7 @@ const BookItem: React.FC<BookItemProps> = ({
                 // buttons hidden while a transfer is active. Same condition as
                 // the overlay, so a book can never show neither.
                 null
-              : // A feed book has no file to move either way, so it never gets a
-                // cloud badge — it would only queue a transfer that fails (#5307).
-                !isFeedBook(book) &&
-                (!book.uploadedAt || (book.uploadedAt && !book.downloadedAt)) && (
+              : (!book.uploadedAt || (book.uploadedAt && !book.downloadedAt)) && (
                   <button
                     aria-label={!book.uploadedAt ? _('Upload Book') : _('Download Book')}
                     className='show-cloud-button -m-2 p-2'

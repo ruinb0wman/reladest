@@ -15,7 +15,6 @@ import { md5Fingerprint } from '@/utils/md5';
 import type { TranslationFunc } from '@/hooks/useTranslation';
 import { stubTranslation as _ } from '@/utils/misc';
 import { SIZE_PER_LOC, SIZE_PER_TIME_UNIT } from '@/services/constants';
-import { isFeedBook } from '@/services/rss/feedBookUrl';
 
 /** Valid sort types for the library */
 const VALID_SORT_TYPES: LibrarySortByType[] = Object.values(LibrarySortByType);
@@ -204,8 +203,8 @@ export const findSelectedManualGroup = (
  * The books a bulk Download should actually fetch (#5244): the selection
  * expanded through {@link expandBookshelfSelection}, narrowed to the books that
  * live in the cloud but not on this device. The predicate matches the per-book
- * "Download Book" affordance — a feed book has no file to fetch (#5307), and a
- * book that was never uploaded or is already local has nothing to pull down.
+ * "Download Book" affordance: a book that was never uploaded or is already local
+ * has nothing to pull down.
  */
 export const selectDownloadableBooks = (
   ids: string[],
@@ -214,12 +213,7 @@ export const selectDownloadableBooks = (
 ): Book[] => {
   const hashes = new Set(expandBookshelfSelection(ids, items));
   return books.filter(
-    (book) =>
-      hashes.has(book.hash) &&
-      !book.deletedAt &&
-      !isFeedBook(book) &&
-      !!book.uploadedAt &&
-      !book.downloadedAt,
+    (book) => hashes.has(book.hash) && !book.deletedAt && !!book.uploadedAt && !book.downloadedAt,
   );
 };
 
@@ -1159,14 +1153,10 @@ export const getBookContextMenuItemIds = (
     ids.push('clearStatus');
   }
   ids.push('showDetails', 'showInFinder', 'searchGoodreads');
-  // A feed book has no file to move: every transfer action would fail, and the
-  // share dialog uploads before it can hand out a link (issue #5307).
-  if (!isFeedBook(book)) {
-    if (book.uploadedAt && !book.downloadedAt) ids.push('download');
-    if (!book.uploadedAt && book.downloadedAt) ids.push('upload');
-    // LocalSend needs the file on this device; cloud-only books are excluded.
-    if (opts?.localSend && (book.downloadedAt || book.filePath)) ids.push('sendNearby');
-  }
+  if (book.uploadedAt && !book.downloadedAt) ids.push('download');
+  if (!book.uploadedAt && book.downloadedAt) ids.push('upload');
+  // LocalSend needs the file on this device; cloud-only books are excluded.
+  if (opts?.localSend && (book.downloadedAt || book.filePath)) ids.push('sendNearby');
   // Keep an Audiobookshelf book's media on the device (#6256); needs a native
   // filesystem, so the caller enables it on Tauri only.
   ids.push('delete');

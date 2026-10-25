@@ -46,7 +46,6 @@ const renderHeader = () =>
           onPullLibrary={noop}
           onImportBooksFromFiles={noop}
           onOpenCatalogManager={noop}
-          onOpenFeeds={noop}
           onToggleSelectMode={noop}
           onSelectAll={noop}
           onDeselectAll={noop}

@@ -22,7 +22,6 @@ const renderPopup = (props: Partial<React.ComponentProps<typeof ImportMenuPopup>
       onClose={onClose}
       onImportBooksFromFiles={vi.fn()}
       onOpenCatalogManager={vi.fn()}
-      onOpenFeeds={vi.fn()}
       {...props}
     />,
   );
@@ -44,7 +43,6 @@ describe('ImportMenuPopup', () => {
     renderPopup();
 
     expect(screen.getByRole('menuitem', { name: 'From Local File' })).toBeTruthy();
-    expect(screen.getByRole('menuitem', { name: 'From Feed URL' })).toBeTruthy();
     expect(screen.getByRole('menuitem', { name: 'Online Library' })).toBeTruthy();
     expect(screen.queryByRole('menuitem', { name: 'From Directory' })).toBeNull();
   });

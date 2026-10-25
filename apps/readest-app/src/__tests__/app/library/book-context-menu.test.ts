@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { getBookContextMenuItemIds } from '@/app/library/utils/libraryUtils';
-import { buildFeedBookUrl } from '@/services/rss/feedBookUrl';
 import { Book } from '@/types/book';
 
 const createBook = (overrides: Partial<Book> = {}): Book => ({
@@ -103,26 +102,6 @@ describe('getBookContextMenuItemIds', () => {
 
   it('omits download/upload for a book that is neither downloaded nor uploaded', () => {
     const book = createBook({ filePath: '/some/external/file.epub' });
-    expect(getBookContextMenuItemIds(book)).toEqual([
-      'select',
-      'group',
-      'markFinished',
-      'markAbandoned',
-      'showDetails',
-      'showInFinder',
-      'searchGoodreads',
-      'delete',
-    ]);
-  });
-
-  // Issue #5307 — a feed subscription has no file anywhere: the cloud has
-  // nothing to upload it to. Offering those actions only produces a failed
-  // transfer.
-  it('omits download/upload for a feed book (issue #5307)', () => {
-    const book = createBook({
-      downloadedAt: 1,
-      url: buildFeedBookUrl('https://www.saastr.com/feed/'),
-    });
     expect(getBookContextMenuItemIds(book)).toEqual([
       'select',
       'group',

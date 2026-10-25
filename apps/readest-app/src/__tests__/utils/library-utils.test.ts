@@ -1556,17 +1556,6 @@ describe('selectDownloadableBooks', () => {
     expect(selectDownloadableBooks(['local-only'], items, [localOnly])).toEqual([]);
   });
 
-  it('skips feed books, which have no file to fetch', () => {
-    const feed = createMockBook({
-      hash: 'feed',
-      uploadedAt: 100,
-      url: 'feed://%7B%22feedUrl%22%3A%22https%3A%2F%2Fexample.com%2Frss%22%7D',
-    });
-    const items: (Book | BooksGroup)[] = [feed];
-
-    expect(selectDownloadableBooks(['feed'], items, [feed])).toEqual([]);
-  });
-
   it('skips soft-deleted books', () => {
     const gone = createMockBook({ hash: 'gone', uploadedAt: 100, deletedAt: 300 });
     const items: (Book | BooksGroup)[] = [gone];

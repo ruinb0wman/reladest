@@ -10,7 +10,6 @@ import {
 } from '@/types/book';
 import { DBBookConfig, DBBook, DBBookNote } from '@/types/records';
 import { sanitizeString } from './sanitize';
-import { buildFeedBookUrl } from '@/services/rss/feedBookUrl';
 
 export const transformBookConfigToDB = (bookConfig: unknown, userId: string): DBBookConfig => {
   const {
@@ -173,11 +172,6 @@ export const transformBookFromDB = (dbBook: DBBook): Book => {
   // Only when set: an undefined key would wipe the local count in the pull
   // merge's `{ ...local, ...remote }` spread.
   if (page_count != null) book.pageCount = page_count;
-  // Native cloud DBBook has no `url` column; a feed book carries its feed URL in
-  // metadata so the reader can rebuild the feed:// descriptor here.
-  if (!book.url && book.metadata?.feedUrl) {
-    book.url = buildFeedBookUrl(book.metadata.feedUrl);
-  }
   return book;
 };
 

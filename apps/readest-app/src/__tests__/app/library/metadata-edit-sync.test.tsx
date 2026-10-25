@@ -11,8 +11,7 @@ import type { Book } from '@/types/book';
  * its stale metadata forever. The metadata group (title, author, tags,
  * metadata) must merge on its own metadataUpdatedAt clock — the same
  * field-level LWW that already protects readingStatus (#4634) and the cover
- * (#4544). RSS feed books are read daily on every device, which made this
- * near-deterministic for them.
+ * (#4544).
  */
 
 const appService = vi.hoisted(() => ({
@@ -20,10 +19,6 @@ const appService = vi.hoisted(() => ({
   generateCoverImageUrl: vi.fn(async () => 'blob:cover'),
   downloadBookCovers: vi.fn(async () => {}),
 }));
-
-const ensureFeedBookCover = vi.hoisted(() =>
-  vi.fn(async (_appService: unknown, _book: Book) => 'blob:feed-cover'),
-);
 
 const syncState = vi.hoisted(() => ({
   useSyncInited: true,
@@ -61,21 +56,14 @@ vi.mock('@/services/sync/file/runLibrarySync', () => ({
   runFileLibrarySyncPass: vi.fn(async () => ({ booksSynced: 0 })),
 }));
 
-vi.mock('@/services/rss/feedBook', () => ({ ensureFeedBookCover }));
-
 const { useBooksSync } = await import('@/app/library/hooks/useBooksSync');
 const { useLibraryStore } = await import('@/store/libraryStore');
-const { buildFeedBookUrl } = await import('@/services/rss/feedBookUrl');
-
-const FEED_URL = 'https://8sidor.se/feed/';
-
-const makeFeedBook = (over: Partial<Book> = {}): Book => ({
-  hash: 'feed-1',
+const makeBook = (over: Partial<Book> = {}): Book => ({
+  hash: 'book-1',
   format: 'EPUB',
   title: '8 Sidor',
   author: '',
-  url: buildFeedBookUrl(FEED_URL),
-  metadata: { title: '8 Sidor', author: '', language: '', feedUrl: FEED_URL },
+  metadata: { title: '8 Sidor', author: '', language: '' },
   uploadedAt: null,
   createdAt: 1000,
   updatedAt: 1000,
@@ -90,24 +78,24 @@ beforeEach(() => {
 
 describe('metadata edits merge on their own clock (issue #5438)', () => {
   it('adopts a fresher synced metadata edit even when the local row is newer', async () => {
-    // This device read the feed after the edit (page turns bump updatedAt),
+    // This device read the book after the edit (page turns bump updatedAt),
     // so it wins whole-row LWW — but the cloud row carries a fresher
     // metadataUpdatedAt from the editing device.
-    useLibraryStore.getState().setLibrary([makeFeedBook({ updatedAt: 5000 })]);
+    useLibraryStore.getState().setLibrary([makeBook({ updatedAt: 5000 })]);
     useLibraryStore.setState({ libraryLoaded: true });
     syncState.syncedBooks = [
-      makeFeedBook({
+      makeBook({
         title: '8 Sidor (SV)',
         updatedAt: 3000,
         metadataUpdatedAt: 4000,
-        metadata: { title: '8 Sidor (SV)', author: '', language: 'sv', feedUrl: FEED_URL },
+        metadata: { title: '8 Sidor (SV)', author: '', language: 'sv' },
       }),
     ];
 
     renderHook(() => useBooksSync());
 
     await waitFor(() => {
-      const merged = useLibraryStore.getState().library.find((b) => b.hash === 'feed-1');
+      const merged = useLibraryStore.getState().library.find((b) => b.hash === 'book-1');
       expect(merged?.title).toBe('8 Sidor (SV)');
       expect(merged?.metadata?.language).toBe('sv');
       expect(merged?.metadataUpdatedAt).toBe(4000);
@@ -119,20 +107,20 @@ describe('metadata edits merge on their own clock (issue #5438)', () => {
   it('keeps a fresher local metadata edit when the synced row is newer', async () => {
     // Reverse race: this device just edited; a peer's page turn won the row.
     useLibraryStore.getState().setLibrary([
-      makeFeedBook({
+      makeBook({
         title: 'Edited here',
         updatedAt: 4000,
         metadataUpdatedAt: 4000,
-        metadata: { title: 'Edited here', author: '', language: 'sv', feedUrl: FEED_URL },
+        metadata: { title: 'Edited here', author: '', language: 'sv' },
       }),
     ]);
     useLibraryStore.setState({ libraryLoaded: true });
-    syncState.syncedBooks = [makeFeedBook({ updatedAt: 5000 })];
+    syncState.syncedBooks = [makeBook({ updatedAt: 5000 })];
 
     renderHook(() => useBooksSync());
 
     await waitFor(() => {
-      const merged = useLibraryStore.getState().library.find((b) => b.hash === 'feed-1');
+      const merged = useLibraryStore.getState().library.find((b) => b.hash === 'book-1');
       expect(merged?.updatedAt).toBe(5000);
       expect(merged?.title).toBe('Edited here');
       expect(merged?.metadata?.language).toBe('sv');
@@ -141,22 +129,23 @@ describe('metadata edits merge on their own clock (issue #5438)', () => {
   });
 
   it('computes primaryLanguage from synced metadata when adopting a new book', async () => {
-    // A device adopting the book fresh (e.g. Android after the #5307 fix
-    // ships) has no local primaryLanguage; TTS must speak the language the
-    // user set, not the reader's later guess from the parsed document.
+    // A device adopting the book fresh has no local primaryLanguage; TTS must
+    // speak the language the user set, not the reader's later guess from the
+    // parsed document.
     useLibraryStore.getState().setLibrary([]);
     useLibraryStore.setState({ libraryLoaded: true });
     syncState.syncedBooks = [
-      makeFeedBook({
+      makeBook({
+        uploadedAt: 1000,
         metadataUpdatedAt: 4000,
-        metadata: { title: '8 Sidor', author: '', language: 'sv', feedUrl: FEED_URL },
+        metadata: { title: '8 Sidor', author: '', language: 'sv' },
       }),
     ];
 
     renderHook(() => useBooksSync());
 
     await waitFor(() => {
-      const adopted = useLibraryStore.getState().library.find((b) => b.hash === 'feed-1');
+      const adopted = useLibraryStore.getState().library.find((b) => b.hash === 'book-1');
       expect(adopted?.primaryLanguage).toBe('sv');
     });
   });

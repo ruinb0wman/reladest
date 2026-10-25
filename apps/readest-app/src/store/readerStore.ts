@@ -18,9 +18,6 @@ import {
   openPseStreamBook,
   parsePseStreamFileName,
 } from '@/services/opds/pseStream';
-import type { FileSystem } from '@/types/system';
-import { isFeedBookUrl, parseFeedBookUrl } from '@/services/rss/feedBookUrl';
-import { openFeedBookDoc } from '@/services/rss/feedReader';
 import { computeBookNav, hydrateBookNav, isBookNavCacheCurrent, updateToc } from '@/services/nav';
 import {
   formatTitle,
@@ -211,7 +208,6 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         throw new Error('Book not found');
       }
       const isPseStream = !!book.url && isPseStreamFileName(book.url);
-      const isFeed = !!book.url && isFeedBookUrl(book.url);
       let bookDoc = bookData?.bookDoc;
       let docFormat = bookData?.docFormat;
       let file: File | null = bookData?.file ?? null;
@@ -235,18 +231,12 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
         known: config.widePages,
         onFound: (ids) => useBookDataStore.getState().setConfig(id, { widePages: ids }),
       });
-      if (!bookDoc || (!isPseStream && !isFeed && !file) || reload) {
+      if (!bookDoc || (!isPseStream && !file) || reload) {
         console.log('Loading book', key);
         if (isPseStream) {
           const data = parsePseStreamFileName(book.url!);
           const doc = await openPseStreamBook(data, makeWidePages(await configPromise));
           bookDoc = doc.book;
-          file = null;
-        } else if (isFeed) {
-          const { feedUrl } = parseFeedBookUrl(book.url!);
-          // AppService publicly exposes the readFile/writeFile/exists surface of FileSystem.
-          const fs = appService as unknown as FileSystem;
-          bookDoc = await openFeedBookDoc(fs, book.hash, feedUrl, book.title);
           file = null;
         } else {
           // resolveNativeBookFilePath only reads `book` (it feeds the Rust
@@ -293,20 +283,17 @@ export const useReaderStore = create<ReaderStore>((set, get) => ({
       // Filter out invalid booknotes
       config.booknotes = config.booknotes?.filter((booknote) => booknote.cfi) ?? [];
       // Load cached book navigation (TOC + section fragments) or compute and persist.
-      // Feed manifests grow between opens, so feed books always recompute instead.
       if (book.format === 'EPUB' && bookDoc.rendition?.layout !== 'pre-paginated') {
-        const cachedNav = isFeed ? null : await appService.loadBookNav(book);
+        const cachedNav = await appService.loadBookNav(book);
         if (isBookNavCacheCurrent(cachedNav) && process.env.NODE_ENV === 'production') {
           hydrateBookNav(bookDoc, cachedNav);
         } else {
           const freshNav = await computeBookNav(bookDoc);
           hydrateBookNav(bookDoc, freshNav);
-          if (!isFeed) {
-            try {
-              await appService.saveBookNav(book, freshNav);
-            } catch (e) {
-              console.warn('Failed to persist book nav cache:', e);
-            }
+          try {
+            await appService.saveBookNav(book, freshNav);
+          } catch (e) {
+            console.warn('Failed to persist book nav cache:', e);
           }
         }
       }
