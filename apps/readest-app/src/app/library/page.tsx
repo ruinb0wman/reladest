@@ -86,7 +86,12 @@ import { CacheManagerWindow } from './components/CacheManagerWindow';
 import { useDragDropImport } from './hooks/useDragDropImport';
 import { useAppRouter } from '@/hooks/useAppRouter';
 import { Toast } from '@/components/Toast';
-import { createBookGroups, findGroupById, getBreadcrumbs } from './utils/libraryUtils';
+import {
+  createBookGroups,
+  findGroupById,
+  getBreadcrumbs,
+  libraryBackAction,
+} from './utils/libraryUtils';
 import Spinner from '@/components/Spinner';
 import LibraryHeader from './components/LibraryHeader';
 import Bookshelf from './components/Bookshelf';
@@ -429,13 +434,19 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
     handleLibraryNavigation(parentGroupId);
   };
 
-  const handleBackUpOneGroupLevelRef = useRef(handleBackUpOneGroupLevel);
-  handleBackUpOneGroupLevelRef.current = handleBackUpOneGroupLevel;
-  const triggerBackUpOneGroupLevel = useCallback(() => handleBackUpOneGroupLevelRef.current(), []);
+  // Android back must undo the in-app level (the group) before it reaches the
+  // app and exits. Virtual groups only carry the `?group=` param, so the action
+  // is decided from the URL, not from the manual-group path alone.
+  const groupParam = searchParams?.get('group') || '';
+  const backAction = libraryBackAction(currentGroupPath, groupParam);
+  const handleLibraryBack = () => {
+    if (backAction === 'up-one-group') handleBackUpOneGroupLevel();
+    else if (backAction === 'leave-group') handleLibraryNavigation('');
+  };
 
   useKeyDownActions({
-    onCancel: triggerBackUpOneGroupLevel,
-    enabled: !!appService?.isAndroidApp && !!currentGroupPath,
+    onCancel: handleLibraryBack,
+    enabled: !!appService?.isAndroidApp && backAction !== null,
   });
 
   useEffect(() => {

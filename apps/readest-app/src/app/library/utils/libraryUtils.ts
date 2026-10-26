@@ -582,6 +582,28 @@ export const getBreadcrumbs = (currentPath: string) => {
 };
 
 /**
+ * What an Android back gesture does while browsing the library.
+ *
+ * There are two ways to be "inside a group" here, and they are not the same
+ * state: a manual group has a path (`currentGroupPath`, possibly nested, e.g.
+ * `Fiction/Mystery`), while a virtual group (series / author / tag / subject /
+ * status) only exists as the `?group=` URL param — `getGroupName` knows nothing
+ * about those ids. Gating the back key on `currentGroupPath` alone is why the
+ * gesture fell through to the app and exited it from a series or author folder.
+ *
+ * `null` means there is no in-app level to undo, so the gesture stays the
+ * app-level back (exit).
+ */
+export const libraryBackAction = (
+  currentGroupPath: string | undefined,
+  groupParam: string,
+): 'up-one-group' | 'leave-group' | null => {
+  if (currentGroupPath) return 'up-one-group';
+  if (groupParam) return 'leave-group';
+  return null;
+};
+
+/**
  * Parse a combined author string into individual author names.
  * Handles common separators like ", ", " & ", " and ".
  */
