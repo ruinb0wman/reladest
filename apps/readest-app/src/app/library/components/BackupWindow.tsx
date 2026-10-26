@@ -40,7 +40,7 @@ interface BackupResult {
 }
 
 interface BackupWindowProps {
-  onPullLibrary: (fullRefresh?: boolean, verbose?: boolean) => void;
+  onPullLibrary: (fullRefresh?: boolean) => void;
 }
 
 export const BackupWindow: React.FC<BackupWindowProps> = ({ onPullLibrary }) => {

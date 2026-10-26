@@ -8,7 +8,6 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { SYNC_BOOKS_INTERVAL_SEC } from '@/services/constants';
 import { throttle } from '@/utils/throttle';
 import { debounce } from '@/utils/debounce';
-import { eventDispatcher } from '@/utils/event';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getActiveFileSyncBackends } from '@/services/sync/cloudSyncProvider';
 import { runFileLibrarySyncPass } from '@/services/sync/file/runLibrarySync';
@@ -69,54 +68,28 @@ export const useBooksSync = () => {
     };
   }, [user, lastSyncedAtBooks]);
 
-  const pullLibrary = useCallback(
-    async (_fullRefresh = false, verbose = false) => {
-      // A LAN build has one sync path: the enabled file backend (WebDAV).
-      // Upstream this also ran a "native pull" of the Readest Cloud book rows,
-      // which is gone with the account system. Every library-refresh surface —
-      // pull to refresh, the SettingsMenu sync row, BackupWindow — routes here.
-      const settingsNow = useSettingsStore.getState().settings;
-      const backends = getActiveFileSyncBackends(settingsNow);
-      const runFilePass = backends.length > 0;
+  const pullLibrary = useCallback(async () => {
+    // A LAN build has one sync path: the enabled file backend (WebDAV).
+    // Upstream this also ran a "native pull" of the Readest Cloud book rows,
+    // which is gone with the account system. Every library-refresh surface —
+    // pull to refresh, the SettingsMenu sync row, BackupWindow — routes here.
+    const settingsNow = useSettingsStore.getState().settings;
+    const backends = getActiveFileSyncBackends(settingsNow);
+    const runFilePass = backends.length > 0;
 
-      if (!runFilePass) return;
-      if (isPullingRef.current) return;
+    if (!runFilePass) return;
+    if (isPullingRef.current) return;
 
-      isPullingRef.current = true;
-      try {
-        // Both legs run to completion (under the same isPullingRef guard)
-        // before anything is reported: a `verbose` pull emits exactly ONE
-        // toast for the combined outcome, never one per provider. Reporting
-        // from the file leg alone would fire before the native pull even
-        // started, and would show its outcome only — a file-pass failure
-        // masking a native pull that then succeeds, or a book count that
-        // ignores what the native pull actually synced.
-        let fileSynced = 0;
-        let fileSucceeded = false;
-        if (runFilePass) {
-          const result = await runFileLibrarySyncPass(envConfig, _);
-          // A run that could not write library.json converged NOTHING, however
-          // many books it uploaded: peers read membership, tombstones and the
-          // uploaded-file record from that one file. Reporting it as "N books
-          // synced" is what let #5900 go unnoticed for so long.
-          fileSucceeded = result !== null && !result.indexPushFailed && !result.failures;
-          fileSynced = result?.booksSynced ?? 0;
-        }
-
-        if (verbose) {
-          eventDispatcher.dispatch('toast', {
-            type: fileSucceeded ? 'info' : 'error',
-            message: fileSucceeded
-              ? _('{{count}} book(s) synced', { count: fileSynced })
-              : _('Sync failed'),
-          });
-        }
-      } finally {
-        releaseSyncLock();
-      }
-    },
-    [_, user, libraryLoaded, syncBooks, envConfig, releaseSyncLock],
-  );
+    isPullingRef.current = true;
+    try {
+      // The outcome report (one toast per backend, success only when books
+      // moved) lives in `notifySyncOutcome`, called by the pass itself — a
+      // toast here would double-fire for the same run.
+      await runFileLibrarySyncPass(envConfig, _);
+    } finally {
+      releaseSyncLock();
+    }
+  }, [_, envConfig, releaseSyncLock]);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const handleAutoSync = useCallback(

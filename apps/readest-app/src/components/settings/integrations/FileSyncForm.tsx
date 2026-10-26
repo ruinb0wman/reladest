@@ -4,14 +4,13 @@ import React from 'react';
 import { MdCloudSync } from 'react-icons/md';
 import { v4 as uuidv4 } from 'uuid';
 import { useEnv } from '@/context/EnvContext';
-import { useTranslation, type TranslationFunc } from '@/hooks/useTranslation';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useFileSyncStore } from '@/store/fileSyncStore';
-import { eventDispatcher } from '@/utils/event';
-import { formatSyncFailure } from '@/services/sync/file/syncResult';
 import { FileSyncEngine } from '@/services/sync/file/engine';
 import { FileSyncError } from '@/services/sync/file/provider';
+import { notifySyncOutcome } from '@/services/sync/file/syncNotice';
 import { createAppLocalStore } from '@/services/sync/file/appLocalStore';
 import { syncSettingsMirror } from '@/services/sync/file/settingsMirror';
 import {
@@ -45,28 +44,6 @@ interface FileSyncFormProps {
    */
   syncNowDisabled?: boolean;
 }
-
-/**
- * Translate a sync-time error into a user-facing string. Backend-neutral: the
- * provider maps every failure to a {@link FileSyncError} with a normalised `code`
- * for the brief toast; the persistent report retains the underlying diagnostic.
- */
-const formatSyncError = (_: TranslationFunc, e: unknown): string => {
-  if (e instanceof FileSyncError) {
-    switch (e.code) {
-      case 'AUTH_FAILED':
-        return _('Authentication failed. Reconnect in Settings.');
-      case 'NOT_FOUND':
-        return _('Remote resource not found');
-      case 'NETWORK':
-        return _('Network error');
-    }
-    if (typeof e.status === 'number') {
-      return _('Sync failed (status {{status}})', { status: e.status });
-    }
-  }
-  return _('Sync failed.');
-};
 
 /**
  * The provider-agnostic sync controls shared by every file-sync backend's
@@ -180,18 +157,14 @@ const FileSyncForm: React.FC<FileSyncFormProps> = ({
         console.warn('[cloudSync] settings mirror failed', kind, e);
       }
 
-      const failure = formatSyncFailure(result, _);
+      const failure = notifySyncOutcome(_, kind, { result });
       setLastError(kind, failure);
       if (!failure) {
         await persist({ lastSyncedAt: Date.now() });
-        eventDispatcher.dispatch('toast', {
-          type: 'info',
-          message: _('{{count}} book(s) synced', { count: result.booksSynced }),
-        });
       }
     } catch (e) {
       setLastError(kind, e instanceof Error ? e.message : String(e));
-      eventDispatcher.dispatch('toast', { type: 'error', message: formatSyncError(_, e) });
+      notifySyncOutcome(_, kind, { error: e });
     } finally {
       endSync(kind);
     }

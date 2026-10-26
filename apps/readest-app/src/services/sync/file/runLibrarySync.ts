@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { formatSyncFailure } from './syncResult';
+import { notifySyncOutcome } from './syncNotice';
 
 import type { Book } from '@/types/book';
 import type { EnvConfigType } from '@/services/environment';
@@ -188,7 +188,8 @@ export const runFileLibrarySyncPass = async (
       try {
         const result = await syncOneBackend(envConfig, kind, _);
         if (result) {
-          useFileSyncStore.getState().setLastError(kind, formatSyncFailure(result, _));
+          // health row + toast from the same message, one place (syncNotice).
+          useFileSyncStore.getState().setLastError(kind, notifySyncOutcome(_, kind, { result }));
           // Spread the latest counters, but ACCUMULATE everything that reports
           // trouble — a plain spread let a healthy second mirror erase the
           // first one's failures and its unwritten index (#5900).
@@ -205,6 +206,7 @@ export const runFileLibrarySyncPass = async (
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
         useFileSyncStore.getState().setLastError(kind, message);
+        notifySyncOutcome(_, kind, { error: e });
         console.warn('[cloudSync] library file sync failed', kind, e);
       }
     }

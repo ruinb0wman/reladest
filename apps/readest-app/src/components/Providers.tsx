@@ -38,7 +38,6 @@ import { DropdownProvider } from '@/context/DropdownContext';
 import { CommandPaletteProvider, CommandPalette } from '@/components/command-palette';
 import AtmosphereOverlay from '@/components/AtmosphereOverlay';
 import AppLockScreen from '@/components/AppLockScreen';
-import FileSyncReport from '@/components/FileSyncReport';
 import AppLockDialog from '@/components/settings/AppLockDialog';
 import TelemetryConsentDialog from '@/components/TelemetryConsentDialog';
 import { useAppLockStore } from '@/store/appLockStore';
@@ -270,7 +269,6 @@ const Providers = ({ children }: { children: React.ReactNode }) => {
                   {children}
                   <CommandPalette />
                   <AtmosphereOverlay />
-                  {!appShellHidden && <FileSyncReport />}
                   <WindowResizeHandles />
                 </div>
                 <AppLockDialog />

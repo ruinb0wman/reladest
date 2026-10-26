@@ -5,6 +5,8 @@ import type { SystemSettings } from '@/types/settings';
 import { useFileSyncStore } from '@/store/fileSyncStore';
 import { useLibraryStore } from '@/store/libraryStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { eventDispatcher } from '@/utils/event';
+import { clearSyncNoticeCache } from '@/services/sync/file/syncNotice';
 
 /**
  * The manual "Sync now" must keep the provider health surfaces honest: the
@@ -16,11 +18,6 @@ import { useSettingsStore } from '@/store/settingsStore';
 
 const syncLibrary = vi.fn();
 
-vi.mock('@/components/Dialog', () => ({
-  default: ({ isOpen, children }: { isOpen: boolean; children: React.ReactNode }) =>
-    isOpen ? <div role='dialog'>{children}</div> : null,
-}));
-
 vi.mock('@/context/EnvContext', () => ({
   useEnv: () => ({
     envConfig: { getAppService: async () => ({ loadLibraryBooks: async () => [] }) },
@@ -29,7 +26,8 @@ vi.mock('@/context/EnvContext', () => ({
 }));
 
 vi.mock('@/hooks/useTranslation', () => ({
-  useTranslation: () => (key: string) => key,
+  useTranslation: () => (key: string, params?: Record<string, string | number>) =>
+    params ? key.replace('{{count}}', String(params['count'] ?? '')) : key,
 }));
 
 vi.mock('@/services/sync/file/providerRegistry', async (importOriginal) => {
@@ -47,7 +45,6 @@ vi.mock('@/services/sync/file/engine', () => ({
   }),
 }));
 
-import FileSyncReport from '@/components/FileSyncReport';
 import FileSyncForm from '@/components/settings/integrations/FileSyncForm';
 
 const stored = {
@@ -62,6 +59,7 @@ const renderForm = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
+  clearSyncNoticeCache();
   syncLibrary.mockResolvedValue({ booksSynced: 1, failures: 0, totalBooks: 1, failedBooks: [] });
   useSettingsStore.setState({
     settings: { webdav: stored } as unknown as SystemSettings,
@@ -71,7 +69,6 @@ beforeEach(() => {
     byKind: {},
     activeKind: null,
     lastErrorByKind: {},
-    reportByKind: {},
   });
 });
 
@@ -118,18 +115,39 @@ test.each([
     failedBooks: [{ hash: 'a', title: 'Failed PDF', phase: 'upload-file', reason: 'HTTP 507' }],
     ...failure,
   });
-  render(
-    <>
-      <FileSyncForm kind='webdav' stored={stored} persist={persist} />
-      <FileSyncReport />
-    </>,
-  );
+  render(<FileSyncForm kind='webdav' stored={stored} persist={persist} />);
   fireEvent.click(screen.getByRole('button', { name: 'Sync now' }));
   await waitFor(() => expect(useFileSyncStore.getState().byKind.webdav?.isSyncing).toBe(false));
   expect(persist).not.toHaveBeenCalled();
   expect(useFileSyncStore.getState().lastErrorByKind.webdav).toBeTruthy();
-  expect(screen.getByText(/HTTP 507/)).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
-  expect(screen.queryByText(/HTTP 507/)).toBeNull();
-  expect(useFileSyncStore.getState().lastErrorByKind.webdav).toBeTruthy();
+});
+
+test('a failed run toasts its details instead of opening a dialog', async () => {
+  const dispatch = vi.spyOn(eventDispatcher, 'dispatch');
+  syncLibrary.mockResolvedValueOnce({
+    booksSynced: 1,
+    totalBooks: 2,
+    failures: 1,
+    indexPushFailed: false,
+    failedBooks: [{ hash: 'a', title: 'Failed PDF', phase: 'upload-file', reason: 'HTTP 507' }],
+  });
+  renderForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Sync now' }));
+  await waitFor(() => expect(useFileSyncStore.getState().byKind.webdav?.isSyncing).toBe(false));
+
+  const toasts = dispatch.mock.calls.filter(([event]) => event === 'toast');
+  expect(toasts).toHaveLength(1);
+  expect(toasts[0]?.[1]).toMatchObject({ type: 'error' });
+  expect((toasts[0]?.[1] as { message: string }).message).toContain('HTTP 507');
+});
+
+test('a successful run toasts the book count', async () => {
+  const dispatch = vi.spyOn(eventDispatcher, 'dispatch');
+  renderForm();
+  fireEvent.click(screen.getByRole('button', { name: 'Sync now' }));
+  await waitFor(() => expect(useFileSyncStore.getState().byKind.webdav?.isSyncing).toBe(false));
+
+  const toasts = dispatch.mock.calls.filter(([event]) => event === 'toast');
+  expect(toasts).toHaveLength(1);
+  expect(toasts[0]?.[1]).toMatchObject({ type: 'success', message: '1 book(s) synced' });
 });

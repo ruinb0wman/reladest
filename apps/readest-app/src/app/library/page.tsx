@@ -340,15 +340,7 @@ const LibraryPageContent = ({ searchParams }: { searchParams: ReadonlyURLSearchP
   useLibraryFileSync();
   const { isDragging } = useDragDropImport();
 
-  usePullToRefresh(
-    scrollRef,
-    async () => {
-      await pullLibrary(false, true);
-    },
-    async () => {
-      await pullLibrary(true, true);
-    },
-  );
+  usePullToRefresh(scrollRef, pullLibrary, pullLibrary);
   useShortcuts({
     onToggleFullscreen: () => {
       if (!isTauriAppPlatform()) return false;

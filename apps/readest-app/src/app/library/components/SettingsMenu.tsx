@@ -32,7 +32,7 @@ import Menu from '@/components/Menu';
 import { type AppLockDialogMode, useAppLockStore } from '@/store/appLockStore';
 
 interface SettingsMenuProps {
-  onPullLibrary: (fullRefresh?: boolean, verbose?: boolean) => void;
+  onPullLibrary: (fullRefresh?: boolean) => void;
   setIsDropdownOpen?: (isOpen: boolean) => void;
 }
 
@@ -202,7 +202,7 @@ const SettingsMenu: React.FC<SettingsMenuProps> = ({ onPullLibrary, setIsDropdow
   };
 
   const handleSyncLibrary = () => {
-    onPullLibrary(true, true);
+    onPullLibrary(true);
     setIsDropdownOpen?.(false);
   };
 
