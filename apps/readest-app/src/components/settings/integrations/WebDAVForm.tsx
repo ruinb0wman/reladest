@@ -14,6 +14,7 @@ import { buildWebDAVConnectSettings } from '@/services/sync/providers/webdav/con
 import { SectionTitle } from '../primitives';
 import FileSyncForm from './FileSyncForm';
 import WebDAVBrowsePane from './WebDAVBrowsePane';
+import LanEndpointCard from './LanEndpointCard';
 import { persistCloudProviderEnabled } from './cloudSync';
 
 /**
@@ -109,6 +110,8 @@ const WebDAVForm: React.FC = () => {
   if (isActive) {
     return (
       <div className='space-y-5'>
+        <LanEndpointCard stored={stored} />
+
         <FileSyncForm kind='webdav' stored={stored} persist={persistWebdav} />
 
         <WebDAVBrowsePane settings={stored} onUpdateSettings={persistWebdav} />
@@ -140,6 +143,8 @@ const WebDAVForm: React.FC = () => {
         handleConnect();
       }}
     >
+      <LanEndpointCard stored={stored} />
+
       <div className='space-y-1.5'>
         <SectionTitle as='label' htmlFor='webdav-server-url' className='block'>
           {_('Server URL')}
