@@ -7,6 +7,7 @@ import { RemoteFile } from '@/utils/file';
 import { detectViewTransitionGroup, detectViewTransitionsAPI } from '@/utils/viewTransition';
 import { isPWA } from './environment';
 import { BaseAppService } from './appService';
+import { withDiskBooks } from './diskBooksFileSystem';
 import {
   DATA_SUBDIR,
   LOCAL_BOOKS_SUBDIR,
@@ -296,7 +297,9 @@ const indexedDBFileSystem: FileSystem = {
 };
 
 export class WebAppService extends BaseAppService {
-  fs = indexedDBFileSystem;
+  // Books live on disk when the node-side `/api/local-fs` route is enabled
+  // (NEXT_PUBLIC_LOCAL_FS=1); everything else stays in IndexedDB.
+  fs: FileSystem = withDiskBooks(indexedDBFileSystem);
   override isMobile = ['android', 'ios'].includes(getOSPlatform());
   override appPlatform = 'web' as AppPlatform;
   override supportsCanvasContext2DFilter = !isSafariBrowser();
